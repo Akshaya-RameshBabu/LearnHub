@@ -198,7 +198,7 @@ public class SysadminController {
 						muserrepositories.save(user);
 						cacheService.updateAdminStatus(user.getInstitutionName());
 						cacheService.updateUserActiveStatus(email);
-						return ResponseEntity.ok().body("{\"message\": \"Deactivated Successfully\"}");
+						return ResponseEntity.ok().body("{\"message\": \"Activated Successfully\"}");
 					}
 
 					// Return not found if the user with the given email does not exist
