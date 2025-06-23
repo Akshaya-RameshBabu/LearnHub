@@ -1,6 +1,10 @@
 package com.knowledgeVista.User.SecurityConfiguration;
 
+import java.security.Key;
 import java.util.Date;
+import java.util.function.Function;
+
+import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +17,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 @Configuration
 public class JwtUtil {
+
 	@Autowired
 	private JwtConfig jwtConfig;
 
@@ -21,119 +26,79 @@ public class JwtUtil {
 
 	private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-	// 24hrs
-	public static final long JWT_EXPIRATION_MS = 86400000;
-	// public static final long JWT_EXPIRATION_MS = 60000; // 1 minute
+	public static final long JWT_EXPIRATION_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+	private Key getSigningKey() {
+		byte[] secretBytes = jwtConfig.getSecretKey().getBytes(); // Your key should be 64+ bytes for HS512
+		return new SecretKeySpec(secretBytes, SignatureAlgorithm.HS512.getJcaName());
+	}
 
 	public String generateToken(String username, String userRole, String institutionName, Long userId, String email) {
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + JWT_EXPIRATION_MS);
 
-		return Jwts.builder().setSubject(username).setIssuedAt(now).claim("username", username).claim("email", email)
-				.claim("role", userRole).claim("institution", institutionName).claim("userId", userId)
-				.setExpiration(expiryDate).signWith(SignatureAlgorithm.HS256, jwtConfig.getSecretKey()).compact();
-	}
-
-	public String getInstitutionFromToken(String token) {
-		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-			return claims.get("institution", String.class);
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("Error extracting institution", e);
-			return null;
-		}
-	}
-
-	public Long getUserIdFromToken(String token) {
-		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-			return claims.get("userId", Long.class);
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("Error extracting userId", e);
-			return null;
-		}
+		return Jwts.builder().setSubject(username).setIssuedAt(now).setExpiration(expiryDate)
+				.claim("username", username).claim("email", email).claim("role", userRole)
+				.claim("institution", institutionName).claim("userId", userId)
+				.signWith(getSigningKey(), SignatureAlgorithm.HS512).compact();
 	}
 
 	public boolean validateToken(String token) {
 		try {
-			// Check if the token is blacklisted
-			if (tokenBlacklist.isTokenBlacklisted(token)) {
-				return false; // Token is blacklisted, so consider it invalid
-			}
+			if (tokenBlacklist.isTokenBlacklisted(token))
+				return false;
 
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-
-			// Check if the token has expired
-			Date expiration = claims.getExpiration();
-			Date now = new Date();
-			return !expiration.before(now); // Return true if not expired
+			Claims claims = extractAllClaims(token);
+			return claims.getExpiration().after(new Date());
 		} catch (Exception e) {
-			// Token parsing failed or expired
-			e.printStackTrace();
-			logger.error("", e);
+			logger.error("JWT validation failed", e);
 			return false;
-		}
-	}
-
-	public String getRoleFromToken(String token) {
-		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-			return claims.get("role", String.class);
-		} catch (Exception e) {
-			// Print or log the exception for debugging
-			e.printStackTrace();
-			logger.error("", e);
-			return null;
-		}
-	}
-
-	public String getUsernameFromToken(String token) {
-		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-			return claims.get("username", String.class);
-		} catch (Exception e) {
-			// Print or log the exception for debugging
-			e.printStackTrace();
-			logger.error("", e);
-			return null;
-		}
-	}
-
-	public String getEmailFromToken(String token) {
-		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-			return claims.get("email", String.class);
-		} catch (Exception e) {
-			// Print or log the exception for debugging
-			e.printStackTrace();
-			logger.error("", e);
-			return null;
 		}
 	}
 
 	public String refreshToken(String token) {
 		try {
-			Claims claims = Jwts.parser().setSigningKey(jwtConfig.getSecretKey()).parseClaimsJws(token).getBody();
-
-			String username = claims.get("username", String.class);
-			String role = claims.get("role", String.class);
-			String institution = claims.get("institution", String.class);
-			String email = claims.get("email", String.class);
-			Long userId = claims.get("userId", Long.class);
-
-			Date now = new Date();
-			Date expiryDate = new Date(now.getTime() + JWT_EXPIRATION_MS);
-
-			return Jwts.builder().setSubject(username).claim("username", username).claim("role", role)
-					.claim("email", email).claim("institution", institution).claim("userId", userId)
-					.setExpiration(expiryDate).signWith(SignatureAlgorithm.HS256, jwtConfig.getSecretKey()).compact();
+			Claims claims = extractAllClaims(token);
+			return generateToken(claims.get("username", String.class), claims.get("role", String.class),
+					claims.get("institution", String.class), claims.get("userId", Long.class),
+					claims.get("email", String.class));
 		} catch (Exception e) {
-			e.printStackTrace();
 			logger.error("Error refreshing token", e);
 			return null;
 		}
 	}
 
+	public String getUsernameFromToken(String token) {
+		return getClaim(token, claims -> claims.get("username", String.class));
+	}
+
+	public String getEmailFromToken(String token) {
+		return getClaim(token, claims -> claims.get("email", String.class));
+	}
+
+	public String getInstitutionFromToken(String token) {
+		return getClaim(token, claims -> claims.get("institution", String.class));
+	}
+
+	public String getRoleFromToken(String token) {
+		return getClaim(token, claims -> claims.get("role", String.class));
+	}
+
+	public Long getUserIdFromToken(String token) {
+		return getClaim(token, claims -> claims.get("userId", Long.class));
+	}
+
+	private <T> T getClaim(String token, Function<Claims, T> claimsResolver) {
+		try {
+			final Claims claims = extractAllClaims(token);
+			return claimsResolver.apply(claims);
+		} catch (Exception e) {
+			logger.error("Error extracting claim", e);
+			return null;
+		}
+	}
+
+	private Claims extractAllClaims(String token) {
+		return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody();
+	}
 }
