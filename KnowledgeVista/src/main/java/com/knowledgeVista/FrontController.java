@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
 import com.knowledgeVista.Attendance.AttendanceService;
 import com.knowledgeVista.Batch.BatchInstallmentdetails;
@@ -56,6 +57,7 @@ import com.knowledgeVista.Course.Test.CourseTest;
 import com.knowledgeVista.Course.Test.controller.QuestionController;
 import com.knowledgeVista.Course.Test.controller.Testcontroller;
 import com.knowledgeVista.Course.certificate.certificateController;
+import com.knowledgeVista.Course.moduleTest.service.GenerateModuleTest;
 import com.knowledgeVista.Course.moduleTest.service.ModuleTestService;
 import com.knowledgeVista.Email.EmailController;
 import com.knowledgeVista.Email.Mailkeys;
@@ -91,7 +93,7 @@ import com.knowledgeVista.User.LabellingItems.controller.LadellingitemController
 import com.knowledgeVista.User.SecurityConfiguration.CheckAccessAnnotation;
 import com.knowledgeVista.User.Usersettings.RoleDisplayController;
 import com.knowledgeVista.User.Usersettings.Role_display_name;
-
+import org.springframework.http.MediaType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 
@@ -225,6 +227,8 @@ public class FrontController {
 
 	@Autowired
 	private AssignmentService2 assignmentService2;
+	@Autowired
+	private GenerateModuleTest generateModule;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -352,6 +356,11 @@ public class FrontController {
 	public ResponseEntity<?> getAllStudentCourseDetails(@RequestHeader("Authorization") String token) {
 		return coursesec.getAllStudentCourseDetails(token);
 	}
+	@GetMapping("/get/lessonIdBycourseID/{courseId}")
+   @CheckAccessAnnotation
+   public ResponseEntity<?> getLessonIdBycourseID(@PathVariable Long courseId, @RequestHeader("Authorization") String token) {
+	return coursesec.getLessonIdBycourseID(courseId, token);
+   }
 
 //----------------------------videolessonController-------------------------------
 	@GetMapping("/getDocs/{lessonId}")
@@ -2222,7 +2231,7 @@ public class FrontController {
 			@PathVariable Long assignmentId, @RequestHeader("Authorization") String token) {
 		return assignmentService2.AddMoreQuestionForQuizzInAssignment(assignmentId, question, token);
 	}
-
+   
 	// --------------------------OTP Verification----------------------
 	@PostMapping("/auth/send-otp")
 	public ResponseEntity<?> sendOTP(@RequestParam String email) {
@@ -2233,4 +2242,23 @@ public class FrontController {
 	public ResponseEntity<?> verifyOTP(@RequestParam String email, @RequestParam String otp) {
 		return muserreg.verifyOTP(email, otp);
 	}
+
+	
+	@GetMapping(value = "/generate/stream/{lessonId}/{count}", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseBodyEmitter streamQuestions(@PathVariable Long lessonId,@PathVariable Long count) {
+        ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
+        emitter.onTimeout(() -> {
+            emitter.complete();
+        });
+        emitter.onCompletion(() -> {
+            // Optionally log or clean up
+        });
+        emitter.onError((throwable) -> {
+            // Optionally log or clean up
+        });
+        generateModule.streamQuestionsFromLessonQwen(lessonId,count, emitter);
+        return emitter;
+    }
+
 }
+

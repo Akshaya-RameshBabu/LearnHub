@@ -125,6 +125,7 @@ import SubmitAssignment from "./Assignment/SubmitAssignment.js";
 import BatchAssignments from "./Assignment/BatchAssignments.js";
 import ValidateAssignment from "./Assignment/ValidateAssignment.js";
 import LicenceFileCreation from "./AuthenticationPages/LicenceFileCreation.js";
+import GenerateQuestions from "./course/ModuleTest.js/GenerateQuestions.js";
 
 function App() {
   useEffect(() => {
@@ -538,6 +539,19 @@ function App() {
                 </ErrorBoundary>
               }
             />
+             <Route
+            path="/test/generate/:courseId"
+            element={
+              <ErrorBoundary>
+                 <PrivateRoute
+                    authorizationRequired={true}
+                    authenticationRequired={true}
+                  >
+                <GenerateQuestions />
+                </PrivateRoute>
+              </ErrorBoundary>
+            }
+          />
             <Route
               path="/course/edit/:courseId"
               element={

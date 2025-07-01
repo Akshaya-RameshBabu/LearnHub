@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import com.knowledgeVista.Course.CourseDetail;
+import com.knowledgeVista.Course.VideoLessonDTO;
 import com.knowledgeVista.Course.Repository.videoLessonRepo;
 import com.knowledgeVista.License.licenseRepository;
 import com.knowledgeVista.Payments.Orderuser;
@@ -170,8 +171,20 @@ public class CourseControllerSecond {
 		 }
 	
 
-	 
-	 
+	 public ResponseEntity<?>getLessonIdBycourseID(Long courseId,String token){	
+		try {
+			String role = jwtUtil.getRoleFromToken(token);
+			String institution=jwtUtil.getInstitutionFromToken(token);
+			if(!"ADMIN".equals(role)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			}
+			List<VideoLessonDTO> lessonId=lessonrepo.FindlessonIdBycourseID(institution,courseId);
+			return ResponseEntity.ok(lessonId);
+		} catch (Exception e) {
+			e.printStackTrace();logger.error("", e); // You can replace this with logging framework like Log4j
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	 }
 	
 
 

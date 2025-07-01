@@ -20,6 +20,12 @@ public interface videoLessonRepo extends JpaRepository<videoLessons, Long> {
 		List<VideoLessonDTO> searchByTitle(@Param("title") String title, 
 		                                   @Param("institution") String institution, 
 		                                   @Param("courseId") Long courseId);
+
+	 @Query("SELECT new com.knowledgeVista.Course.VideoLessonDTO(v.lessonId, v.Lessontitle) " +
+	"FROM videoLessons v WHERE v.courseDetail.courseId = :courseId AND v.institutionName = :institution")
+		List<VideoLessonDTO> FindlessonIdBycourseID(
+		                                   @Param("institution") String institution, 
+		                                   @Param("courseId") Long courseId);
  
 	  @Query("SELECT vd FROM videoLessons vd WHERE vd.lessonId IN :lessonIds AND vd.institutionName = :institutionName")
 	  List<videoLessons> findByLessonIdsAndInstitutionName(

@@ -10,7 +10,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,23 +24,26 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class VideoFileService {
+
 	@Value("${upload.video.directory}")
 	private String videoUploadDirectory;
 
 	private static final Logger logger = LoggerFactory.getLogger(VideoFileService.class);
 
 	// Allowed video MIME types
-	private static final Set<String> ALLOWED_VIDEO_TYPES = new HashSet<>(Arrays.asList(
-		"video/mp4",
-		"video/mpeg",
-		"video/webm",
-		"video/quicktime",
-		"video/x-msvideo",
-		"video/x-flv"
-	));
+	private static final Set<String> ALLOWED_VIDEO_TYPES = new HashSet<>(Arrays.asList("video/mp4", "video/mpeg",
+			"video/webm", "video/quicktime", "video/x-msvideo", "video/x-flv"));
+	private static final Set<String> ALLOWED_FILE_TYPES = new HashSet<>(
+			Arrays.asList("application/pdf", "application/vnd.ms-powerpoint",
+					"application/vnd.openxmlformats-officedocument.presentationml.presentation"));
 
 	// Maximum file size (100MB)
 	private static final long MAX_FILE_SIZE = 100 * 1024 * 1024;
+
+	public byte[] getFileAsBytes(String filename) throws IOException {
+		Path path = Paths.get(videoUploadDirectory, filename);
+		return Files.readAllBytes(path);
+	}
 
 	public String saveVideoFile(MultipartFile videoFile) throws IOException, SecurityException {
 		// Validate file
@@ -65,6 +72,53 @@ public class VideoFileService {
 		return uniqueFileName;
 	}
 
+	public String saveDocumentFile(MultipartFile documentFile) throws IOException, SecurityException {
+		// Validate the document file
+		validateDocumentFile(documentFile);
+
+		// Ensure upload directory exists
+		Path uploadPath = Paths.get(videoUploadDirectory); // You can separate doc dir if needed
+		if (!Files.exists(uploadPath)) {
+			Files.createDirectories(uploadPath);
+		}
+
+		// Generate a secure file name
+		String uniqueFileName = generateSecureFileName(documentFile);
+		String filePath = uploadPath.resolve(uniqueFileName).toString();
+
+		// Save the file
+		Files.copy(documentFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+
+		// Hash and log
+		String fileHash = calculateFileHash(documentFile);
+		storeFileHash(uniqueFileName, fileHash);
+
+		return uniqueFileName;
+	}
+
+	private void validateDocumentFile(MultipartFile file) throws SecurityException {
+		if (file == null || file.isEmpty()) {
+			throw new SecurityException("File is empty");
+		}
+
+		// Check file size
+		if (file.getSize() > MAX_FILE_SIZE) {
+			throw new SecurityException("File size exceeds limit: " + MAX_FILE_SIZE);
+		}
+
+		// Check content type
+		String contentType = file.getContentType();
+		if (contentType == null || !ALLOWED_FILE_TYPES.contains(contentType.toLowerCase())) {
+			throw new SecurityException("Invalid file type. Allowed: " + ALLOWED_FILE_TYPES);
+		}
+
+		// Check extension
+		String filename = file.getOriginalFilename();
+		if (filename == null || !filename.toLowerCase().matches(".*\\.(pdf|ppt|pptx)$")) {
+			throw new SecurityException("Invalid file extension. Allowed: pdf, ppt, pptx");
+		}
+	}
+
 	private void validateVideoFile(MultipartFile file) throws SecurityException {
 		if (file == null || file.isEmpty()) {
 			throw new SecurityException("File is empty");
@@ -78,8 +132,8 @@ public class VideoFileService {
 		// Validate content type using Spring's content type detection
 		String contentType = file.getContentType();
 		if (contentType == null || !ALLOWED_VIDEO_TYPES.contains(contentType.toLowerCase())) {
-			throw new SecurityException("Invalid file type. Detected: " + contentType + 
-									 ". Allowed types: " + ALLOWED_VIDEO_TYPES);
+			throw new SecurityException(
+					"Invalid file type. Detected: " + contentType + ". Allowed types: " + ALLOWED_VIDEO_TYPES);
 		}
 
 		// Validate file extension
@@ -109,21 +163,23 @@ public class VideoFileService {
 		// AVI: RIFF....AVI
 		// FLV: FLV\1
 
-		if (matchesSignature(header, new byte[]{0x66, 0x74, 0x79, 0x70}) || // MP4
-			matchesSignature(header, new byte[]{0x00, 0x00, 0x01, (byte)0xBA}) || // MPEG
-			matchesSignature(header, new byte[]{0x00, 0x00, 0x01, (byte)0xB3}) || // MPEG
-			matchesSignature(header, new byte[]{0x1A, 0x45, (byte)0xDF, (byte)0xA3}) || // WebM
-			matchesSignature(header, "RIFF".getBytes()) || // AVI
-			matchesSignature(header, "FLV\1".getBytes())) { // FLV
+		if (matchesSignature(header, new byte[] { 0x66, 0x74, 0x79, 0x70 }) || // MP4
+				matchesSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xBA }) || // MPEG
+				matchesSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xB3 }) || // MPEG
+				matchesSignature(header, new byte[] { 0x1A, 0x45, (byte) 0xDF, (byte) 0xA3 }) || // WebM
+				matchesSignature(header, "RIFF".getBytes()) || // AVI
+				matchesSignature(header, "FLV\1".getBytes())) { // FLV
 			return;
 		}
 		throw new SecurityException("Invalid file signature: file does not match known video formats");
 	}
 
 	private boolean matchesSignature(byte[] header, byte[] signature) {
-		if (signature.length > header.length) return false;
+		if (signature.length > header.length)
+			return false;
 		for (int i = 0; i < signature.length; i++) {
-			if (header[i] != signature[i]) return false;
+			if (header[i] != signature[i])
+				return false;
 		}
 		return true;
 	}
@@ -133,7 +189,7 @@ public class VideoFileService {
 		String originalName = file.getOriginalFilename();
 		String extension = originalName.substring(originalName.lastIndexOf("."));
 		String randomPart = UUID.randomUUID().toString().substring(0, 8);
-		
+
 		return timestamp + "_" + randomPart + extension;
 	}
 
@@ -176,7 +232,7 @@ public class VideoFileService {
 
 		try {
 			logger.info("Path: {}", filePath);
-
+			System.out.println(filePath);
 			if (Files.exists(filePath)) {
 				// Fetch file size safely
 				try (SeekableByteChannel channel = Files.newByteChannel(filePath)) {
