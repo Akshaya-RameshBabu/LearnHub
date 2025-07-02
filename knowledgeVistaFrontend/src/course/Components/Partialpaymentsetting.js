@@ -138,7 +138,19 @@ const Partialpaymentsetting = () => {
       }
     } catch (error) {
       console.error("Error saving installments:", error);
-      alert("Something went wrong! Please try again.");
+        MySwal.fire({
+                                toast:true,
+                          position: 'top-end', 
+                          icon: 'error',
+                          title: 'Something Went Wrong Please Try again later !',
+                          showConfirmButton: false,
+                          timer: 3000,
+                          timerProgressBar: true,
+                          didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                          }
+                        });
     }
   };
   

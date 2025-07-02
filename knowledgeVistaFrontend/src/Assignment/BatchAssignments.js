@@ -187,24 +187,7 @@ useEffect(()=>{
     {assignment.assignmentdescription}
   </p>
 
-  <span
   
-    onClick={() => toggleDescription(assignment.id)}
-    style={{
-      position: "absolute",
-      top: "0",
-      right: "0",
-      cursor: "pointer",
-      color: "blue",
-      padding: "5px"
-    }}
-  >
-    {expandedId === assignment.id ? (
-      <i className="fa-solid fa-angle-up text-primary"></i>
-    ) : (
-      <i className="fa-solid fa-angle-down text-primary pb-3"></i>
-    )}
-  </span>
 </div>
 <div
   style={{
@@ -243,7 +226,7 @@ useEffect(()=>{
       visibility: assignment?.submissionstatus === "NOT_SUBMITTED" ? "hidden" : "visible",
     }}
   >
-    <button className="btn btn-primary" onClick={()=>{navigate(`/Assignment/Validate/${batchId}/${responsedata?.userId}/${assignment?.assignmentid}`)}}>Validate</button>
+    <button className="btn btn-primary" onClick={()=>{navigate(`/Assignment/Validate/${batchTitle}/${batchId}/${responsedata?.userId}/${assignment?.assignmentid}`)}}>Validate</button>
   </div>
 </div>
 

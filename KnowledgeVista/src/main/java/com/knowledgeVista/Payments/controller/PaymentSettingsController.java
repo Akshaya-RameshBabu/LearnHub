@@ -46,11 +46,8 @@ public class PaymentSettingsController {
 
 	public ResponseEntity<?> SavePaymentDetails( Paymentsettings data, String token) {
 		
-		if (!jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }  
 		String role = jwtUtil.getRoleFromToken(token);
-		String email=jwtUtil.getUsernameFromToken(token);
+		String email=jwtUtil.getEmailFromToken(token);
   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
   	     String institution="";
   	     if(opreq.isPresent()) {
@@ -82,11 +79,8 @@ public class PaymentSettingsController {
 	
 
 	public ResponseEntity<?> GetPaymentDetails ( String token){
-		try {
-			 if (!jwtUtil.validateToken(token)) {
-	              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	          }  String role = jwtUtil.getRoleFromToken(token);
-	          String email=jwtUtil.getUsernameFromToken(token);
+		try { String role = jwtUtil.getRoleFromToken(token);
+	          String email=jwtUtil.getEmailFromToken(token);
 	   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
 	   	     String institution="";
 	   	     if(opreq.isPresent()) {
@@ -125,14 +119,9 @@ public class PaymentSettingsController {
 	}
 	
 	public ResponseEntity<?> editpayment( Long payid, String razorpay_key, String razorpay_secret_key, String token){
-		 
-	 
-		 if (!jwtUtil.validateToken(token)) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-         } 
-		 
+	try{
 		 String role = jwtUtil.getRoleFromToken(token);
-		 String email=jwtUtil.getUsernameFromToken(token);
+		 String email=jwtUtil.getEmailFromToken(token);
    	     Optional<Muser>opreq=muserRepository.findByEmail(email);
    	     String institution="";
    	     if(opreq.isPresent()) {
@@ -164,20 +153,19 @@ public class PaymentSettingsController {
          }else {
 	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	        } 
-		 
+	}catch(Exception e){
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	} 
 		 
 	 }
 	//=====================Stripe Keys================================
 	 public ResponseEntity<?>SaveStripedetails(String token, Stripesettings stripedetails){
 		  try {
-	        	if (!jwtUtil.validateToken(token)) {
-	   	         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	   	     }
 	   	     String role = jwtUtil.getRoleFromToken(token);
 	   	     if(!"ADMIN".equals(role)) {
 	   	    	 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	   	     }
-	   	     String email=jwtUtil.getUsernameFromToken(token);
+	   	     String email=jwtUtil.getEmailFromToken(token);
 	   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
 	   	     String institution="";
 	   	     if(opreq.isPresent()) {
@@ -208,11 +196,8 @@ public class PaymentSettingsController {
 }
 	 
 	 public ResponseEntity<?> GetstripeKeys ( String token){
-			try {
-				 if (!jwtUtil.validateToken(token)) {
-		              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		          }  String role = jwtUtil.getRoleFromToken(token);
-		          String email=jwtUtil.getUsernameFromToken(token);
+			try {  String role = jwtUtil.getRoleFromToken(token);
+		          String email=jwtUtil.getEmailFromToken(token);
 		   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
 		   	     String institution="";
 		   	     if(opreq.isPresent()) {
@@ -252,14 +237,11 @@ public class PaymentSettingsController {
 		
 	
      public ResponseEntity<?>getpublishkey(String token){
-    	 try {
-			 if (!jwtUtil.validateToken(token)) {
-	              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("token Expired try login again");
-	          }  String role = jwtUtil.getRoleFromToken(token);
+    	 try {  String role = jwtUtil.getRoleFromToken(token);
 	          if("ADMIN".equals(role)||"TRAINER".equals(role)) {
 	        	  return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student only enrole in course");
 	          }
-	          String email=jwtUtil.getUsernameFromToken(token);
+	          String email=jwtUtil.getEmailFromToken(token);
 	   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
 	   	     String institution="";
 	   	     if(opreq.isPresent()) {
@@ -285,14 +267,11 @@ public class PaymentSettingsController {
      //=======================PayPal=======================
      public ResponseEntity<?>SavePaypaldetails(String token, Paypalsettings paypalsettings){
 		  try {
-	        	if (!jwtUtil.validateToken(token)) {
-	   	         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("token expired try login again");
-	   	     }
 	   	     String role = jwtUtil.getRoleFromToken(token);
 	   	     if(!"ADMIN".equals(role)) {
 	   	    	 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Trainer or Stdent cannot access this page");
 	   	     }
-	   	     String email=jwtUtil.getUsernameFromToken(token);
+	   	     String email=jwtUtil.getEmailFromToken(token);
 	   	    String institution=muserRepository.findinstitutionByEmail(email);
 	   	    if(institution==null) {
 	   	    	return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User Not found");
@@ -321,10 +300,8 @@ public class PaymentSettingsController {
      
      public ResponseEntity<?> GetpaypalKeys ( String token){
 			try {
-				 if (!jwtUtil.validateToken(token)) {
-		              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		          }  String role = jwtUtil.getRoleFromToken(token);
-		          String email=jwtUtil.getUsernameFromToken(token);
+				  String role = jwtUtil.getRoleFromToken(token);
+		          String email=jwtUtil.getEmailFromToken(token);
 		          String institution=muserRepository.findinstitutionByEmail(email);
 		          if(institution==null) {
 		              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User Not Found");

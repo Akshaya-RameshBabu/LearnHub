@@ -37,13 +37,8 @@ public class AssignBatch {
 	 @Transactional
 	 public ResponseEntity<?> assignCoursesToUser(HttpServletRequest request, Long userId,  Long BatchId, String token) {
 	     try {
-	         // ✅ Validate Token
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	         }
-
 	         // ✅ Fetch admin user details once
-	         Optional<Muser> opUser = muserRepository.findByEmail(jwtUtil.getUsernameFromToken(token));
+	         Optional<Muser> opUser = muserRepository.findByEmail(jwtUtil.getEmailFromToken(token));
 	         if (opUser.isEmpty()) {
 	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	         }
@@ -239,13 +234,8 @@ public class AssignBatch {
 		 @Transactional
 		 public ResponseEntity<?> assignBatchesToTrainer(HttpServletRequest request, Long userId,  Long BatchId, String token) {
 		     try {
-		         // ✅ Validate Token
-		         if (!jwtUtil.validateToken(token)) {
-		             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		         }
-
 		         // ✅ Fetch admin user details once
-		         Optional<Muser> opUser = muserRepository.findByEmail(jwtUtil.getUsernameFromToken(token));
+		         Optional<Muser> opUser = muserRepository.findByEmail(jwtUtil.getEmailFromToken(token));
 		         if (opUser.isEmpty()) {
 		             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		         }

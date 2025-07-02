@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import baseUrl from '../api/utils';
 import axios from 'axios';
-
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'; 
 
@@ -10,6 +11,7 @@ const CreateBatchModel = ({ setSelectedBatches, closeModal,setErrors }) => {
   const today = new Date();
   const formattedToday = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
+        const MySwal = withReactContent(Swal);
   // Calculate the same date next month
   const nextMonthDate = new Date(today);
   nextMonthDate.setMonth(today.getMonth() + 1); // Add one month
@@ -23,7 +25,19 @@ const CreateBatchModel = ({ setSelectedBatches, closeModal,setErrors }) => {
     const token = sessionStorage.getItem('token'); // Get the token from sessionStorage
 
     if (!batchTitle || !startDate || !endDate) {
-      alert('Please fill all fields before submitting!');
+        MySwal.fire({
+                                toast:true,
+                          position: 'top-end', 
+                          icon: 'warning',
+                          title: 'Please Fill all Fields Before Submitting',
+                          showConfirmButton: false,
+                          timer: 3000,
+                          timerProgressBar: true,
+                          didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                          }
+                        });
       return;
     }
 
@@ -61,7 +75,19 @@ const CreateBatchModel = ({ setSelectedBatches, closeModal,setErrors }) => {
       }
     } catch (error) {
       console.error('Error creating batch:', error);
-      alert('An error occurred while creating the batch.');
+        MySwal.fire({
+                                toast:true,
+                          position: 'top-end', 
+                          icon: 'Error',
+                          title: 'Error Occured While Creating the batch',
+                          showConfirmButton: false,
+                          timer: 3000,
+                          timerProgressBar: true,
+                          didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                          }
+                        });
     }
   };
 

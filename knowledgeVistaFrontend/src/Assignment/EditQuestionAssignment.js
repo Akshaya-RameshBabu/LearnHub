@@ -4,7 +4,8 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import baseUrl from '../api/utils';
 import axios from 'axios';
-const AddQuestionToEditAssignment = ({ AssignmentQuestion, setAssignmentQuestion, setShowAddQuestion, handleSaveQuestions,getAssignment }) => {
+import EditQuizzAssignment from './EditQuizzAssignment';
+const EditQuestionAssignment = ({ AssignmentQuestion, setAssignmentQuestion, setShowAddQuestion, handleSaveQuestions,getAssignment ,Assignment}) => {
   
       const navigate=useNavigate();
       const token=sessionStorage.getItem("token");
@@ -107,6 +108,9 @@ const AddQuestionToEditAssignment = ({ AssignmentQuestion, setAssignmentQuestion
           }
         });
       };
+      if(Assignment?.type==="QUIZ"){
+        return <EditQuizzAssignment Assignment={Assignment} getAssignment={getAssignment}/>
+      }else{
      return (
          <div className="row">
              <div className="col-sm-12">
@@ -177,7 +181,7 @@ const AddQuestionToEditAssignment = ({ AssignmentQuestion, setAssignmentQuestion
              </div>
          </div>
      )
- 
+    }
 }
 
-export default AddQuestionToEditAssignment
+export default EditQuestionAssignment

@@ -286,7 +286,14 @@ const CreateModuleTest = () => {
         mtestName: 'Test name cannot be more than 50 characters.',
       }));
       return;
-    } else {
+    }else if (e.target.value.includes("/") || e.target.value.includes("\\")){
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        mtestName: " Title should not contain the '/' or '\' character"
+      }));
+      return;
+      
+     }  else {
         setErrors(prevErrors => ({
             ...prevErrors,
             mtestName: ''
@@ -309,7 +316,7 @@ const CreateModuleTest = () => {
           questionText: 'Question text cannot be more than 1000 characters.',
         }));
         return;
-      } else {
+      }else {
           setErrors(prevErrors => ({
               ...prevErrors,
               questionText: ''

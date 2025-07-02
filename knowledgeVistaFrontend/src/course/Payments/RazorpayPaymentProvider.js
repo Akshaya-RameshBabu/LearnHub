@@ -58,9 +58,10 @@ const RazorpayPaymentProvider = (orderData ,setopenselectgateway) => {
 
       const order = response.data;
       const options = {
-        order_id: order.orderId,
-        description: order.description,
-        name: order.name,
+        key:order?.key,
+        order_id: order?.orderId,
+        description: order?.description,
+        name: order?.name,
         handler: function (response) {
           if (response.error) {
             Swal.fire({

@@ -4,10 +4,14 @@ import baseUrl from '../api/utils'
 import { useNavigate, useParams } from 'react-router-dom'
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import FileViewer from './FileViewer';
+import SubmitAssignmentQuizz from './SubmitAssignmentQuizz';
+import ValidateQuizz from './ValidateQuizz';
 
 const ValidateAssignment = () => {
      const navigate = useNavigate();
-    const{batchId,userId,assignmentId}=useParams();
+    const{batchName,batchId,userId,assignmentId}=useParams();
+    const[data,setdata]=useState()
     const [Assignment, setAssignment] = useState();
      const MySwal = withReactContent(Swal);
    const token=sessionStorage.getItem('token')
@@ -15,10 +19,12 @@ const ValidateAssignment = () => {
     totalMarksObtained:"",
     feedback:""
    })
+   const[loading,setLoading]=useState()
      const [answers, setAnswers] = useState({});
      const[existingSubmission,setexistingSubmission]=useState({});
     const getSubmitteAssignmentforUser=async()=>{
         try{
+          setLoading(true)
         const response= await axios.get(`${baseUrl}/Assignments/getAssignment`,{
             headers:{
                 Authorization:token
@@ -30,6 +36,7 @@ const ValidateAssignment = () => {
             }
         })
         if (response.status === 200) {
+          setdata(response?.data)
             setAssignment(response?.data?.assignment);
             if(response?.data?.existingSubmission){
             setexistingSubmission(response?.data?.existingSubmission)
@@ -63,11 +70,15 @@ const ValidateAssignment = () => {
           console.log(err)
           throw err
           }
+          }finally{
+            setLoading(false)
           }
     }
     useEffect(()=>{
         getSubmitteAssignmentforUser()
     },[])
+
+   
 
     const handleResultChange = (e) => {
       const { name, value } = e.target;
@@ -111,7 +122,7 @@ const ValidateAssignment = () => {
                 batchId,
                 userId,
                 assignmentId,
-                feedback:existingSubmission?.feedback,
+                feedback:existingSubmission?.feedback||"",
               marks:existingSubmission?.totalMarksObtained,              }
             }
           );
@@ -148,7 +159,70 @@ const ValidateAssignment = () => {
       };
   return (
     <div>
-    <div className="page-header"></div>
+    <div className="page-header">
+    {/* <div className="page-block">
+          <div className="row align-items-center">
+            <div className="col-md-12">
+              <div className="page-header-title">
+                <h5 className="m-b-10">Assignments</h5>
+              </div>
+              <ul className="breadcrumb">
+                <li className="breadcrumb-item">
+                  <a
+                    href="#"
+                    onClick={()=>{navigate("/batch/viewall")}}
+                    title="dashboard"
+                  >
+                    <i className="fa-solid fa-object-group"></i>
+                  </a>
+                </li>
+                <li className="breadcrumb-item">
+                  <a
+                    href="#"
+                    onClick={() => {
+                      navigate(`/batch/viewcourse/${batchName}/${batchId}`);
+                    }}
+                  >
+                    {batchName}
+                  </a>
+                </li>
+                <li className="breadcrumb-item">
+                  <a href="#"
+                    onClick={() => {
+                      navigate(`/batch/ViewStudents/${batchName}/${batchId}`);
+                    }}>
+                   {displayname && displayname.student_name
+                      ? displayname.student_name
+                      : "Student"}
+                    Details
+                  </a>
+                </li>
+                <li className="breadcrumb-item">
+                  <a href="#"
+                  onClick={()=>{navigate(`/view/Student/Dashboard/${responsedata?.email}/${responsedata?.userId}/${responsedata?.batchId}/${responsedata?.batchName}`)}}
+                   >
+                 {responsedata.userName}
+                  </a>
+                </li>
+                <li className="breadcrumb-item">
+                  <a href="#"
+                  onClick={()=>{navigate(`/view/Assignments/${batchName}/${batchId}/${userId}`)}}
+                   >
+                  Assigmnents
+                  </a>
+                </li>
+                <li className="breadcrumb-item">
+                  <a href="#"
+                   >
+                  Validate
+                  </a>
+                </li>
+              
+              </ul>
+            </div>
+          </div>
+        </div> */}
+    </div>
     <div className="row">
       <div className="col-sm-12">
         <div className="card min-vh-80">
@@ -170,15 +244,19 @@ const ValidateAssignment = () => {
               <i className="fa-solid fa-xmark"></i>
             </div>
           </div>
+          {loading ? <div className="outerspinner active" >
+                <div className="spinner"></div>
+            </div> :   
           <div>          
-             <div className="mb-4 ">
+                    <div className="mb-4 ">
               <h4 className="text-primary">{Assignment?.title}</h4>
               <p className="text-muted text-indend-2em">{Assignment?.description}</p>
               <p>
                 <strong>Total Marks:</strong> {Assignment?.totalMarks}
               </p>
             </div>
-    
+           
+  { Assignment?.type==="QA"?
             <div>
               {Assignment?.questions.map((q, idx) => (
                 <div className="mb-3" key={q.id}>
@@ -199,7 +277,36 @@ const ValidateAssignment = () => {
 </div>
                 </div>
               ))}
-            </div>
+            </div>:Assignment?.type==="FILE_UPLOAD"?
+             <div className="submission-info">
+             <div className="submission-row">
+               <span className="label">📁 File Name :</span>
+               <p className='text-blue'
+               >
+                 {existingSubmission?.fileName?.split("_")[1]}
+               </p>
+               {data?.fileBase64 && data?.fileMimeType && (
+    <div className="file-preview" style={{ marginTop: "1rem" }}>
+      <FileViewer
+        mimeType={data?.fileMimeType}
+        base64={data?.fileBase64}
+        fileName={existingSubmission?.fileName?.split("_")[1]}
+      />
+    </div>
+  )}
+             </div>
+           
+             <div className="submission-row">
+               <span className="label">🕒 Submitted At :</span>
+               <span>
+                 {new Date(existingSubmission.submittedAt).toLocaleString()}
+               </span>
+             </div>
+           </div> : Assignment?.type === "QUIZ" ? (
+                   <ValidateQuizz answers={answers} Assignment={Assignment}/>
+                  ):<div><p>Some Error Occured .... Try again later</p>
+                  <small>Unknown Assignment Type </small>
+                   </div>}
 
            <div>
            <div className="form-group row">
@@ -256,7 +363,7 @@ const ValidateAssignment = () => {
                 </button>
               </div>
 
-          </div>
+          </div>}
           </div>
           </div>
           </div>

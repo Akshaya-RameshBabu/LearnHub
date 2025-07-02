@@ -28,31 +28,23 @@ public class AssignCourse {
 	 
 	 private static final Logger logger = LoggerFactory.getLogger(AssignCourse.class);
 public ResponseEntity<List<CourseDetailDto>> getCoursesForUser( String token) {
-		
-		if (!jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
+		try{
         String role = jwtUtil.getRoleFromToken(token);
-        String email = jwtUtil.getUsernameFromToken(token);
+        String email = jwtUtil.getEmailFromToken(token);
 		if("USER".equals(role)) {
 			 List<CourseDetailDto> courses=muserRepository.findStudentAssignedCoursesByEmail(email);
-			  
 		        return ResponseEntity.ok(courses);
-	    
-
 	        }
-
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}catch(Exception e){
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	    }
 
 public ResponseEntity<List<CourseDetailDto>> getCoursesForTrainer(String token) {
-	if (!jwtUtil.validateToken(token)) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
+	try{
     String role = jwtUtil.getRoleFromToken(token);
-    String email = jwtUtil.getUsernameFromToken(token);
+    String email = jwtUtil.getEmailFromToken(token);
 	if("TRAINER".equals(role)) {
 		 List<CourseDetailDto> courses=muserRepository.findAllotedCoursesByEmail(email);
   
@@ -60,7 +52,9 @@ public ResponseEntity<List<CourseDetailDto>> getCoursesForTrainer(String token) 
         }
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    
+	}catch(Exception e){
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	}
 }
 
 	

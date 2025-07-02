@@ -202,6 +202,7 @@ const Login = () => {
       });
 
       if (response.status === 200) {
+          sessionStorage.clear();
         const data = response.data;
         const jwtToken = data.token;
         const role = data.role;
@@ -228,22 +229,22 @@ const Login = () => {
         const data = error.response.data
           ? error.response.data
           : "error occured";
-        const message = data.message;
+        const message = data?.message;
         if (message === "Incorrect password") {
           setErrors((prevErrors) => ({
             ...prevErrors,
-            password: "Incorrect password",
+            password: `Incorrect password. ${data?.attemptsLeft} attempts left before account lockout.`,
           }));
         } else if (message === "In Active") {
           MySwal.fire({
             title: "In Active User!",
-            text: `reason : ${data.Description}`,
+            text: `reason : ${data?.Description}`,
             icon: "error",
           });
         }else if(message ==="Not Approved"){
           MySwal.fire({
-            title: `${data.message}`,
-            text: `${data.Description}`,
+            title: `${data?.message}`,
+            text: `${data?.Description}`,
             icon: "error",
           });
         }

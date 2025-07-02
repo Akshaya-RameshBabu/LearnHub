@@ -36,34 +36,18 @@ public class Edituser {
 	     String phone, String skills,MultipartFile profile, Boolean isActive,String countryCode, String token
 	 ) {
 	     try {
-	         // Validate the token
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Unauthorized access\"}");
-	         }
-
-	         // Get the role from the token
 	         String role = jwtUtil.getRoleFromToken(token);
-
-	         // Only ADMIN and TRAINER roles are allowed
 	         if (!role.equals("ADMIN") && !role.equals("TRAINER")) {
 	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Unauthorized access\"}");
 	         }
-
-	         // Fetch the student by the original email
 	         Optional<Muser> opStudent = muserrepositories.findByEmail(originalEmail);
 	         if (!opStudent.isPresent()) {
 	             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Student not found\"}");
 	         }
-
-	         // Get the student object
 	         Muser student = opStudent.get();
-
-	         // If the role is not USER, return an error
 	         if (!"USER".equals(student.getRole().getRoleName())) {
 	             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"Student not found\"}");
 	         }
-
-	         // Update student data
 	         student.setUsername(username);
 
 	         // Check if the email has changed
@@ -113,11 +97,6 @@ public class Edituser {
 	      MultipartFile profile, Boolean isActive,String countryCode, String token
 	 ) {
 	     try {
-	         // Validate the token
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Unauthorized access\"}");
-	         }
-
 	         // Get the role from the token
 	         String role = jwtUtil.getRoleFromToken(token);
 
@@ -188,13 +167,8 @@ public class Edituser {
 	     String skills, MultipartFile profile, Boolean isActive,String countryCode ,String token
 	 ) {
 	     try {
-	         // Validate the token
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Unauthorized access\"}");
-	         }
-
 	         jwtUtil.getRoleFromToken(token);
-	         String originalEmail=jwtUtil.getUsernameFromToken(token);
+	         String originalEmail=jwtUtil.getEmailFromToken(token);
 	         Optional<Muser> opStudent = muserrepositories.findByEmail(originalEmail);
 	         if (!opStudent.isPresent()) {
 	             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"message\": \"user not found\"}");
@@ -247,7 +221,7 @@ public class Edituser {
 	 
 	 public ResponseEntity<?> NameandProfile( String token) {
 		 
-		 String email= jwtUtil.getUsernameFromToken(token);
+		 String email= jwtUtil.getEmailFromToken(token);
 		 
 		Optional<Muser> opuser= muserrepositories.findByEmail(email);
 		if(opuser.isPresent()) {

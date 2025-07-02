@@ -49,8 +49,8 @@ public class Submission {
 	@MapKeyColumn(name = "question_id") // Key = Question ID
 	@Column(name = "answer_text", length = 5000)
 	private Map<Long, String> answers; // Map<QuestionID, AnswerText>
-//	@Column(length = 1000)
-//	private String uploadedFileUrl;
+	private String fileName;
+	private String uploadedFileUrl;
 	private LocalDateTime submittedAt;
 	@Enumerated(EnumType.STRING)
 	private SubmissionStatus submissionStatus = SubmissionStatus.NOT_SUBMITTED;

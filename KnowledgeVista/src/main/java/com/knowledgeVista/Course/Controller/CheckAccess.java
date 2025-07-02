@@ -33,11 +33,7 @@ public class CheckAccess {
 
 	 public ResponseEntity<?> checkAccess( Map<String, Long> requestData,  String token) {
 	     try {
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	         }
-
-	         String email = jwtUtil.getUsernameFromToken(token);
+	         String email = jwtUtil.getEmailFromToken(token);
 
 	         Long courseId = requestData.get("courseId");
 	         Optional<CourseDetail> courseOptional = coursedetailrepository.findById(courseId);

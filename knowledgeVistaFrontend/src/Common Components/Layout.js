@@ -3,10 +3,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import ErrorBoundary from "../ErrorBoundary.js";
-import $ from "jquery";
 const Layout = ({ searchQuery, handleSearchChange, setSearchQuery,filter,handleFilterChange }) => {
   const location = useLocation();
-  const [activeLink, setActiveLink] = useState(location.pathname);
   return (
     <div >
       <ErrorBoundary >  

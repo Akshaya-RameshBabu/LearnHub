@@ -30,12 +30,7 @@ public class PaymentListController {
 	
 	public ResponseEntity<?>ViewMypaymentHistry(String token){
 		  try {
-		    	
-		    	 if (!jwtUtil.validateToken(token)) {
-		    		 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-		                    .body("Unauthorized access");
-		         }
-		    	 String email=jwtUtil.getUsernameFromToken(token);
+		    	 String email=jwtUtil.getEmailFromToken(token);
 		    	Optional< Muser> opuser = muserRepository.findByEmail(email);
 		    			if(opuser.isPresent()) {
 		    				Muser user=opuser.get();
@@ -63,73 +58,11 @@ public class PaymentListController {
 		                .body("An error occurred : " + e.getMessage() );
 		    }
 	}
-	
-//	public ResponseEntity<?> ViewPaymentdetails(String token,Long courseId){
-//		try {
-//			 if (!jwtUtil.validateToken(token)) {
-//	    		 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//	                    .body("invalid  Token");
-//	         }
-//			 String role=jwtUtil.getRoleFromToken(token);
-//			 if("USER".equals(role)) {
-//				 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//		                    .body("Students Cannot access this page");
-//			 }
-//			 String email=jwtUtil.getUsernameFromToken(token);
-//	   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
-//	   	     String institution="";
-//	   	     if(opreq.isPresent()) {
-//	   	    	 Muser requser=opreq.get();
-//	   	    	institution=requser.getInstitutionName();
-//	   	     boolean adminIsactive=muserRepository.getactiveResultByInstitutionName("ADMIN", institution);
-//	   	    	if(!adminIsactive) {
-//	   	    	 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//	   	    	}
-//	   	     }else {
-//	   	    	 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
-//	   	     }
-//			 if("ADMIN".equals(role)||"TRAINER".equals(role)) {
-//
-//		            Optional<CourseDetail> courseOptional = coursedetail.findByCourseIdAndInstitutionName(courseId, institution);
-//		            if(courseOptional.isPresent()) {
-//		            	CourseDetail course=courseOptional.get();
-//			            Optional<Course_PartPayment_Structure>opPartpay=partpayrepo.findBycourse(course);
-//			            if(opPartpay.isPresent()) {
-//			            	Course_PartPayment_Structure partpay=opPartpay.get();
-//			            	  List<InstallmentDetails> installmentslist=partpay.getInstallmentDetail();
-//			            	   for(InstallmentDetails installment :installmentslist) {
-//			            		   installment.setPartpay(null);
-//			            	   }
-//			            	   return ResponseEntity.ok(installmentslist);
-//			            }else {
-//			            	return ResponseEntity.status(HttpStatus.NOT_FOUND).body("partpay details not found");
-//			            }
-//		            }else {
-//		            	return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not found");
-//		            }
-//
-//			 }else {
-//				 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//		                    .body("Unauthorized access");
-//			 }
-//			
-//		}catch (Exception e) {
-//			e.printStackTrace();    logger.error("", e);;
-//	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//	                .body("An error occurred : " + e.getMessage() );
-//	    }
-//	}
-	
 
 public ResponseEntity<?> viewTransactionHistory(String token) {
     try {
-        if (!jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid Token");
-        }
-
         String role = jwtUtil.getRoleFromToken(token);
-        String email=jwtUtil.getUsernameFromToken(token);
+        String email=jwtUtil.getEmailFromToken(token);
   	     Optional<Muser>opreq=muserRepository.findByEmail(email);
   	     String institution="";
   	     if(opreq.isPresent()) {
@@ -170,12 +103,7 @@ public ResponseEntity<?> viewTransactionHistory(String token) {
 
 public ResponseEntity<?>ViewMypaymentHistrytrainer(String token){
 	  try {
-	    	
-	    	 if (!jwtUtil.validateToken(token)) {
-	    		 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	                    .body("Unauthorized access");
-	         }
-	    	 String email=jwtUtil.getUsernameFromToken(token);
+	    	 String email=jwtUtil.getEmailFromToken(token);
 	    	Optional< Muser> opuser = muserRepository.findByEmail(email);
 	    			if(opuser.isPresent()) {
 	    				Muser user=opuser.get();

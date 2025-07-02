@@ -275,7 +275,18 @@ arr.push(questid);
           <input
             type="text"
             value={newQuizzName}
-            onChange={(e) => setNewQuizzName(e.target.value)}
+            onChange={(e) =>{
+              const value=e.target.value
+    if (value.trim() === '') {
+    }else if (value.length > 50) {
+      return;
+    }else 
+    if(value.includes("/")||  value.includes("\\")){
+      return;
+    }else{
+      setNewQuizzName(value)
+    }
+            }}
             autoFocus
           />
          <button className="hidebtn" 

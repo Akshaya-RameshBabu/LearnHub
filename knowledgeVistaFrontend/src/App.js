@@ -682,7 +682,7 @@ function App() {
               }
             />
             <Route
-              path="/submitAssignment/:sheduleId/:batchId/:AssignmentId"
+              path="/submitAssignment/:batchId/:AssignmentId"
               element={
                 <ErrorBoundary>
                   <PrivateRoute
@@ -1302,7 +1302,7 @@ function App() {
               }
             />
               <Route
-              path="/Assignment/Validate/:batchId/:userId/:assignmentId"
+              path="/Assignment/Validate/:batchName/:batchId/:userId/:assignmentId"
               element={
                 <ErrorBoundary>
                   <PrivateRoute

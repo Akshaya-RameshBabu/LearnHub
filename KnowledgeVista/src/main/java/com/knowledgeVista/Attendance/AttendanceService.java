@@ -31,9 +31,6 @@ public class AttendanceService {
 	
 	public ResponseEntity<?> getAttendance(String token, Long userId,Long batchId, Pageable pageable) {
 	    try {
-	        if (!jwtUtil.validateToken(token)) {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized access");
-	        }
 	        String role = jwtUtil.getRoleFromToken(token);
 	        if (userId == null) {
 	            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -59,9 +56,6 @@ public ResponseEntity<?> GetAttendanceAnalysis(String token,Long userId, Long ba
     Map<String, Object> attendanceData = new HashMap<>();
     
     try {
-    	 if (!jwtUtil.validateToken(token)) {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized access");
-	        }
 	        String role = jwtUtil.getRoleFromToken(token);
 	        if("ADMIN".equals(role)||"TRAINER".equals(role)) {
         Long totalDays = attendanceRepo.countClassesForUserAndBatch(userId, batchId);
@@ -119,10 +113,7 @@ public ResponseEntity<?> GetAttendanceAnalysis(String token,Long userId, Long ba
 		}
 	  }
 public ResponseEntity<?>updateAttendance(String token,Long id,String status){
-	try {
-		if (!jwtUtil.validateToken(token)) {
-   		 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized access");
-   	 }  	
+	try { 	
         String role=jwtUtil.getRoleFromToken(token); 
         if("ADMIN".equals(role)||"TRANER".equals(role)) {
         	Optional<Attendancedetails>opattendance= attendanceRepo.findById(id);
@@ -146,13 +137,10 @@ public ResponseEntity<?>updateAttendance(String token,Long id,String status){
 	}
 }
 public ResponseEntity<?> getMyAttendance(String token,Long batchId, Pageable pageable) {
-    try {
-    	 if (!jwtUtil.validateToken(token)) {
-	    		 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized access");
-	    	 }  	
+    try { 	
 	         String role=jwtUtil.getRoleFromToken(token); 
 	         if("USER".equals(role)) {
-	        	 String email=jwtUtil.getUsernameFromToken(token);
+	        	 String email=jwtUtil.getEmailFromToken(token);
 	        	 Long userId=muserRepository.findidByEmail(email);
 	        	 if(userId==null) {
 	        		 return ResponseEntity.status(HttpStatus.NO_CONTENT).build();

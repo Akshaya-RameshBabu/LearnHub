@@ -182,3 +182,5 @@ build/
 *.aiff
 *.alac
 *.opus
+*.env
+.env.*

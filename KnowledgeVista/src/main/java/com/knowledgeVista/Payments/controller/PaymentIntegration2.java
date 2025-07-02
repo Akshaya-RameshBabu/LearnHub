@@ -492,7 +492,7 @@ public class PaymentIntegration2 {
 	}
 
 	private PayPalHttpClient createPayPalHttpClient(String token) {
-		String email=jwtUtil.getUsernameFromToken(token);
+		String email=jwtUtil.getEmailFromToken(token);
 		if(email.equals(null)) {
 			return null;
 		}

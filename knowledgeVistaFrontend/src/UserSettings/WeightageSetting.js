@@ -67,7 +67,19 @@ const WeightageSetting = () => {
 
     // Ensure the new total does not exceed 100%
     if (totalExcludingCurrent + newValue > 100) {
-      alert("Total weightage cannot exceed 100%");
+         MySwal.fire({
+              toast:true,
+        position: 'top-end', 
+        icon: 'warning',
+        title: 'Total weightage cannot exceed 100%!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+      });
       return;
     }
 
@@ -105,7 +117,19 @@ const WeightageSetting = () => {
       }
     } catch (err) {
       if (err?.response?.status === 400) {
-        alert(err?.response?.data);
+ MySwal.fire({
+              toast:true,
+        position: 'top-end', 
+        icon: 'error',
+        title:err?.response?.data,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+      });
       } else if (err?.response?.status === 401) {
         navigate("/unaithorized");
       } else if (err?.response?.status === 403) {

@@ -41,11 +41,8 @@ public class EnablePaymentsController {
 	 private MuserRepositories muserrepo;
 	 public Boolean updatePaymenttypes(Boolean isEnabled,String paymentTypeName,String token) {
 		 try {
-			 if (!jwtUtil.validateToken(token)) {
-	             return false;
-	         }
 	         String role = jwtUtil.getRoleFromToken(token);
-	         String email=jwtUtil.getUsernameFromToken(token);
+	         String email=jwtUtil.getEmailFromToken(token);
 	         if("ADMIN".equals(role)) {
 	        	 String institutionName=muserrepo.findinstitutionByEmail(email);
 	        	
@@ -80,11 +77,7 @@ public class EnablePaymentsController {
 	 
 	 public ResponseEntity<?> getpaytypedetails(String token) {
 		    try {
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired. Please log in again.");
-		        }
-		        
-		        String email = jwtUtil.getUsernameFromToken(token);
+		        String email = jwtUtil.getEmailFromToken(token);
 		        String role=jwtUtil.getRoleFromToken(token);
 		        String institutionName = muserrepo.findinstitutionByEmail(email);
                  if(!"ADMIN".equals(role)) {
@@ -108,11 +101,7 @@ public class EnablePaymentsController {
 
 	 public ResponseEntity<?> getpaytypedetailsforuser(String token) {
 		    try {
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token expired. Please log in again.");
-		        }
-		        
-		        String email = jwtUtil.getUsernameFromToken(token);
+		        String email = jwtUtil.getEmailFromToken(token);
 		        String institutionName = muserrepo.findinstitutionByEmail(email);
 		        String role=jwtUtil.getRoleFromToken(token);
 		        if(!"USER".equals(role)) {

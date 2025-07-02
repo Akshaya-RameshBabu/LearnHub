@@ -3,8 +3,8 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import baseUrl from "../api/utils.js";
 import axios from "axios";
-import AddQuestionToEditAssignment from "./AddQuestionToEditAssignment";
 import { useNavigate, useParams } from "react-router-dom";
+import EditQuestionAssignment from "./EditQuestionAssignment.js";
 
 const EditAssignment = () => {
   const { courseName, courseId, assignmentId } = useParams();
@@ -18,13 +18,17 @@ const EditAssignment = () => {
   const [Assignment, setAssignment] = useState({
     title: "",
     description: "",
-    totalMarks: 10
+    totalMarks: 10,
+    type: "",
+    maxFileSize: ""
   });
 
   const [errors, setErrors] = useState({
     title: "",
     description: "",
-    totalMarks: ""
+    totalMarks: "",
+    type: "",
+    maxFileSize: "",
   });
   const getAssignment = async () => {
     try {
@@ -80,6 +84,8 @@ const EditAssignment = () => {
         newErrors.title = "Title is required";
       } else if (value.length > 255) {
         newErrors.title = "Title cannot exceed 255 characters";
+      } else if(value.includes("/")||value.includes("\\")){
+        newErrors.title = "Title cannot have '/' or '\\'  characters";
       } else {
         newErrors.title = "";
       }
@@ -127,6 +133,7 @@ const EditAssignment = () => {
     errors.totalMarks ||
     Assignment.title.trim() === "" ||
     Assignment.description.trim() === "" ||
+    Assignment.type==="FILE_UPLOAD" && Assignment.maxFileSize===""||
     Assignment.totalMarks <= 0 ;
   const handleSubmit = async () => {
     if (isFormInvalid) {
@@ -192,6 +199,7 @@ const EditAssignment = () => {
       const cleanedQuestions = AssignmentQuestion.filter(
         (q) => q.questionText.trim() !== ""
       );
+      
       if (cleanedQuestions.length === 0) {
         MySwal.fire({
           icon: "error",
@@ -254,7 +262,7 @@ const EditAssignment = () => {
           <div className="row align-items-center">
             <div className="col-md-12">
               <div className="page-header-title">
-                <h5 className="m-b-10">Assignment</h5>
+                <h5 className="m-b-10">Update Assignment</h5>
               </div>
               <ul className="breadcrumb">
                 <li className="breadcrumb-item">
@@ -268,7 +276,7 @@ const EditAssignment = () => {
                   </a>
                 </li>
                 <li className="breadcrumb-item">
-                  <a href="#">Update Assignment</a>
+                  <a href="#">{Assignment?.title}</a>
                 </li>
               </ul>
             </div>
@@ -292,13 +300,16 @@ const EditAssignment = () => {
                 </div>
                 <div className="headingandbutton">
                   <h4>Update Assignment</h4>
-                  <button
-                    className="btn btn-primary"
-                    style={{ width: "150px" }}
-                    onClick={() => setShowAddQuestion(true)}
-                  >
-                    Edit Questions
-                  </button>
+                  {Assignment.type != "FILE_UPLOAD" && (
+  <button
+    className="btn btn-primary"
+    style={{ width: "150px" }}
+    onClick={() => setShowAddQuestion(true)}
+  >
+   Questions
+  </button>
+)}
+
                 </div>
 
                 <div className="vh-50-overflow mt-4">
@@ -334,7 +345,7 @@ const EditAssignment = () => {
                     <div className="col-sm-6">
                       <textarea
                         id="description"
-                        rows={8}
+                        rows={3}
                         name="description"
                         value={Assignment.description}
                         maxLength="1000"
@@ -349,7 +360,55 @@ const EditAssignment = () => {
                       </div>
                     </div>
                   </div>
+                  <div className="form-group row">
+  <label className="col-sm-3 col-form-label">
+    Assignment Type <span className="text-danger">*</span>
+  </label>
 
+  <div className={`row ${
+        Assignment.type === "FILE_UPLOAD" ? "col-sm-9" : "col-sm-6"
+      }`} >
+    {/* Assignment Type Dropdown */}
+    <select
+    style={{height:"40px"}}
+      className=" col ml-3 btn  btn-primary"
+      value={Assignment.type}
+      // onChange={(e) =>
+      //   setAssignment({
+      //     ...Assignment,
+      //     type: e.target.value,
+      //     maxFileSize: e.target.value === "FILE_UPLOAD" ? Assignment.maxFileSize : "", // reset
+      //   })
+      // }
+      disabled
+    >
+      <option value="QA">Written Response</option>
+      <option value="QUIZ">Multiple Choice Quiz</option>
+      <option value="FILE_UPLOAD">Document Submission</option>
+    </select>
+
+    {/* Max File Size Input (only for FILE_UPLOAD) */}
+    {Assignment.type === "FILE_UPLOAD" && (
+      <div className="mt-2 col row" >
+        <label className="form-label col-sm-4">Max File Size (MB)</label>
+        <input
+          type="number"
+          className="form-control col"
+          placeholder="Enter max file size"
+          min="1"
+          value={Assignment.maxFileSize}
+          onChange={(e) =>
+            setAssignment({
+              ...Assignment,
+              maxFileSize: e.target.value,
+            })
+          }
+        />
+      </div>
+    )}
+  </div>
+</div>
+{Assignment?.type!="QUIZ" && 
                   <div className="form-group row">
                     <label
                       htmlFor="totalMarks"
@@ -374,7 +433,7 @@ const EditAssignment = () => {
                         {errors.totalMarks}
                       </div>
                     </div>
-                  </div>
+                  </div>}
                 </div>
 
                 <div className="cornerbtn">
@@ -398,12 +457,13 @@ const EditAssignment = () => {
           </div>
         </div>
       ) : (
-        <AddQuestionToEditAssignment
+        <EditQuestionAssignment
           AssignmentQuestion={AssignmentQuestion}
           setAssignmentQuestion={setAssignmentQuestion}
           setShowAddQuestion={setShowAddQuestion}
           handleSaveQuestions={handleSaveQuestions}
           getAssignment={getAssignment}
+          Assignment={Assignment}
         />
       )}
     </div>

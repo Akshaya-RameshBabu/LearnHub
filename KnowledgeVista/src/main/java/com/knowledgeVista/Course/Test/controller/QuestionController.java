@@ -54,7 +54,7 @@ public class QuestionController {
 		   try {
 		 
 
-		    String email=jwtUtil.getUsernameFromToken(token);
+		    String email=jwtUtil.getEmailFromToken(token);
 	         String institution="";
 		     Optional<Muser> opuser =muserRepository.findByEmail(email);
 		     if(opuser.isPresent()) {
@@ -145,13 +145,8 @@ public class QuestionController {
 
 		public ResponseEntity<?> getQuestion( Long questionId, String token) {
 	    	  try {
-			        // Validate JWT token
-			        if (!jwtUtil.validateToken(token)) {
-			            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			        }
-			        // Extract role from JWT token
 			        String role = jwtUtil.getRoleFromToken(token);
-			        String email=jwtUtil.getUsernameFromToken(token);
+			        String email=jwtUtil.getEmailFromToken(token);
 			         String institution="";
 				     Optional<Muser> opuser =muserRepository.findByEmail(email);
 				     if(opuser.isPresent()) {
@@ -190,13 +185,8 @@ public class QuestionController {
 	 
 		public ResponseEntity<?> deleteQuestion(List<Long> questionIds, String token, Long testId) {
 		    try {
-		        // Validate JWT token
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		        }
-
 		        String role = jwtUtil.getRoleFromToken(token);
-		        String email = jwtUtil.getUsernameFromToken(token);
+		        String email = jwtUtil.getEmailFromToken(token);
 		        String institution = muserRepository.findinstitutionByEmail(email);
 
 		        if (institution == null) {
@@ -251,13 +241,8 @@ public class QuestionController {
 							String option3, String option4,
 							String answer, String token) {
 		    try {
-		        // Validate JWT token
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		        }
-		        // Extract role from JWT token
 		        String role = jwtUtil.getRoleFromToken(token);
-		        String email=jwtUtil.getUsernameFromToken(token);
+		        String email=jwtUtil.getEmailFromToken(token);
 		         String institution="";
 			     Optional<Muser> opuser =muserRepository.findByEmail(email);
 			     if(opuser.isPresent()) {
@@ -304,13 +289,9 @@ public class QuestionController {
 		        String option2,String option3, String option4,
 		        String answer,String token) {
 		    try {
-		        // Validate JWT token
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		        }
 		        // Extract role from JWT token
 		        String role = jwtUtil.getRoleFromToken(token);
-		        String email=jwtUtil.getUsernameFromToken(token);
+		        String email=jwtUtil.getEmailFromToken(token);
 		         String institution="";
 			     Optional<Muser> opuser =muserRepository.findByEmail(email);
 			     if(opuser.isPresent()) {

@@ -3,8 +3,9 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { useNavigate, useParams } from "react-router-dom";
 import AddQuestionToAssignment from "./AddQuestionToAssignment";
-import baseUrl from "../api/utils.js"
+import baseUrl from "../api/utils.js";
 import axios from "axios";
+import AddQuizzToAssignment from "./AddQuizzToAssignment.js";
 
 const CreateAssignment = () => {
   const { courseName, courseId } = useParams();
@@ -15,33 +16,39 @@ const CreateAssignment = () => {
   const [AssignmentQuestion, setAssignmentQuestion] = useState(
     Array(5).fill({ questionText: "" })
   );
+  const [savedQuestions, setSavedQuestions] = useState([]);// holds the questions for Quizz
   const [Assignment, setAssignment] = useState({
     title: "",
     description: "",
-    totalMarks: 10
+    totalMarks: 10,
+    type: "QA",
+    maxFileSize: ""
   });
 
   const [errors, setErrors] = useState({
     title: "",
     description: "",
-    totalMarks: ""
+    totalMarks: "",
   });
 
   const validate = (name, value, formData = {}) => {
     let newErrors = { ...errors };
-  
+
     const numericValue = Number(value);
-  
+
     if (name === "title") {
       if (value.trim() === "") {
         newErrors.title = "Title is required";
       } else if (value.length > 255) {
         newErrors.title = "Title cannot exceed 255 characters";
-      } else {
+      } else if(value.includes("/")||value.includes("\\")){
+        newErrors.title = "Title cannot have '/' or '\\'  characters";
+      }
+      else {
         newErrors.title = "";
       }
     }
-  
+
     if (name === "description") {
       if (value.trim() === "") {
         newErrors.description = "Description is required";
@@ -51,113 +58,131 @@ const CreateAssignment = () => {
         newErrors.description = "";
       }
     }
-  
+
     if (name === "totalMarks") {
       if (numericValue <= 0) {
         newErrors.totalMarks = "Total marks must be greater than 0";
-      }  else {
+      } else {
         newErrors.totalMarks = "";
       }
     }
     setErrors(newErrors);
   };
-  
-  
-  
-    const handleAssignmentChange = (e) => {
-      const { name, value } = e.target;
-    
-      setAssignment((prev) => {
-        const updatedAssignment = {
-          ...prev,
-          [name]: value,
-        };
-    
-        // Pass the full form data to validate (with the latest updated value)
-        validate(name, value, updatedAssignment);
-    
-        return updatedAssignment;
-      });
-    };
 
-  const isFormInvalid =
-    errors.title ||
-    errors.description ||
-    errors.totalMarks ||
-    Assignment.title.trim() === "" ||
-    Assignment.description.trim() === "" ||
-    Assignment.totalMarks <= 0 ||
-    AssignmentQuestion.length<=0;
-    const handleSubmit = async () => {
-      if (isFormInvalid) {
-          MySwal.fire({
-              icon: "error",
-              title: "Validation Error",
-              text: "Please fill all required fields correctly.",
-          });
-          return;
-      }
-  
-      const assignmenttosend = {
-          ...Assignment,
-          questions: AssignmentQuestion.filter(q => q.questionText.trim() !== ""),
+  const handleAssignmentChange = (e) => {
+    const { name, value } = e.target;
+
+    setAssignment((prev) => {
+      const updatedAssignment = {
+        ...prev,
+        [name]: value,
       };
-      if (assignmenttosend.questions.length === 0) {
-        MySwal.fire({
-          icon: "error",
-          title: "Validation Error",
-          text: "Please add at least one valid question before submitting.",
-      });
-        return;
-      }
-      try {
-          const response = await axios.post(`${baseUrl}/Assignment/save?courseId=${courseId}`, assignmenttosend,{
-              headers: {
-                  Authorization: token,
-              }
-          });
-  
-          if (response.status===200) {
-              MySwal.fire({
-                  icon: "success",
-                  title: "Assignment Created",
-                  text: "The assignment has been successfully created!",
-              }).then(() => {
-                setAssignment({title: "",
-                  description: "",
-                  totalMarks: 10})
-                  setAssignmentQuestion(Array(5).fill({ questionText: "" }))
-                navigate(`/Assignment/getAll/${courseName}/${courseId}`)});
-          }else if(response?.status===204){
-            MySwal.fire({
-              icon: "warning",
-              title: " Not Found",
-              text: "Course Not Found",
-          }).then(() => navigate("/dashboard/course"));
-          }
-      } catch (error) {
-        if(error?.response.status===401){
-          navigate("/unauthorized")
-        }else if(error?.response.status===403){
-          MySwal.fire({
-            icon: "error",
-            title: "Forbidden",
-            text: error?.response?.data || "You Can't Access This Course",
-        }).then((result) => {
-            if (result.isConfirmed) {
-                navigate(-1);
-            }
-        });
-        }else{
-          MySwal.fire({
-              icon: "error",
-              title: "Error",
-              text: error.message || "Failed to create assignment",
-          });
-        }
-      }
+
+      // Pass the full form data to validate (with the latest updated value)
+      validate(name, value, updatedAssignment);
+
+      return updatedAssignment;
+    });
   };
-  
+
+  const handleQuestionButtonClick = () => {
+    if (Assignment.type === "FILE_UPLOAD") {
+      handleSubmit();
+    } else {
+      setShowAddQuestion(true);
+    }
+  };
+  const isFormInvalid = 
+  errors.title ||
+  errors.description ||
+  errors.totalMarks ||
+  Assignment.title.trim() === "" ||
+  Assignment.description.trim() === "" ||
+  Assignment.totalMarks <= 0 ||
+  (Assignment.type === "FILE_UPLOAD" && Assignment.maxFileSize === "");
+
+const buildAssignmentPayload = () => {
+  const basePayload = { ...Assignment };
+
+  switch (Assignment.type) {
+    case "QA":
+      return {
+        ...basePayload,
+        questions: AssignmentQuestion.filter((q) => q.questionText.trim() !== ""),
+      };
+    case "QUIZ":
+      return {
+        ...basePayload,
+        totalMarks: savedQuestions.length,
+        questions: savedQuestions,
+      };
+    default:
+      return basePayload;
+  }
+};
+
+const handleSubmit = async () => {
+  if (isFormInvalid) {
+    return MySwal.fire({
+      icon: "error",
+      title: "Validation Error",
+      text: "Please fill all required fields correctly.",
+    });
+  }
+
+  const payload = buildAssignmentPayload();
+
+  try {
+    const response = await axios.post(
+      `${baseUrl}/Assignment/save?courseId=${courseId}`,
+      payload,
+      {
+        headers: { Authorization: token },
+      }
+    );
+
+    if (response.status === 200) {
+      await MySwal.fire({
+        icon: "success",
+        title: "Assignment Created",
+        text: "The assignment has been successfully created!",
+      });
+      setAssignment({ title: "", description: "", totalMarks: 10 });
+      setAssignmentQuestion(Array(5).fill({ questionText: "" }));
+      navigate(`/Assignment/getAll/${courseName}/${courseId}`);
+    } else if (response?.status === 204) {
+      await MySwal.fire({
+        icon: "warning",
+        title: "Not Found",
+        text: "Course Not Found",
+      });
+      navigate("/dashboard/course");
+    }
+  } catch (error) {
+    const status = error?.response?.status;
+
+    if (status === 401) {
+      return navigate("/unauthorized");
+    }
+
+    if (status === 403) {
+      return MySwal.fire({
+        icon: "error",
+        title: "Forbidden",
+        text: error?.response?.data || "You can't access this course",
+      }).then((result) => {
+        if (result.isConfirmed) navigate(-1);
+      });
+    }
+
+    MySwal.fire({
+      icon: "error",
+      title: "Error",
+      text: error.message || "Failed to create assignment",
+    });
+  }
+};
+
 
   return (
     <div>
@@ -215,7 +240,9 @@ const CreateAssignment = () => {
                         id="title"
                         name="title"
                         value={Assignment.title}
-                        className={`form-control ${errors.title && "is-invalid"}`}
+                        className={`form-control ${
+                          errors.title && "is-invalid"
+                        }`}
                         placeholder="Assignment Title"
                         onChange={handleAssignmentChange}
                         required
@@ -235,7 +262,7 @@ const CreateAssignment = () => {
                     <div className="col-sm-6">
                       <textarea
                         id="description"
-                        rows={8}
+                        rows={3}
                         name="description"
                         value={Assignment.description}
                         maxLength="1000"
@@ -245,11 +272,72 @@ const CreateAssignment = () => {
                         placeholder="Assignment description"
                         onChange={handleAssignmentChange}
                       />
-                      <div className="invalid-feedback">{errors.description}</div>
+                      <div className="invalid-feedback">
+                        {errors.description}
+                      </div>
                     </div>
                   </div>
-
                   <div className="form-group row">
+                    <label className="col-sm-3 col-form-label">
+                      Assignment Type <span className="text-danger">*</span>
+                    </label>
+
+                    <div
+                      className={`row ${
+                        Assignment.type === "FILE_UPLOAD"
+                          ? "col-sm-9"
+                          : "col-sm-6"
+                      }`}
+                    >
+                      {/* Assignment Type Dropdown */}
+                      <select
+                        style={{ height: "40px" }}
+                        className=" col ml-3 btn  btn-primary"
+                        value={Assignment.type}
+                        onChange={(e) =>
+                          setAssignment({
+                            ...Assignment,
+                            type: e.target.value,
+                            maxFileSize:
+                              e.target.value === "FILE_UPLOAD"
+                                ? Assignment.maxFileSize
+                                : "", // reset
+                          })
+                        }
+                      >
+                        <option value="QA">Written Response</option>
+                        <option value="QUIZ">Multiple Choice Quiz</option>
+                        <option value="FILE_UPLOAD">Document Submission</option>
+                      </select>
+
+                      {/* Max File Size Input (only for FILE_UPLOAD) */}
+                      {Assignment.type === "FILE_UPLOAD" && (
+                        <div className="mt-2 col row">
+                          <label className="form-label col-sm-4">
+                            Max File Size (MB)
+                          </label>
+                          <input
+                            type="number"
+                            className="form-control col"
+                            placeholder="Enter max file size"
+                            min="1"
+                            value={Assignment.maxFileSize}
+                            onChange={(e) =>
+                              setAssignment({
+                                ...Assignment,
+                                maxFileSize: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                 
+
+            {Assignment?.type!="QUIZ" && 
+            
+             <div className="form-group row">
                     <label
                       htmlFor="totalMarks"
                       className="col-sm-3 col-form-label"
@@ -258,11 +346,10 @@ const CreateAssignment = () => {
                     </label>
                     <div className="col-sm-6">
                       <input
-                      
                         type="number"
                         id="totalMarks"
                         name="totalMarks"
-                        maxLength={100} 
+                        maxLength={100}
                         value={Assignment.totalMarks}
                         className={`form-control ${
                           errors.totalMarks && "is-invalid"
@@ -270,9 +357,24 @@ const CreateAssignment = () => {
                         placeholder="Total Marks"
                         onChange={handleAssignmentChange}
                       />
-                      <div className="invalid-feedback">{errors.totalMarks}</div>
+                      <div className="invalid-feedback">
+                        {errors.totalMarks}
+                      </div>
                     </div>
                   </div>
+                  
+
+                  }
+
+                  {Assignment?.type === "FILE_UPLOAD" && (
+  <p>
+    <strong>📄 Viewable on site:</strong> .txt, .csv, application/json, .pdf, .jpg, .jpeg, .png, .gif, .bmp, .tiff, .mp4, .mov, .avi, .webm.<br />
+    <strong>📁 Upload only (cannot be viewed on site):</strong> .doc, .docx, .ppt, .pptx, .xls, .xlsx, .zip — please download and open with appropriate software.
+  
+  </p>
+)}
+
+
 
                 </div>
 
@@ -286,10 +388,10 @@ const CreateAssignment = () => {
                   </button>
                   <button
                     className="btn btn-primary"
-                    onClick={() => setShowAddQuestion(true)}
+                    onClick={handleQuestionButtonClick}
                     disabled={isFormInvalid}
                   >
-                    Next
+                    {Assignment.type === "FILE_UPLOAD" ? "Submit" : "Next"}
                   </button>
                 </div>
               </div>
@@ -297,13 +399,23 @@ const CreateAssignment = () => {
           </div>
         </div>
       ) : (
-        <AddQuestionToAssignment
-          AssignmentQuestion={AssignmentQuestion}
-          setAssignmentQuestion={setAssignmentQuestion}
-          setShowAddQuestion={setShowAddQuestion}
-          handleSubmit={handleSubmit}
-        />
-      )}
+        Assignment.type === "QA" ? (
+          <AddQuestionToAssignment
+            AssignmentQuestion={AssignmentQuestion}
+            setAssignmentQuestion={setAssignmentQuestion}
+            setShowAddQuestion={setShowAddQuestion}
+            handleSubmit={handleSubmit}
+          />
+        ) : Assignment.type === "QUIZ" ? (
+          <AddQuizzToAssignment
+            savedQuestions={savedQuestions}
+            setSavedQuestions={setSavedQuestions}
+            setShowAddQuestion={setShowAddQuestion}
+            handleSubmit={handleSubmit}
+          />
+        ) : (
+          <div>Unsupported assignment type</div>
+        )  )}
     </div>
   );
 };

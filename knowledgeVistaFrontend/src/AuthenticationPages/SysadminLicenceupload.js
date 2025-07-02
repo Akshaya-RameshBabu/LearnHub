@@ -19,6 +19,9 @@ const SysadminLicenceupload = () => {
         e.preventDefault();
       
         try {
+          if(!audioFile){
+            return
+          }
           const formData = new FormData();
           const audioData = {
             audioFile: audioFile,
@@ -97,6 +100,7 @@ const SysadminLicenceupload = () => {
                           }}
                           
                         />
+                       {selectedFile &&  <h6 className='mt-2'>Selected File : {selectedFile?.name}</h6>}
                         </div>
                       </div>
                  </div>

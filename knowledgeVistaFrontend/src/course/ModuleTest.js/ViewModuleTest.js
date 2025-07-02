@@ -49,7 +49,8 @@ if(response?.status===200){
         
         switch (name) {
           case "mtestName":
-          error = value.length < 1 ? 'Test name Cannot be Empty' : '';
+          error = value.length < 1 ? 'Test name Cannot be Empty' : value.includes("/")||value.includes("\\")?"test name cannot have '/' or '\\'":""
+      
           setEditedTest({ ...editedTest, mtestName: value });
           break;
           case "mnoOfAttempt":

@@ -710,7 +710,9 @@ input[type="datetime-local"],
 input[type="month"] {
   -webkit-appearance: listbox;
 }
-
+.disabledRadio{
+accent-color: var(--gray);
+}
 textarea {
   overflow: auto;
   resize: vertical;
@@ -3385,9 +3387,8 @@ fieldset:disabled a.btn {
 }
 .btn-transparent {
   color: #212529;
-  border-color: var(--lightgrey);
-  border-radius: 7px;
-  padding: 0px;
+  outline: none;
+  border-bottom: 2px solid var(--lightgrey);
 }
 .btn-light:hover {
   color: #212529;
@@ -27031,4 +27032,39 @@ margin-right:2px ;
   height: 50vh;
   overflow-x: hidden;
   overflow-y: auto;
+}
+.submission-info {
+  width: 100%;
+  margin: 20px auto;
+  padding: 10px 0;
+  border-top: 2px solid #eee;
+  border-bottom: 2px solid #eee;
+}
+
+.submission-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.file-preview{
+  width: 100%;
+}
+
+.label {
+  width: 150px;
+  font-weight: bold;
+  color: #444;
+}
+
+.submission-row a {
+  color: #0077cc;
+  text-decoration: none;
+}
+
+.submission-row a:hover {
+  text-decoration: underline;
+}
+
+.submission-row span {
+  color: #333;
 }

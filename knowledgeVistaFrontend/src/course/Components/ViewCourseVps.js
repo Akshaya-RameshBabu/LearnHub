@@ -218,7 +218,7 @@ return (
         <SelectPaymentGateway orderData={orderData} setorderData={setorderData}/>
       )}
         <h4 style={{color:"white"}}>Courses For You</h4>
-        < div className="course-grid ">
+        < div className="row ">
         { filteredCourses
   .map((item, index) => (
     <div className="course" key={index}>

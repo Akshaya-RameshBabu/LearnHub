@@ -71,7 +71,7 @@ private BatchPartPayRepo batchStruct;
 
 	public Paymentsettings getpaydetails(String token) {
 		try {
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			Optional<Muser> opreq = muserRepository.findByEmail(email);
 			String institution = "";
 			if (opreq.isPresent()) {

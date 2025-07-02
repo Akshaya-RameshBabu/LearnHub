@@ -28,15 +28,18 @@ public class AssignmentQuestion {
 
 	private String questionText; // Question statement
 
-//	@ElementCollection
-//	@CollectionTable(name = "question_options", joinColumns = @JoinColumn(name = "question_id"))
-//	@Column(name = "option_text")
-//	private List<String> options; // Only used for QUIZ
-//
-//	private String correctOption; // Only for QUIZ
+	private String option1;
+	private String option2;
+	private String option3;
+	private String option4;
+
+	private String answer; // Only for QUIZ
 
 	@Override
 	public String toString() {
-		return "AssignmentQuestion [id=" + id + ", assignment=" + assignment + ", questionText=" + questionText + "]";
+		return "AssignmentQuestion [id=" + id + ", assignment=" + assignment + ", questionText=" + questionText
+				+ ", option1=" + option1 + ", option2=" + option2 + ", option3=" + option3 + ", option4=" + option4
+				+ ", answer=" + answer + "]";
 	}
+
 }

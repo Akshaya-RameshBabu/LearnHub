@@ -41,15 +41,7 @@ public class NotificationController {
 	
 		    public ResponseEntity<?> GetNotiImage( String token, List<Long> notifyIds) {
 		        try {
-		            // Validate JWT token
-		            if (!jwtUtil.validateToken(token)) {
-		                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		            }
-		           
-		            
-		            
-		            // Extract email from token and get the user
-		            String email = jwtUtil.getUsernameFromToken(token);
+		            String email = jwtUtil.getEmailFromToken(token);
 		            Optional<Muser> opmuser = muserRepository.findByEmail(email);
 
 		            if (opmuser.isPresent()) {
@@ -75,11 +67,7 @@ public class NotificationController {
 		 
 		public ResponseEntity<?> GetAllNotification(String token) {
 		    try {
-		        if (!jwtUtil.validateToken(token)) {
-		            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		        }
-
-		        String email = jwtUtil.getUsernameFromToken(token);
+		        String email = jwtUtil.getEmailFromToken(token);
 		        Optional<Muser> opmuser = muserRepository.findByEmail(email);
 
 		        if (opmuser.isPresent()) {
@@ -122,10 +110,7 @@ public class NotificationController {
 	
 	public ResponseEntity<?> MarkALLasRead(String token ,  List<Long> notiIds){
 		try {
-			if (!jwtUtil.validateToken(token)) {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	        }
-			String email= jwtUtil.getUsernameFromToken(token);
+			String email= jwtUtil.getEmailFromToken(token);
 		    Optional<Muser> opuser=muserRepository.findByEmail(email);
 		    if(opuser.isPresent()) {
 		    	Muser user=opuser.get();
@@ -153,11 +138,7 @@ public class NotificationController {
 	
 	public ResponseEntity<?> UreadCount(String token) {
 		try {
-
-	         if (!jwtUtil.validateToken(token)) {
-	             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	         }
-	         String email=jwtUtil.getUsernameFromToken(token);
+	         String email=jwtUtil.getEmailFromToken(token);
 	         Optional<Muser> opmuser= muserRepository.findByEmail(email);
 	         if(opmuser.isPresent()) {
 	        	 Muser user=opmuser.get();
@@ -181,12 +162,8 @@ public class NotificationController {
 }
 	
 	public ResponseEntity<?>ClearAll(String token){
-		 
 		try {
-			if (!jwtUtil.validateToken(token)) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-         }
-         String email=jwtUtil.getUsernameFromToken(token);
+         String email=jwtUtil.getEmailFromToken(token);
          Optional<Muser> opmuser= muserRepository.findByEmail(email);
          if(opmuser.isPresent()) {
         	 Muser user=opmuser.get();

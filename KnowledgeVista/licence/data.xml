@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <root1>
     <data>
-        <company_name>Meganar Technologies </company_name>
+        <company_name>Meganar Technologies</company_name>
         <course>1000</course>
-        <key>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMzAyMjAyNTEwMDBlbnRlcnByaXNlMzY1In0.1cgukQ9ECJSMoljok9dgbf877IsFuHrRsDkrFbwrVu8</key>
-        <key2>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNDAyMjAyNTEwMDBlbnRlcnByaXNlMzY1In0.INqchK1HYXUBTUqcH5jJj7IWOgL_NHhrwfmZZABvEqM</key2>
-        <product_name>learnhub</product_name>
+        <key>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyOTA0MjAyNTEwMDBlbnRlcnByaXNlMzY1In0.AwJ-t2aMx3dxR_2PMJ9kzFmwgUtOKlWjubmAFmBu2gM</key>
+        <key2>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzMDA0MjAyNTEwMDBlbnRlcnByaXNlMzY1In0.w6dJsTuyV03SR5zvaE6ZhdKZaLV8ns-S7zvZ-13Blbg</key2>
+        <product_name>LearnHub</product_name>
         <storagesize>1000</storagesize>
         <student>1000</student>
         <trainer>1000</trainer>
         <type>enterprise</type>
         <validity>365</validity>
-        <version>4.9</version>
+        <version>5.0</version>
     </data>
 </root1>
-

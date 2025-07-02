@@ -47,14 +47,23 @@ public class LogManagement {
 
 	@Value("${error.sender.mail_id}")
 	private String sender_mail_id;
-
-//	  private String From;
-
 	@Autowired
 	private MailkeysRepo mailkeyrepo;
 	private static final Logger logger = LoggerFactory.getLogger(LogManagement.class);
 
 	private static final DateTimeFormatter LOG_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+	@Value("${spring.mail.host}")
+	private String defaultHost;
+
+	@Value("${spring.mail.port}")
+	private int defaultPort;
+
+	@Value("${spring.mail.username}")
+	private String defaultUsername;
+
+	@Value("${spring.mail.password}")
+	private String defaultPassword;
 
 	public ResponseEntity<?> logdetails(int id) {
 		try {
@@ -88,16 +97,12 @@ public class LogManagement {
 			List<String> last10MinuteLines = new ArrayList<>();
 			for (String line : allLines) {
 				String lineTimeStr = extractTimeFromLog(line);
-//     	        	 System.out.println("lineTimeStr"+lineTimeStr);
-
 				if (lineTimeStr != null) {
 					if (lineTimeStr.matches(".*[a-zA-Z].*")) {
-//     	        						 System.out.println("value A");
 						if (lastlinevalue != null) {
 							long minutesDiff = ChronoUnit.MINUTES.between(lastlinevalue, lastLogTime);
 							if (minutesDiff <= id) {
 								last10MinuteLines.add(line);
-//     	            	                     System.out.println("value has a-z  minutesDiff :"+minutesDiff+" line added "+line);
 							}
 						}
 					} else {
@@ -105,22 +110,12 @@ public class LogManagement {
 						long minutesDiff = ChronoUnit.MINUTES.between(lineTime, lastLogTime);
 						if (minutesDiff <= id) {
 							last10MinuteLines.add(line);
-//     	                     System.out.println("minutesDiff :"+minutesDiff+" line added "+line);
 							lastlinevalue = lineTime;
-//     	                     System.out.println(lineTime);
-						}
+					}
 					}
 
 				}
-//     	        		 }
 			}
-//     	            }
-
-//     	        // Print the last 10 Minutesdata
-//     	        for (String line : last10MinuteLines) {
-//     	            System.out.println(line);
-//     	        }
-//     		   String destinationFilePath = lastLineTime.replace(":", ".") + ".log";
 			String destinationFilePath = "last10line.log";
 			// Write the last 10 lines to the new file
 			try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(destinationFilePath))) {
@@ -131,8 +126,6 @@ public class LogManagement {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-//     	       System.out.println(receiving_mail_id);
-			
 			 Optional<Muser> data=muserrepositories.findByroleid(1L);
 			 Muser dataset = data.get();
 			 
@@ -204,55 +197,45 @@ public class LogManagement {
 		mailSender.send(mimeMessage);
 		return ResponseEntity.ok("Mail Sent :"+"To Mail ID: "+to+" Mail response :"+helper);
 	}
-//  	  public String getfrom(String institution) {
-//  		  Optional<Mailkeys> opkeys = mailkeyrepo.FindMailkeyByInstituiton(institution);
-//  		  if(opkeys.isPresent()) {
-//  			  Mailkeys keys =opkeys.get();
-//  			  return keys.getEmailid();
-//  		  } else {
-//  			    return null;   
-//  			    }
-//  	  }
 
 	public JavaMailSender getJavaMailSender() {
 		List<Mailkeys> opkeys1 = mailkeyrepo.findAll();
 		boolean isvalid = (!opkeys1.isEmpty() && !opkeys1.get(0).getHostname().isEmpty()
 				&& !opkeys1.get(0).getPort().isEmpty() && !opkeys1.get(0).getEmailid().isEmpty()
 				&& !opkeys1.get(0).getPassword().isEmpty());
+		
+		JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+		
 		if (isvalid) {
 			Mailkeys keys = opkeys1.get(0);
-			JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-			mailSender.setHost(keys.getHostname()); // Set host from Mailkeys
-			mailSender.setPort(Integer.parseInt(keys.getPort())); // Set port
+			mailSender.setHost(keys.getHostname());
+			mailSender.setPort(Integer.parseInt(keys.getPort()));
 			sender_mail_id = keys.getEmailid();
-			mailSender.setUsername(keys.getEmailid()); // Set username (email ID)
-			mailSender.setPassword(keys.getPassword()); // Set password
-
-			// Optional properties for TLS/SSL, protocol, etc.
-			Properties props = mailSender.getJavaMailProperties();
-			props.put("mail.transport.protocol", "smtp");
-			props.put("mail.smtp.auth", "true");
-			props.put("mail.smtp.starttls.enable", "true");
-			props.put("mail.debug", "true"); // Optional, set to true for debugging
-
-			return mailSender;
-			// Do something with firstRow
+			mailSender.setUsername(keys.getEmailid());
+			mailSender.setPassword(keys.getPassword());
 		} else {
-			JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-			mailSender.setHost("smtp.hostinger.com"); // Set host from Mailkeys
-			mailSender.setPort(587); // Set port
-			mailSender.setUsername("learnhubtechie@meganartech.com"); // Set username (email ID)
-			mailSender.setPassword("$Meganar1"); // Set password
-
-			// Optional properties for TLS/SSL, protocol, etc.
-			Properties props = mailSender.getJavaMailProperties();
-			props.put("mail.transport.protocol", "smtp");
-			props.put("mail.smtp.auth", "true");
-			props.put("mail.smtp.starttls.enable", "true");
-			props.put("mail.debug", "true"); // Optional, set to true for debugging
-
-			return mailSender;
+			// Fallback to environment variables
+			mailSender.setHost(defaultHost);
+			mailSender.setPort(defaultPort);
+			mailSender.setUsername(defaultUsername);
+			mailSender.setPassword(defaultPassword);
+			sender_mail_id = defaultUsername;
 		}
+
+		// Mail properties
+		Properties props = mailSender.getJavaMailProperties();
+		props.put("mail.transport.protocol", "smtp");
+		props.put("mail.smtp.auth", "true");
+		props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.connectiontimeout", "30000");
+		props.put("mail.smtp.timeout", "30000");
+		props.put("mail.smtp.writetimeout", "30000");
+		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+		props.put("mail.debug", "true");
+		props.put("mail.smtp.socketFactory.fallback", "false");
+		props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+
+		return mailSender;
 	}
 
 }

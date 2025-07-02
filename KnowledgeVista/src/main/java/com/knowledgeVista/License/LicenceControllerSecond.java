@@ -46,10 +46,7 @@ public class LicenceControllerSecond {
 
 	    public ResponseEntity<?>GetLicenseDetails(String token){
 	    	try {
-	    		if (!jwtUtil.validateToken(token)) {
-		             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		         }
-	    		String uemail = jwtUtil.getUsernameFromToken(token);
+	    		String uemail = jwtUtil.getEmailFromToken(token);
 	            Optional<Muser> opuser= muserrepo.findByEmail(uemail);
 	            if(opuser.isPresent()) {
 
@@ -75,9 +72,6 @@ public class LicenceControllerSecond {
 
 	    public ResponseEntity<?>GetLicenseDetailsofadmin(String token,String adminemail){
 	    	try {
-	    		if (!jwtUtil.validateToken(token)) {
-		             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("token Expired");
-		         }
 	    		String role = jwtUtil.getRoleFromToken(token);
 	    		if("SYSADMIN".equals(role)) {
 	            Optional<Muser> opuser= muserrepo.findByEmail(adminemail);

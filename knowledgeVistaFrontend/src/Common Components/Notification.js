@@ -276,17 +276,17 @@ const role=sessionStorage.getItem("role")
                         alt="Notification Image"
                       />
                       <div className="media-body">
-                        {/* <p>
-                          <strong>{notification.heading}</strong>
-                          <span className="n-time text-muted">
-                            <i className="icon feather icon-clock m-r-10"></i>
-                            {notification.timeAgo || "Just now"}
-                          </span>
-                        </p> */}
-                        <p>
-                          {notification.description.length > 80
-                            ? notification.description.substring(0, 80) + "..."
-                            : notification.description}
+                        <p title={notification.description} 
+                        style={{
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 3, // Change this to control number of lines
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: '1.5em',
+                          maxHeight: '4.5em' // 3 lines * line-height (1.5em)
+                        }}>
+                          {notification.description}
                         </p>
                         <small className="text-muted">
                           Created By {notification.username}

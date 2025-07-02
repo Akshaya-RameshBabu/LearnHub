@@ -43,7 +43,7 @@ const AddQuestionToAssignment = ({ AssignmentQuestion, setAssignmentQuestion, se
                 <div className="card">
                     <div className="card-body">
                         <div className="navigateheaders">
-                            <div onClick={() => navigate(-1)}>
+                            <div onClick={() => setShowAddQuestion(false)}>
                                 <i className="fa-solid fa-arrow-left"></i>
                             </div>
                             <div></div>

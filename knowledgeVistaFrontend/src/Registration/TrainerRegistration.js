@@ -48,7 +48,10 @@ const TrainerRegistration = () => {
   const phoneRef = useRef(null);
   const [defaultCountry, setDefaultCountry] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const fetchUserCountryCode = async () => {
     try {
       const response = await fetch("https://ipapi.co/json/");
@@ -236,9 +239,122 @@ const TrainerRegistration = () => {
         console.error("Error converting image to base64:", error);
       });
   };
+const handleSendOTP = async () => {
+    if (!formData.email || errors.email) {
+      setErrors(prev => ({
+        ...prev,
+        email: !formData.email ? "Email is required" : errors.email
+      }));
+      emailRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
 
+    setIsSendingOtp(true);
+    try {
+      // Clear OTP input and errors when resending
+      setOtp("");
+      setErrors(prev => ({ ...prev, otp: "" }));
+      setOtpVerified(false);
+      setOtpSent(true);
+      
+      const response = await axios.post(
+        `${baseUrl}/auth/send-otp`,
+        null,
+        { 
+          params: { 
+            email: formData.email
+          } 
+        }
+      );
+      if (response.status === 200) {
+        MySwal.fire({
+          icon: "success",
+          title: "OTP Sent!",
+          text: "Please check your email for the OTP.",
+        });
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 400) {
+        if (error.response.data === "EMAIL") {
+          setErrors(prev => ({
+            ...prev,
+            email: "This email is already registered"
+          }));
+        }
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          email: "Failed to send OTP. Please try again."
+        }));
+      }
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp) {
+      setErrors(prev => ({
+        ...prev,
+        otp: "OTP is required"
+      }));
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${baseUrl}/auth/verify-otp`,
+        null,
+        { params: { email: formData.email, otp } }
+      );
+
+      if (response.status === 200) {
+        setOtpVerified(true);
+        setErrors(prev => ({
+          ...prev,
+          otp: ""
+        }));
+          MySwal.fire({
+               toast:true,
+         position: 'top-end', 
+         icon: 'success',
+         title: 'Email verified successfully!',
+         showConfirmButton: false,
+         timer: 3000,
+         timerProgressBar: true,
+         didOpen: (toast) => {
+           toast.addEventListener('mouseenter', Swal.stopTimer);
+           toast.addEventListener('mouseleave', Swal.resumeTimer);
+         }
+       });
+      }
+    } catch (error) {
+      setErrors(prev => ({
+        ...prev,
+        otp: "Invalid or expired OTP"
+      }));
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!otpVerified) {
+         MySwal.fire({
+              toast:true,
+        position: 'top-end', 
+        icon: 'warning',
+        title: 'Please verify your Email First!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+      });
+      emailRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
 
     // Check if any required fields are empty or have errors
     let hasErrors = false;
@@ -269,6 +385,7 @@ const TrainerRegistration = () => {
     formDataToSend.append("profile", formData.profile);
     formDataToSend.append("skills", formData.skills);
     formDataToSend.append("countryCode", formData.countryCode);
+    formDataToSend.append("otp", otp);
 
     try {
       const response = await axios.post(
@@ -299,8 +416,11 @@ const TrainerRegistration = () => {
               countryCode: "",
               base64Image: null,
             });
-            setPhoneNumber("");
-            fetchUserCountryCode();
+          setPhoneNumber("");
+          fetchUserCountryCode()
+           setOtpSent(false);
+          setOtpVerified(false);
+          setOtp("");
           }
         });
       }
@@ -312,21 +432,16 @@ const TrainerRegistration = () => {
             ...prevErrors,
             email: "This email is already registered.",
           }));
-        } else{
+         }else{
           MySwal.fire({
           title: "Error!",
-          text: data,
+          text: data ||"An error occurred while registering.",
           icon: "error",
           confirmButtonText: "OK",
-        });
-        }
+        })
+      }
       } else {
-        // MySwal.fire({
-        //   title: "Error!",
-        //   text: "An error occurred while registering. Please try again later.",
-        //   icon: "error",
-        //   confirmButtonText: "OK",
-        // });
+       
         throw error
       }
     }
@@ -436,29 +551,77 @@ const TrainerRegistration = () => {
                     <div className="invalid-feedback">{errors.username}</div>
                   </div>
                 </div>
-                <div className="form-group row" ref={emailRef}>
-                  <label htmlFor="email"
-                   className="col-sm-3 col-form-label">
-                    {" "}
-                    Email<span className="text-danger">*</span>
-                  </label>
-                  <div className=" col-sm-9">
-                    {" "}
+              <div className="form-group row" ref={emailRef}>
+                <label htmlFor="email" className="col-sm-3 col-form-label">
+                  Email<span className="text-danger">*</span>
+                </label>
+                <div className="col-sm-9">
+                  <div className="d-flex">
                     <input
                       type="email"
                       autoComplete="off"
-                      className={`form-control   ${
-                        errors.email && "is-invalid"
-                      }`}
+                      className={`form-control ${errors.email ? "is-invalid" : ""}`}
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="Email Address"
                       required
+                      disabled={otpVerified}
                     />
-                    <div className="invalid-feedback">{errors.email}</div>
+                    <button
+                      type="button"
+                      className="btn btn-primary ms-2 col-sm-2"
+                      onClick={handleSendOTP}
+                      disabled={!formData.email || errors.email || otpVerified || isSendingOtp}
+                    >
+                      {isSendingOtp ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
+                    </button>
+                  </div>
+                  {errors.email && <div className="text-danger mt-1">{errors.email}</div>}
+                </div>
+              </div>
+
+              {otpSent && !otpVerified && (
+                <div className="form-group row">
+                  <label htmlFor="otp" className="col-sm-3 col-form-label">
+                    OTP<span className="text-danger">*</span>
+                  </label>
+                  <div className="col-sm-9">
+                    <div className="d-flex">
+                      <input
+                        type="text"
+                        className={`form-control ${errors.otp ? "is-invalid" : ""}`}
+                        name="otp"
+                        value={otp}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setOtp(value);
+                          if (errors.otp) {
+                            setErrors(prev => ({ ...prev, otp: "" }));
+                          }
+                        }}
+                        placeholder="Enter 6-digit OTP"
+                        maxLength="6"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary ms-2 col-sm-2"
+                        onClick={handleVerifyOTP}
+                        disabled={otp.length !== 6}
+                      >
+                        Verify OTP
+                      </button>
+                    </div>
+                    {errors.otp && <div className="text-danger mt-1">{errors.otp}</div>}
+                    {otpSent && !errors.otp && (
+                      <small className="text-muted">
+                        Please enter the 6-digit OTP sent to your email
+                      </small>
+                    )}
                   </div>
                 </div>
+              )}
 
                 <div className="form-group row">
                   <label htmlFor="Password" className="col-sm-3 col-form-label">

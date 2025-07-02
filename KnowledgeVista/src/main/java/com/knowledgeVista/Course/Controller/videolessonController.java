@@ -94,12 +94,8 @@ public class videolessonController {
 	public ResponseEntity<String> savenote(MultipartFile file, String Lessontitle, String LessonDescription,
 			MultipartFile videoFile, String fileUrl, List<MultipartFile> documentFiles, Long courseId, String token) {
 		try {
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			String username = "";
 			String institution = "";
 
@@ -222,13 +218,9 @@ public class videolessonController {
 	public ResponseEntity<?> EditLessons(Long lessonId, MultipartFile file, String Lessontitle,
 	        String LessonDescription, MultipartFile videoFile, String fileUrl,
 	        List<MultipartFile> newDocumentFiles, List<Long> removedDetails, String token) {
-
-	    if (!jwtUtil.validateToken(token)) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	    }
-	   
+try{
 	    String role = jwtUtil.getRoleFromToken(token);
-	    String email = jwtUtil.getUsernameFromToken(token);
+	    String email = jwtUtil.getEmailFromToken(token);
 	    String username = "";
 	    String institution = "";
 
@@ -395,14 +387,14 @@ public class videolessonController {
 	    } else {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	    }
+}catch(Exception e){
+	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+}
 	}
 public ResponseEntity<?>getDocFile(String fileName, int slideNumber,String token){
 	try {
-		if (!jwtUtil.validateToken(token)) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
 		String role = jwtUtil.getRoleFromToken(token);
-		String email = jwtUtil.getUsernameFromToken(token);
+		String email = jwtUtil.getEmailFromToken(token);
 		Optional<Muser> opuser = muserRepo.findByEmail(email);
 
 		if (!opuser.isPresent()) {
@@ -474,12 +466,8 @@ public ResponseEntity<?>UserAccessCheck(String fileName, int slideNumber,Muser u
 
 	public ResponseEntity<?> getVideoFile(Long lessId, Long courseId, String token, HttpServletRequest request) {
 		try {
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			Optional<Muser> opuser = muserRepo.findByEmail(email);
 
 			if (!opuser.isPresent()) {
@@ -673,12 +661,8 @@ public ResponseEntity<?>UserAccessCheck(String fileName, int slideNumber,Muser u
 
 	public ResponseEntity<?> getlessonfromId(Long lessonId, String token) {
 		try {
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 
 			String institution = "";
 			Optional<Muser> opuser = muserRepository.findByEmail(email);
@@ -718,14 +702,11 @@ public ResponseEntity<?>UserAccessCheck(String fileName, int slideNumber,Muser u
 
 public ResponseEntity<?>getDocsName(Long lessonId , String token){
 	try {
-		if (!jwtUtil.validateToken(token)) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
         String role=jwtUtil.getRoleFromToken(token);
         if("ADMIN".equals(role)) {
         	return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
         }
-		String email = jwtUtil.getUsernameFromToken(token);
+		String email = jwtUtil.getEmailFromToken(token);
 		Optional<Muser> opuser = muserRepository.findByEmail(email);
 		if (opuser.isPresent()) {
 			Muser user = opuser.get();
@@ -771,14 +752,11 @@ public ResponseEntity<?>getDocsName(Long lessonId , String token){
 //==================get Miniatures=========================
 public ResponseEntity<?>getMiniatureDetails(Long lessonId,Long Id , String token){
 	try {
-		if (!jwtUtil.validateToken(token)) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
         String role=jwtUtil.getRoleFromToken(token);
         if("ADMIN".equals(role)) {
         	return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
         }
-		String email = jwtUtil.getUsernameFromToken(token);
+		String email = jwtUtil.getEmailFromToken(token);
 		Optional<Muser> opuser = muserRepository.findByEmail(email);
 		if (opuser.isPresent()) {
 			Muser user = opuser.get();
@@ -823,13 +801,8 @@ public ResponseEntity<?>getMiniatureDetails(Long lessonId,Long Id , String token
 
 	public ResponseEntity<?> deleteLessonsByLessonId(Long lessonId, String Lessontitle, String token) {
 		try {
-			// Validate the token
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 
 			String institution = "";
 			Optional<Muser> opuser = muserRepository.findByEmail(email);

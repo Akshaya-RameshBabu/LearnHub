@@ -163,7 +163,7 @@ if(response?.status===200){
       <td>
         <button className="btn btn-primary btn-sm"
         onClick={()=>{
-            navigate(`/submitAssignment/${item.scheduleid}/${batchId}/${item.assignmentid}`)
+            navigate(`/submitAssignment/${batchId}/${item.assignmentid}`)
         }}>View / Submit</button>
       </td>
    

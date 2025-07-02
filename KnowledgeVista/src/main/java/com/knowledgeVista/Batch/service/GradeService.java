@@ -183,11 +183,7 @@ public class GradeService {
 
 	public ResponseEntity<?> getGrades(String token) {
 		try {
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Token");
-			}
-
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			Optional<Muser> opuser = muserRepo.findByEmail(email);
 			if (opuser.isEmpty()) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User Not Found");
@@ -202,6 +198,7 @@ public class GradeService {
 			List<Batch> batches = user.getEnrolledbatch();
 			for (Batch batch : batches) {
 				GradeDto grade = getGradesbyBatchId(user, weightage, batch.getId(), batch.getBatchTitle());
+				grade.setBatchImage(batch.getBatchImage());
 				grades.add(grade);
 			}
 			Map<String, Object> res = new HashMap<>();
@@ -225,10 +222,6 @@ public class GradeService {
 	public ResponseEntity<?> getGradesofStudent(String token, String email, Long batchId) {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
-			if (!jwtUtil.validateToken(token)) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Token");
-			}
-
 			Optional<Muser> opuser = muserRepo.findByEmail(email);
 			if (opuser.isEmpty()) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User Not Found");
@@ -282,7 +275,7 @@ public class GradeService {
 	public ResponseEntity<?> getBatchAnalysis(Long batchId, String token) {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getUsernameFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			String institutionName = muserRepo.findinstitutionByEmail(email);
 			if (institutionName == null) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized User Institution Not Found");

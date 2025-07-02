@@ -103,20 +103,7 @@ const CreateQuizz = () => {
         // Update the state with new errors
         setErrors(newErrors);
     };
-    const handleCriteriaChange = (e) => {
-      const { name, value } = e.target;
-      let error = "";
-  
-      // Convert value to a number if it is an attempt count or percentage
-      
-     
-  
-      // Update error state
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [name]: error
-      }));
-    };
+   
      const handlequizzNameChange =(e)=>{
         const { value } = e.target;
         setquizzName(value)
@@ -125,13 +112,22 @@ const CreateQuizz = () => {
               ...prevErrors,
               quizzName  : 'This field is required'
           }));
-      }if (quizzName.length > 50) {
+      }else if (quizzName.length > 50) {
         setErrors((prevErrors) => ({
           ...prevErrors,
           quizzName: 'Test name cannot be more than 50 characters.',
         }));
         return;
-      } else {
+      }else 
+      if(value.includes("/")||  value.includes("\\")){
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          quizzName:  "Quizz Title should not contain the '/' or '\' character",
+        }));
+        return;
+         
+      }
+       else {
           setErrors(prevErrors => ({
               ...prevErrors,
               quizzName: ''

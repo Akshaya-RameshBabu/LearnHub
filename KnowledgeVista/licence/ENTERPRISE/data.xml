@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<root1>
+    <data>
+        <company_name>Meganar Technologies</company_name>
+        <course>1000</course>
+        <key>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxODA0MjAyNTEwMDBlbnRlcnByaXNlMzY1In0.kudJ1CC_PptTFmz-m1p3Qx5StpamuQbJzGzQzMzKA5E</key>
+        <key2>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxOTA0MjAyNTEwMDBlbnRlcnByaXNlMzY1In0.wkNbAsqzUdSbcxcvjDzVMVTBoYgHtkun-pHSW_Mnds0</key2>
+        <product_name>Learnhub</product_name>
+        <storagesize>1000</storagesize>
+        <student>1000</student>
+        <trainer>1000</trainer>
+        <type>enterprise</type>
+        <validity>365</validity>
+        <version>4.2</version>
+    </data>
+</root1>

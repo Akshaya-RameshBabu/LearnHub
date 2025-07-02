@@ -7,6 +7,8 @@ import com.knowledgeVista.Course.CourseDetail;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -37,14 +39,18 @@ public class Assignment {
 	@JoinColumn(name = "course_id", nullable = false)
 	private CourseDetail courseDetail;
 
-//	@Enumerated(EnumType.STRING)
-//	@Column(nullable = false)
-//	private AssignmentType type;
-//	private Integer maxFileSize; // Applicable only for FILE_UPLOAD
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private AssignmentType type;
+
+	private Integer maxFileSize; // Applicable only for FILE_UPLOAD
+
 	@OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AssignmentQuestion> questions; // List of essay-type questions
 	@OneToMany(mappedBy = "Assignment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AssignmentSchedule> schedules;
+	@OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL, orphanRemoval = true) // Adding cascade delete here
+	private List<Submission> submissions;
 
 	@Override
 	public String toString() {
@@ -52,9 +58,9 @@ public class Assignment {
 				+ totalMarks + ", courseDetail=" + courseDetail + ", questions=" + questions + "]";
 	}
 
-//	public enum AssignmentType {
-//		QA, // Written Response
-//		QUIZ, // Multiple Choice Quiz
-//		FILE_UPLOAD // Document Submission
-//	}
+	public enum AssignmentType {
+		QA, // Written Response
+		QUIZ, // Multiple Choice Quiz
+		FILE_UPLOAD // Document Submission
+	}
 }

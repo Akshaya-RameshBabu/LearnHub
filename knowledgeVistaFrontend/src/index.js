@@ -14,10 +14,6 @@ const MySwal = withReactContent(Swal);
 function handleError(message) {
   if (!alertShown) {
     alertShown = true; // Set the flag to indicate an alert is being shown
-    console.error(message); // Log the error message
-
-    // Show an alert with the error message
-    // alert(message);
     MySwal.fire({
       icon: "error",
       title: "Some Error Occurred",

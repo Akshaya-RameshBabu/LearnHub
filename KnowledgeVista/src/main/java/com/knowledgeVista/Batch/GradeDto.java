@@ -10,22 +10,35 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GradeDto {
-    private String batchName;
-    private double weightedTest;
-    private double weightedQuiz;
-    private double weightedAttendance;
-    private double totalScore;
-    private double weightedAssignment;
-    private String result;
+	private String batchName;
+	private double weightedTest;
+	private double weightedQuiz;
+	private double weightedAttendance;
+	private double totalScore;
+	private double weightedAssignment;
+	private String result;
+	private byte[] batchImage;
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class GradeDtoWithUserDetails {
-        private GradeDto gradeDto;
-        private byte[] profile;  // Corrected data type
-        private String userName;
-        private String email;
-    }
+	public GradeDto(String batchName, double weightedTest, double weightedQuiz, double weightedAttendance,
+			double totalScore, double weightedAssignment, String result) {
+		super();
+		this.batchName = batchName;
+		this.weightedTest = weightedTest;
+		this.weightedQuiz = weightedQuiz;
+		this.weightedAttendance = weightedAttendance;
+		this.totalScore = totalScore;
+		this.weightedAssignment = weightedAssignment;
+		this.result = result;
+	}
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class GradeDtoWithUserDetails {
+		private GradeDto gradeDto;
+		private byte[] profile; // Corrected data type
+		private String userName;
+		private String email;
+	}
 }

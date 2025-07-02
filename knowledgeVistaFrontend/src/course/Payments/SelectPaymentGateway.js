@@ -8,10 +8,13 @@ import PaypalPaymentProvider from "./PaypalPaymentProvider";
 import axios from "axios";
 import baseUrl from "../../api/utils";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 
 const SelectPaymentGateway = ({ orderData, setorderData,setopenselectgateway }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const token = sessionStorage.getItem("token");
+  const MySwal = withReactContent(Swal);
   const navigate = useNavigate();
   const Currency=sessionStorage.getItem("Currency")
   const [paymentMethods, setPaymentMethods] = useState({
@@ -64,7 +67,19 @@ const SelectPaymentGateway = ({ orderData, setorderData,setopenselectgateway }) 
       setSelectedPaymentMethod("");
       handlePaymentPaypal();
     } else {
-      alert("Please select a payment method before proceeding.");
+       MySwal.fire({
+                    toast:true,
+              position: 'top-end', 
+              icon: 'warning',
+              title: 'Please Select a payment method before Proceeding',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+              }
+            });
     }
   };
 
