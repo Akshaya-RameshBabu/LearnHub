@@ -2,11 +2,29 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import baseUrl from "../../api/utils";
 import axios from "axios";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+function sanitizeAIOutput(text) {
+  // Replace encoded tags with real tags
+  text = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+  // Fix common mismatched tags (e.g., <opt1>...</opt2> becomes <opt1>...</opt1>)
+  text = text.replace(/(<opt1>.*?)(<\/opt[2-4]>)/gs, '$1</opt1>');
+  text = text.replace(/(<opt2>.*?)(<\/opt[13-4]>)/gs, '$1</opt2>');
+  text = text.replace(/(<opt3>.*?)(<\/opt[124]>)/gs, '$1</opt3>');
+  text = text.replace(/(<opt4>.*?)(<\/opt[123]>)/gs, '$1</opt4>');
+
+  // Optionally, remove any question blocks that are still malformed
+  // (You can use a DOMParser or regex to only keep well-formed <question>...</question> blocks)
+
+  return text;
+}
 
 const GenerateQuestions = () => {
-  const { courseId } = useParams();
   const navigate = useNavigate();
-
+  const { courseName,courseId} = useParams();
+  const [testName, setTestName] = useState(`${courseName} Test`);
   const [loading, setLoading] = useState(false);
   const [res, setRes] = useState("");
   const [questions, setQuestions] = useState([]);
@@ -16,17 +34,32 @@ const GenerateQuestions = () => {
   const[lessonId,setLessonId]=useState(null);
   const[QuestionCount,setQuestionCount]=useState(2);
   const[showPreview,setshowPreview]=useState(false);
-  // Controlled state for editing
+  const [noofattempt, setNoOfAttempt] = useState(1);
+  const [passPercentage, setPassPercentage] = useState(40);
+  const MySwal = withReactContent(Swal);
   const [questionText, setQuestionText] = useState("");
-  const [options, setOptions] = useState(["", "", "", ""]);
+  const [options, setOptions] = useState({
+    option1: "",
+    option2: "",
+    option3: "",
+    option4: ""
+  });
   const [answer, setAnswer] = useState("");
   const [errors, setErrors] = useState({
+    noofattempt: "",
+    passPercentage: "",
+    testName:'',
     questionText: '',
-    options: ["", "", "", ""],
+    options: {
+      option1: '',
+      option2: '',
+      option3: '',
+      option4: ''
+    },
     answer: ''
   });
 const token=sessionStorage.getItem('token')
-  const [isManualMode, setIsManualMode] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(true);
 
   const [selectedIndex, setSelectedIndex] = useState(null);
 
@@ -67,7 +100,9 @@ fetchLessonId();
         if (done) break;
         result += decoder.decode(value);
       }
-      const newQuestions = parseQuestions(result);
+      // Sanitize the AI output before parsing
+      const sanitized = sanitizeAIOutput(result);
+      const newQuestions = parseQuestions(sanitized);
       setQuestions(prev => [...prev, ...newQuestions]);
     } catch (error) {
       console.error(error);
@@ -82,17 +117,19 @@ fetchLessonId();
     const questionNodes = xml.getElementsByTagName("question");
     const parsed = [];
     for (let q of questionNodes) {
-      const options = [
-        q.getElementsByTagName("opt1")[0]?.textContent.trim() ?? "",
-        q.getElementsByTagName("opt2")[0]?.textContent.trim() ?? "",
-        q.getElementsByTagName("opt3")[0]?.textContent.trim() ?? "",
-        q.getElementsByTagName("opt4")[0]?.textContent.trim() ?? "",
-      ];
+      const options = {
+        option1: q.getElementsByTagName("opt1")[0]?.textContent.trim() ?? "",
+        option2: q.getElementsByTagName("opt2")[0]?.textContent.trim() ?? "",
+        option3: q.getElementsByTagName("opt3")[0]?.textContent.trim() ?? "",
+        option4: q.getElementsByTagName("opt4")[0]?.textContent.trim() ?? "",
+      };
       let answer = q.getElementsByTagName("answer")[0]?.textContent.trim() ?? "";
       // Normalize answer if it's Option A/B/C/D
       if (/^Option [A-D]$/i.test(answer)) {
         const idx = "ABCD".indexOf(answer.slice(-1).toUpperCase());
-        if (idx !== -1) answer = options[idx];
+        if (idx !== -1) {
+          answer = options[`option${idx + 1}`];
+        }
       }
       parsed.push({
         questionText: q.getElementsByTagName("questiontext")[0]?.textContent.trim() ?? "",
@@ -112,9 +149,14 @@ fetchLessonId();
   useEffect(() => {
     if (selectedIndex !== null && questions[selectedIndex]) {
       setQuestionText(questions[selectedIndex].questionText || "");
-      setOptions(questions[selectedIndex].options ? [...questions[selectedIndex].options] : ["", "", "", ""]);
+      setOptions(questions[selectedIndex].options ? { ...questions[selectedIndex].options } : {
+        option1: "",
+        option2: "",
+        option3: "",
+        option4: ""
+      });
       setAnswer(questions[selectedIndex].answer || "");
-      setErrors({ questionText: '', options: ["", "", "", ""], answer: '' });
+      setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
     }
   }, [selectedIndex]);
 
@@ -123,28 +165,28 @@ fetchLessonId();
     setQuestionText(e.target.value);
     setErrors((prev) => ({ ...prev, questionText: e.target.value.trim() === '' ? 'This field is required' : '' }));
   };
-  const handleOptionChange = (e, idx) => {
-    const newOptions = [...options];
-    newOptions[idx] = e.target.value;
+  const handleOptionChange = (e, key) => {
+    const newOptions = { ...options, [key]: e.target.value };
     setOptions(newOptions);
-    const newErrors = { ...errors };
-    newErrors.options[idx] = e.target.value.trim() === '' ? 'Option cannot be empty' : '';
-    setErrors(newErrors);
+    setErrors((prev) => ({
+      ...prev,
+      options: { ...prev.options, [key]: e.target.value.trim() === '' ? 'Option cannot be empty' : '' }
+    }));
   };
  
 
   // Approve logic: validate and add to approved list (works for both generated and manual)
   const handleApprove = () => {
     let hasError = false;
-    const newErrors = { questionText: '', options: ["", "", "", ""], answer: '' };
+    const newErrors = { questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' };
     if (!questionText.trim()) {
       newErrors.questionText = 'This field is required.';
       hasError = true;
       
     }
-    options.forEach((opt, i) => {
-      if (!opt.trim()) {
-        newErrors.options[i] = 'Option cannot be empty.';
+    Object.keys(options).forEach((key) => {
+      if (!options[key].trim()) {
+        newErrors.options[key] = 'Option cannot be empty.';
         hasError = true;
       }
     });
@@ -156,7 +198,7 @@ fetchLessonId();
     if (hasError) return;
     const approved = {
       questionText,
-      options: [...options],
+      options: { ...options },
       answer
     };
     if (!isManualMode && selectedIndex !== null) {
@@ -191,9 +233,14 @@ fetchLessonId();
       setSelectedQuestions((prevSelectedQuestions) => [...prevSelectedQuestions, approved]);
     }
     setQuestionText("");
-    setOptions(["", "", "", ""]);
+    setOptions({
+      option1: "",
+      option2: "",
+      option3: "",
+      option4: ""
+    });
     setAnswer("");
-    setErrors({ questionText: '', options: ["", "", "", ""], answer: '' });
+    setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
   };
 
   const handleReject = () => {
@@ -202,11 +249,36 @@ fetchLessonId();
       setSelectedIndex(null);
       setSelectedQuestion(null);
       setQuestionText("");
-      setOptions(["", "", "", ""]);
+      setOptions({
+        option1: "",
+        option2: "",
+        option3: "",
+        option4: ""
+      });
       setAnswer("");
     }
   };
-
+  const handleTestNameChange =(e)=>{
+    const { value } = e.target;
+    setTestName(value)
+    if (value.trim() === '') {
+      setErrors(prevErrors => ({
+          ...prevErrors,
+          testName  : 'This field is required'
+      }));
+  }if (testName.length > 50) {
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      testName: 'Test name cannot be more than 50 characters.',
+    }));
+    return;
+  } else {
+      setErrors(prevErrors => ({
+          ...prevErrors,
+          testName: ''
+      }));
+  }
+  }
   const handleUnselect = (index) => {
     // Remove from selectedQuestions
     setSelectedQuestions((prev) => {
@@ -218,13 +290,97 @@ fetchLessonId();
     // Remove from approvedIndexes
     setApprovedIndexes((prev) => prev.filter((i) => i !== index));
   };
+  const handleCriteriaChange = (e) => {
+    const { name, value } = e.target;
+    let error = "";
 
-  const handleSave = () => {
-    console.log("Saving test with questions:", selectedQuestions);
-    alert("Test saved!");
+    // Convert value to a number if it is an attempt count or percentage
+    const numericValue = name === "noofattempt" || name === "passPercentage" ? parseFloat(value) : value;
+
+    switch (name) {
+      case "noofattempt":
+        error = numericValue < 1 ? "Number of attempt must be at least 1." : "";
+        setNoOfAttempt(numericValue);
+        break;
+      case "passPercentage":
+        error = numericValue < 1 || numericValue > 100 ? "Pass percentage must be between 1 and 100." : "";
+        setPassPercentage(numericValue);
+        break;
+      default:
+        break;
+    }
+
+    // Update error state
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: error
+    }));
   };
 
   
+
+  const handleSave = async (e) => {
+    e.preventDefault(); // Prevent default form submission behavior
+
+    try {
+      const questionsToSend = selectedQuestions.map(q => ({
+        questionText: q.questionText,
+        option1: q.options.option1,
+        option2: q.options.option2,
+        option3: q.options.option3,
+        option4: q.options.option4,
+        answer: q.answer
+      }));
+  
+   
+      const noOfQuestions = questionsToSend.length; // Count the number of questions
+      const requestBody = {
+        testName,
+        questions: questionsToSend,
+        noOfQuestions,
+        noofattempt,
+        passPercentage
+      };
+  const res=JSON.stringify(requestBody)
+
+      const response = await axios.post(`${baseUrl}/test/create/${courseId}`,res, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        }
+      });
+
+     
+      // Reset state after successful submission
+      setSelectedQuestions([]);
+      setTestName("");
+
+      Swal.fire({
+        title: "Created .!",
+        text: "Test Created SuccessFully.!",
+        icon: "success",
+        confirmButtonText: "OK"
+      }).then((result) => {
+        if (result.isConfirmed) {
+           navigate(`/course/testlist/${courseName}/${courseId}`);
+        }
+      });
+
+    } catch (error) {
+       if(error.response && error.response.status===401)
+          {
+            navigate("/unauthorized")
+          }else{
+            // MySwal.fire({
+            //   title: "Error!",
+            //   text: error.response,
+            //   icon: "error",
+            //   confirmButtonText: "OK",
+            // });
+            throw error
+          }
+    }
+  };
 
   // Whenever questions, selectedQuestions, or rejectedQuestions change, set the first available question as selected
   useEffect(() => {
@@ -243,9 +399,14 @@ fetchLessonId();
     setIsManualMode(true);
     setSelectedQuestion(null);
     setQuestionText("");
-    setOptions(["", "", "", ""]);
+    setOptions({
+      option1: "",
+      option2: "",
+      option3: "",
+      option4: ""
+    });
     setAnswer("");
-    setErrors({ questionText: '', options: ["", "", "", ""], answer: '' });
+    setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
   };
 
   // For rendering: sort questions by status: pending, approved
@@ -279,7 +440,8 @@ fetchLessonId();
       <>
        {selectedQuestions.length > 0 && (
           <>
-            <h3 className="text-lg font-semibold mt-8 mb-4 text-primary">Approved Questions</h3>
+          <h4>Test Name : {testName}</h4>
+            <h6 className=" text-primary">Approved Questions</h6>
             <div className="space-y-4">
               {selectedQuestions.map((q, idx) => (
                 <div key={idx} className="rounded-xl p-4 border  relative">
@@ -291,8 +453,8 @@ fetchLessonId();
                   
                   <h4 className="font-bold text-dark mb-2">{q.questionText}</h4>
                   <ol className="list-decimal pl-4 text-dark text-sm space-y-1">
-                    {q.options.map((opt, i) => (
-                      <li key={i}>{opt}</li>
+                    {["option1", "option2", "option3", "option4"].map((key, i) => (
+                      <li key={i}>{q.options[key]}</li>
                     ))}
                   </ol>
                   <div className="text-success text-sm mt-2">Answer: {q.answer}</div>
@@ -303,11 +465,43 @@ fetchLessonId();
        
           </>
         )}
+         <div className="form-group row">
+               <label className="col-sm-3 col-form-label">Number of Attempt</label>
+               <div className="col-sm-9">
+            <input
+              type="number"
+              value={noofattempt}
+              name="noofattempt"
+              className={`form-control ${errors.noofattempt && "is-invalid"}`}
+              onChange={handleCriteriaChange}
+            />
+            {errors.noofattempt && (
+              <div className="invalid-feedback">{errors.noofattempt}</div>
+            )}</div>
+          </div>
+          
+          <div className="form-group row">
+               <label className="col-sm-3 col-form-label">Pass Percentage</label>
+               <div className="col-sm-9">
+            <input
+              type="number"
+              value={passPercentage}
+              name="passPercentage"
+              className={`form-control ${errors.passPercentage && "is-invalid"}`}
+              onChange={handleCriteriaChange}
+            />
+            {errors.passPercentage && (
+              <div className="invalid-feedback">{errors.passPercentage}</div>
+            )}
+            </div>
+          </div>
              <div className="cornerbtn">
               <button className="btn btn-secondary" onClick={()=>{setshowPreview(false)}}>
                 back
               </button>
-              <button onClick={handleSave} className="btn btn-primary" disabled={selectedQuestions.length <= 0}>
+              <button onClick={handleSave} className="btn btn-primary" disabled={selectedQuestions.length <= 0 || !!errors.noofattempt ||
+                !!errors.passPercentage || !noofattempt ||
+                !passPercentage}>
                 <i className="fa-solid fa-floppy-disk mr-2"></i>Save Test
               </button>
             </div>
@@ -317,7 +511,17 @@ fetchLessonId();
         <div className="splitpart1">
         {(selectedQuestion || isManualMode || questions.length === 0) ? (
           <div>
-            <h4>{isManualMode ? 'Add Manual Question' : 'Edit Question'}</h4>
+         <h4>{isManualMode ? 'Add Question Manually' : 'Review AI-Generated Question'}</h4>
+            <div className="formgroup row p-2" > 
+              <input
+                className={`form-control    ${errors.testName && 'is-invalid'}`}
+                value={testName}
+                placeholder="Test Name"
+                onChange={handleTestNameChange}
+              />
+              {errors.testName && <div className="invalid-feedback">{errors.testName}</div>}
+              
+  </div>
             <div className="formgroup row p-2">
               <textarea
               rows={3}
@@ -332,34 +536,34 @@ fetchLessonId();
             </div>
             {/* Options with radio for answer selection */}
             <ul className='listgroup'>
-              {options.map((option, index) => (
-                <li className='choice' key={index}>
+              {["option1", "option2", "option3", "option4"].map((key, index) => (
+                <li className='choice' key={key}>
                   <input
                     className='mt-2'
                     type="radio"
                     name="answer"
-                    value={option}
-                    checked={option !== "" && answer === option}
+                    value={options[key]}
+                    checked={options[key] !== "" && answer === options[key]}
                     onChange={() => {
-    setAnswer(option);
-    setErrors((err) => ({
-      ...err,
-      answer: "",
-    }));
-  }}
+                      setAnswer(options[key]);
+                      setErrors((err) => ({
+                        ...err,
+                        answer: "",
+                      }));
+                    }}
                     required
                   />
                   <div>
                     <input
-                      className={`form-control   ${errors.options[index] && 'is-invalid'}`}
+                      className={`form-control   ${errors.options[key] && 'is-invalid'}`}
                       type="text"
-                      value={option}
+                      value={options[key]}
                       placeholder={`Option ${index + 1}`}
-                      onChange={(e) => handleOptionChange(e, index)}
+                      onChange={(e) => handleOptionChange(e, key)}
                       required
                     />
-                    {errors.options[index] && (
-                      <div className="invalid-feedback">{errors.options[index]}</div>
+                    {errors.options[key] && (
+                      <div className="invalid-feedback">{errors.options[key]}</div>
                     )}
                   </div>
                 </li>
@@ -382,9 +586,14 @@ fetchLessonId();
                 <button onClick={() => {
                   setSelectedQuestion(null);
                   setQuestionText("");
-                  setOptions(["", "", "", ""]);
+                  setOptions({
+                    option1: "",
+                    option2: "",
+                    option3: "",
+                    option4: ""
+                  });
                   setAnswer("");
-                  setErrors({ questionText: '', options: ["", "", "", ""], answer: '' });
+                  setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
                 }} className="btn btn-secondary" style={{width:"150px"}}>
                   <i className="fa-solid fa-xmark mr-2 "></i>Cancel
                 </button>
@@ -456,6 +665,7 @@ fetchLessonId();
           gap: "8px",
           fontWeight: "500",
         }}
+        title="Generate Questions"
        onClick={generateQuestions} disabled={!lessonId || loading}
       >
        <i className="fa-solid fa-wand-magic-sparkles"></i> Generate
@@ -534,7 +744,7 @@ fetchLessonId();
                             <div></div>
                             <button className="btn btn-primary" onClick={()=>{
                               setshowPreview(true);
-                            }} disabled={selectedQuestions.length <= 0}>
+                            }} disabled={selectedQuestions.length <= 0 || !testName ||errors.testName}>
                                 Preview
                             </button>
                         </div>

@@ -10,18 +10,19 @@ const TestList = () => {
   const navigate=useNavigate();
   const MySwal = withReactContent(Swal);
   const [test, setTest] = useState(null); // Change to single test instead of array
-  const [notFound, setNotFound] = useState(false); // State to track if test is not found
   const [editedTest, setEditedTest] = useState({}); 
   const [errors, setErrors] = useState({
     noofattempt: "",
     passPercentage: "",
     testName :""
   });
+  const[loading,setloading]=useState(false)
   const token = sessionStorage.getItem("token");
   const [editingField, setEditingField] = useState(null); // State to track which field is being edited
 const [selectedIds,setselectedIds]=useState([]);
 
   useEffect(() => {
+    setloading(true)
     const fetchData = async () => {
       try {
         const response = await axios.get(`${baseUrl}/test/getall/${courseId}`, {
@@ -39,7 +40,7 @@ const [selectedIds,setselectedIds]=useState([]);
           {
             navigate("/unauthorized")
           }else if(error.response && error.response.status===404){
-          setNotFound(true);
+          navigate(`/course/AddTest/${courseName}/${courseId}`)
         }else{
         // MySwal.fire({
         //   title: "Error",
@@ -49,6 +50,8 @@ const [selectedIds,setselectedIds]=useState([]);
         // });
         throw error
       }
+      }finally{
+       setloading(false)
       }
     };
 
@@ -256,14 +259,12 @@ const handleDelete = async (questID) => {
   </div>      
                 </div>
      </div>
-        {notFound ? (
-          <div className='centerflex'>
-          <div className='enroll'>
-            <h4>No test found for the  course {courseName}</h4>
-            <a href={`/course/AddTest/${courseName}/${courseId}`} className='btn btn-primary'>Add Test</a>
-          </div></div>
-        ) : (
-          test && (
+     {loading && (
+              <div className="outerspinner active">
+                <div className="spinner"></div>
+              </div>
+            )}
+         { test && (
             <div className='card-body'>
               <div className='singletest'>
                 <span className='edititems'>
@@ -395,8 +396,7 @@ const handleDelete = async (questID) => {
                 </div>
               )}
               </div>
-          )
-        )}
+          )}
         </div>
         </div>
         </div>

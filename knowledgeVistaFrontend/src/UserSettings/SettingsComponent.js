@@ -5,7 +5,7 @@ import ErrorBoundary from "../ErrorBoundary";
 import DisplaysocialLogin from "./DisplaysocialLogin";
 import Sitesettings from "./Sitesettings";
 import AttendanceThresholdMinutes from "./AttendanceThresholdMinutes";
-
+import OpenRouterKeys from "./OpenRouterKeys";
 const SettingsComponent = () => {
   const navigate = useNavigate();
   return (
@@ -56,6 +56,9 @@ const SettingsComponent = () => {
         </ErrorBoundary>
         <ErrorBoundary>
         <AttendanceThresholdMinutes/>
+      </ErrorBoundary>
+      <ErrorBoundary>
+        <OpenRouterKeys/>
       </ErrorBoundary>
       <ErrorBoundary>
         <Sitesettings/>

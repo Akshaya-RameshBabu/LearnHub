@@ -149,12 +149,12 @@ public class GenerateModuleTest {
 			Your task:
 			- Generate exactly %d multiple-choice type question based ONLY on the lesson content below.
 			-no need to give any explanation just give the questions with options 
-		
 			Output must be:
 			- Plain text only.
 			- Enclosed entirely in a <question>...</question> tag.
+		    - please Dont make any mistakes in tags opening and closing always open and close the tag correctly. 
+			- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
 			- Formatted exactly like this:
-		    -Dont make any type mistakes in tags name name the tage exactly in order 
 			<question>
 			<questiontext>
 			 [Question text]

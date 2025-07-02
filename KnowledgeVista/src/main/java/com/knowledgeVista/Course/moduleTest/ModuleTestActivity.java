@@ -4,7 +4,6 @@ package com.knowledgeVista.Course.moduleTest;
 import java.time.LocalDate;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.knowledgeVista.Course.CourseDetail;
 import com.knowledgeVista.User.Muser;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;

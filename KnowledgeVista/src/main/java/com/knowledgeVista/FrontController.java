@@ -1467,6 +1467,16 @@ public class FrontController {
 			return null;
 		}
 	}
+	@PostMapping("/openRouter/savekeys")
+@CheckAccessAnnotation
+public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestParam String keys ,@RequestHeader("Authorization") String token){
+	return settingcontroller.saveOpenRouterKeys(token,keys);
+}
+@GetMapping("/openRouter/getkeys")
+@CheckAccessAnnotation
+public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization") String token){
+	return settingcontroller.getOpenRouterKeys(token);
+}
 
 	// ========================================GoogleLogin=================================
 

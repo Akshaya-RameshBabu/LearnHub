@@ -490,7 +490,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-            <Route
+            {/* <Route
               path="/course/AddTest/:courseName/:courseId"
               element={
                 <ErrorBoundary>
@@ -502,7 +502,21 @@ function App() {
                   </PrivateRoute>
                 </ErrorBoundary>
               }
+            /> */}
+            <Route
+              path="/course/AddTest/:courseName/:courseId"
+              element={
+                <ErrorBoundary>
+                  <PrivateRoute
+                    authenticationRequired={true}
+                    authorizationRequired={true}
+                  >
+                    <GenerateQuestions />
+                  </PrivateRoute>
+                </ErrorBoundary>
+              }
             />
+            
             <Route
               path="/test/start/:courseName/:courseId"
               element={
@@ -539,19 +553,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-             <Route
-            path="/test/generate/:courseId"
-            element={
-              <ErrorBoundary>
-                 <PrivateRoute
-                    authorizationRequired={true}
-                    authenticationRequired={true}
-                  >
-                <GenerateQuestions />
-                </PrivateRoute>
-              </ErrorBoundary>
-            }
-          />
+             
             <Route
               path="/course/edit/:courseId"
               element={
