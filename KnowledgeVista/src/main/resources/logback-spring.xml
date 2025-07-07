@@ -23,7 +23,7 @@
     </appender>
 
     <!-- Logger for your class only -->
-    <logger name="com.knowledgeVista.Course.moduleTest.service.GenerateModuleTest" level="DEBUG" additivity="false">
+    <logger name="com.knowledgeVista.AiIntegration.AiService" level="DEBUG" additivity="false">
         <appender-ref ref="MODULE_TEST_LOG" />
     </logger>
 

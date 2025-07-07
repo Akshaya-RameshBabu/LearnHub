@@ -10,8 +10,12 @@ import com.knowledgeVista.Settings.OpenRouterKeys;
 
 @Repository
 public interface OpenRouterKeyRepo extends JpaRepository<OpenRouterKeys,Long> {
-    @Query("SELECT k.openRouterKey from OpenRouterKeys k WHERE k.InstitutionName=:institutionName") 
-    String findByInstitution(String institutionName);
-    @Query("SELECT k.openRouterKey from OpenRouterKeys k WHERE k.InstitutionName=:institutionName") 
-    String findkeyByInstitution(String institutionName);
+    @Query("SELECT k from OpenRouterKeys k WHERE k.email=:email") 
+    Optional<OpenRouterKeys> FindByEmail(String email);
+    @Query("SELECT k.openRouterKey from OpenRouterKeys k WHERE k.email=:email") 
+    String FindKeyByEmail(String email);
+
+    @Query("SELECT k.openRouterKey from OpenRouterKeys k WHERE k.type='DEFAULT'")
+    String getDefaultKeys();
+    
 }

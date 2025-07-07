@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.knowledgeVista.Course.Repository.CourseDetailRepository;
 import com.knowledgeVista.Settings.OpenRouterKeys;
 import com.knowledgeVista.Settings.ViewSettings;
+import com.knowledgeVista.Settings.OpenRouterKeys.KeyType;
 import com.knowledgeVista.Settings.Repo.OpenRouterKeyRepo;
 import com.knowledgeVista.Settings.Repo.ViewSettingsRepo;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
@@ -167,39 +168,36 @@ public class SettingsController {
 
 	public ResponseEntity<?> saveOpenRouterKeys(String token, String openRouterKey) {
 		try {
-			String institutionName = jwtUtil.getInstitutionFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
 			String role = jwtUtil.getRoleFromToken(token);
-			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
-				String key = openrouterKEyRepo.findByInstitution(institutionName);
-				OpenRouterKeys keys;
+				Optional<OpenRouterKeys> keys = openrouterKEyRepo.FindByEmail(email);
 				String encryptedKey;
+				OpenRouterKeys saving = new OpenRouterKeys();
+				if ("SYSADMIN".equals(role)) {
+					saving.setType(KeyType.DEFAULT);
+				}else{
+					saving.setType(KeyType.PERSONAL);
+				}
+				
 				try {
 					encryptedKey = EncryptionUtil.encrypt(openRouterKey);
 				} catch (Exception e) {
 					e.printStackTrace();
 					return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Encryption failed");
 				}
-				if (key != null) {
-					// Find the entity to update
-					keys = openrouterKEyRepo.findAll().stream()
-						.filter(k -> institutionName.equals(k.getInstitutionName()))
-						.findFirst()
-						.orElse(null);
-					if (keys != null) {
-						keys.setOpenRouterKey(encryptedKey);
-						openrouterKEyRepo.save(keys);
+				if (keys.isPresent()) {
+                        saving=keys.get();
+						saving.setOpenRouterKey(encryptedKey);
+						openrouterKEyRepo.save(saving);
 						return ResponseEntity.ok("Updated");
 					}
-				}
-				// Create new record
-				keys = new OpenRouterKeys();
-				keys.setInstitutionName(institutionName);
-				keys.setOpenRouterKey(encryptedKey);
-				openrouterKEyRepo.save(keys);
+				else{
+				saving.setOpenRouterKey(encryptedKey);
+				saving.setEmail(email);
+				openrouterKEyRepo.save(saving);
 				return ResponseEntity.ok("Saved");
-			} else {
-				return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized role");
-			}
+				}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
@@ -208,10 +206,8 @@ public class SettingsController {
 
 	public ResponseEntity<?> getOpenRouterKeys(String token) {
 		try {
-			String institutionName = jwtUtil.getInstitutionFromToken(token);
-			String role = jwtUtil.getRoleFromToken(token);
-			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
-				String encryptedKey = openrouterKEyRepo.findByInstitution(institutionName);
+			String email = jwtUtil.getEmailFromToken(token);
+				String encryptedKey = openrouterKEyRepo.FindKeyByEmail(email);
 				if (encryptedKey != null) {
 					String decryptedKey;
 					try {
@@ -226,9 +222,7 @@ public class SettingsController {
 				} else {
 					return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 				}
-			} else {
-				return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized role");
-			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");

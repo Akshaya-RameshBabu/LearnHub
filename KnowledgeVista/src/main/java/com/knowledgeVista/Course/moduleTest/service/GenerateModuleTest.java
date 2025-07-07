@@ -3,11 +3,8 @@ package com.knowledgeVista.Course.moduleTest.service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
@@ -18,15 +15,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-// import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
-import org.springframework.web.reactive.function.client.WebClient;
+import com.knowledgeVista.AiIntegration.AiService;
 import com.knowledgeVista.Course.DocsDetails;
 import com.knowledgeVista.Course.videoLessons;
 import com.knowledgeVista.Course.Repository.videoLessonRepo;
 import com.knowledgeVista.FileService.VideoFileService;
+import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 
 @Service
 public class GenerateModuleTest {
@@ -40,22 +36,20 @@ public class GenerateModuleTest {
 
 	@Autowired
 	private VideoFileService fileService;
+	@Autowired
+	private JwtUtil jwtUtil;
 
+@Autowired
+private AiService aiservice;
 	
 
-	@Value("${openrouter.api.key}")
-	private String openRouterApiKey;
-
-	
-
-
-	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter) {
+	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter,String token) {
 		Optional<videoLessons> lessonOpt = lessonRepository.findById(lessonId);
 		if (!lessonOpt.isPresent()) {
 			emitter.completeWithError(new Exception("Lesson not found"));
 			return;
 		}
-
+        String email=jwtUtil.getEmailFromToken(token);
 		videoLessons lesson = lessonOpt.get();
 		List<DocsDetails> docs = lesson.getDocuments();
 		if (docs.isEmpty()) {
@@ -82,61 +76,13 @@ public class GenerateModuleTest {
 
 		String prompt = buildQuestionPrompt(contentBuilder.toString(), count);
 		logger.info(prompt);
-
-		WebClient webClient = WebClient.builder()
-			.baseUrl("https://openrouter.ai")
-			.defaultHeader("Authorization", "Bearer " + openRouterApiKey)
-			.build();
-
-		Map<String, Object> requestBody = new HashMap<>();
-		requestBody.put("model", "qwen/qwen3-30b-a3b:free");
-		List<Map<String, String>> messages = List.of(
-			Map.of("role", "user", "content", prompt)
-		);
-		requestBody.put("messages", messages);
-
-		webClient.post()
-			.uri("/api/v1/chat/completions")
-			.contentType(MediaType.APPLICATION_JSON)
-			.accept(MediaType.APPLICATION_NDJSON, MediaType.APPLICATION_JSON)
-			.bodyValue(requestBody)
-			.retrieve()
-			.bodyToFlux(String.class)
-			.subscribe(
-				chunk -> {
-					// Try to extract the 'content' field from the chunk (JSON line)
-					String text = extractContentField(chunk);
-					if (text != null && !text.isEmpty()) {
-						logger.info(text);
-						try {
-							emitter.send(text);
-						} catch (Exception e) {
-							emitter.completeWithError(e);
-						}
-					}
-				},
-				error -> {
-					logger.error("[QWEN AI ERROR] LessonId: {}", lessonId, error);
-					emitter.completeWithError(error);
-				},
-				emitter::complete
-			);
+         aiservice.callQwenAIAndStreamResponse(prompt, email, emitter);
+		
 	}
 
 	/**
 	 * Extracts only the 'content' field from a JSON line (for streaming Qwen/OpenRouter).
 	 */
-	private String extractContentField(String jsonLine) {
-		int idx = jsonLine.indexOf("\"content\":");
-		if (idx != -1) {
-			int start = jsonLine.indexOf('"', idx + 10) + 1;
-			int end = jsonLine.indexOf('"', start);
-			if (start > 0 && end > start) {
-				return jsonLine.substring(start, end).replace("\\n", "\n").replace("\\\"", "\"");
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Build the prompt for the LLM.

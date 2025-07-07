@@ -1122,6 +1122,19 @@ const [joinUrl,setjoinUrl]=useState();
                   <span className="pcoded-mtext">Certificates</span>
                 </a>
               </li>
+              <li className="nav-item no-hasmenu">
+                <a
+                  href="#"
+                  data-path="/settings"
+                  onClick={(e) => handleClick(e, "/settings")}
+                  className="nav-link "
+                >
+                  <span className="pcoded-micon">
+                    <i className="fa-solid fa-gear"></i>
+                  </span>
+                  <span className="pcoded-mtext">Settings</span>
+                </a>
+              </li>
             </ul>
           )}
           {/* User Sidebar */}

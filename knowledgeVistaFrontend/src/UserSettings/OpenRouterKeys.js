@@ -9,41 +9,38 @@ const OpenRouterKeys = () => {
     const MySwal = withReactContent(Swal); 
     const token=sessionStorage.getItem("token")
     const navigate=useNavigate();
-
     const [savedKey, setSavedKey] = useState({ openRouterKey: "" });
     const [editKey, setEditKey] = useState({ openRouterKey: "" });
     const [formErrors, setFormErrors] = useState({ openRouterKey: "" });
     const [isEditMode, setIsEditMode] = useState(false);
-
+    const fetchOpenRouterKey = async () => {
+        try {
+            const response = await axios.get(`${baseUrl}/openRouter/getkeys`, {
+                headers:{
+                    "Authorization":token
+                },
+            });
+    
+            if (response.status === 200) {
+                setSavedKey(response.data);
+                setEditKey(response.data);
+            } else if (response.status === 204 || response.status === 404) {
+                setIsEditMode(true);
+            }
+        } catch (error) {
+            if (error.response) {
+                if (error.response.status === 404) {
+                    setIsEditMode(true);
+                } else if (error.response.status === 401) {
+                    navigate("/unauthorized")
+                } else {
+                    throw error
+                }
+            }
+        }
+    };
     useEffect(() => {
         if(token){
-            const fetchOpenRouterKey = async () => {
-                try {
-                    const response = await axios.get(`${baseUrl}/openRouter/getkeys`, {
-                        headers:{
-                            "Authorization":token
-                        },
-                    });
-            
-                    if (response.status === 200) {
-                        setSavedKey(response.data);
-                        setEditKey(response.data);
-                    } else if (response.status === 204 || response.status === 404) {
-                        setIsEditMode(true);
-                    }
-                } catch (error) {
-                    if (error.response) {
-                        if (error.response.status === 404) {
-                            setIsEditMode(true);
-                        } else if (error.response.status === 401) {
-                            navigate("/unauthorized")
-                        } else {
-                            throw error
-                        }
-                    }
-                }
-            };
-        
             fetchOpenRouterKey();
         }
     }, [token, navigate]);
@@ -87,10 +84,9 @@ const OpenRouterKeys = () => {
                     text: response.data,
                     icon: "success",
                     confirmButtonText: "OK",
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.reload();
-                    }   });
+                }).then(() => {
+                    fetchOpenRouterKey();
+                });
                 setIsEditMode(false);
             } 
         } catch (error) {

@@ -7,33 +7,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knowledgeVista.Attendance.Repo.AttendanceRepo;
 import com.knowledgeVista.Batch.Batch;
 import com.knowledgeVista.Batch.Repo.BatchRepository;
-import com.knowledgeVista.Course.Repository.CourseDetailRepository;
-import com.knowledgeVista.Meeting.SaveMeetDataService;
-import com.knowledgeVista.Meeting.ZoomTokenService;
 import com.knowledgeVista.Meeting.zoomclass.Meeting;
-import com.knowledgeVista.Meeting.zoomclass.repo.InviteeRepo;
 import com.knowledgeVista.Meeting.zoomclass.repo.Meetrepo;
-import com.knowledgeVista.Meeting.zoomclass.repo.OccurancesRepo;
-import com.knowledgeVista.Meeting.zoomclass.repo.VirtualmeetmapRepo;
-import com.knowledgeVista.Notification.Repositories.NotificationDetailsRepo;
-import com.knowledgeVista.Notification.Repositories.NotificationUserRepo;
-import com.knowledgeVista.Settings.Controller.SettingsController;
 import com.knowledgeVista.User.Muser;
-import com.knowledgeVista.User.Repository.MuserRepositories;
-import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
-import com.knowledgeVista.zoomJar.ZoomMethods;
-
 import jakarta.transaction.Transactional;
 
 @Service

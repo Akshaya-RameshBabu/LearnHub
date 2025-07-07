@@ -3,8 +3,6 @@ package com.knowledgeVista.Batch;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-
-import com.knowledgeVista.Batch.Assignment.Assignment;
 import com.knowledgeVista.Course.CourseDetail;
 import com.knowledgeVista.Meeting.zoomclass.Meeting;
 import com.knowledgeVista.User.Muser;
@@ -19,7 +17,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import lombok.Getter;

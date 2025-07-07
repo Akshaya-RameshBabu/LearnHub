@@ -91,7 +91,11 @@ fetchLessonId();
   const generateQuestions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${baseUrl}/generate/stream/${lessonId}/${QuestionCount}`);
+      const response = await fetch(`${baseUrl}/generate/stream/${lessonId}/${QuestionCount}`,{
+        headers:{
+          Authorization:token
+        }
+      });
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let result = "";

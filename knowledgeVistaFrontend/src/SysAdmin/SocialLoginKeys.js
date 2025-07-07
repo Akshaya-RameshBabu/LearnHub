@@ -5,6 +5,7 @@ import withReactContent from "sweetalert2-react-content";
 import axios from 'axios';
 import baseUrl from '../api/utils';
 import googleicon from "../images/google-25x25.png"
+import OpenRouterKeys from '../UserSettings/OpenRouterKeys';
 
 const SocialLoginKeys = () => {
     const MySwal = withReactContent(Swal); 
@@ -276,7 +277,16 @@ const SocialLoginKeys = () => {
     </div>
     </div>
   </div>
+  <div className="card">
+      <div className="card-body">
+      <div className="row">
+  <OpenRouterKeys/>
+  </div>
+  </div>
+  </div>
 </div>
+
+
   )
 }
 

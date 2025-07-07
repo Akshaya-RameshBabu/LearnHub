@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
+import com.knowledgeVista.AiIntegration.AiService;
 import com.knowledgeVista.Attendance.AttendanceService;
 import com.knowledgeVista.Batch.BatchInstallmentdetails;
 import com.knowledgeVista.Batch.SearchDto;
@@ -91,6 +92,7 @@ import com.knowledgeVista.User.LabellingItems.FooterDetails;
 import com.knowledgeVista.User.LabellingItems.controller.FooterDetailsController;
 import com.knowledgeVista.User.LabellingItems.controller.LadellingitemController;
 import com.knowledgeVista.User.SecurityConfiguration.CheckAccessAnnotation;
+import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 import com.knowledgeVista.User.Usersettings.RoleDisplayController;
 import com.knowledgeVista.User.Usersettings.Role_display_name;
 import org.springframework.http.MediaType;
@@ -229,6 +231,10 @@ public class FrontController {
 	private AssignmentService2 assignmentService2;
 	@Autowired
 	private GenerateModuleTest generateModule;
+	@Autowired
+	private AiService aiservice;
+	@Autowired
+	private JwtUtil jwtutil;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -2255,7 +2261,7 @@ public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization
 
 	
 	@GetMapping(value = "/generate/stream/{lessonId}/{count}", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseBodyEmitter streamQuestions(@PathVariable Long lessonId,@PathVariable Long count) {
+    public ResponseBodyEmitter streamQuestions(@PathVariable Long lessonId,@PathVariable Long count,@RequestHeader("Authorization") String token) {
         ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
         emitter.onTimeout(() -> {
             emitter.complete();
@@ -2266,7 +2272,24 @@ public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization
         emitter.onError((throwable) -> {
             // Optionally log or clean up
         });
-        generateModule.streamQuestionsFromLessonQwen(lessonId,count, emitter);
+        generateModule.streamQuestionsFromLessonQwen(lessonId,count, emitter,token);
+        return emitter;
+    }
+
+	@GetMapping(value = "/user/chat", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseBodyEmitter chatwithQwen(@RequestHeader("Authorization") String token,@RequestParam String prompt ) {
+        ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
+        emitter.onTimeout(() -> {
+            emitter.complete();
+        });
+        emitter.onCompletion(() -> {
+            // Optionally log or clean up
+        });
+        emitter.onError((throwable) -> {
+            // Optionally log or clean up
+        });
+		String email=jwtutil.getEmailFromToken(token);
+        aiservice.callQwenAIAndStreamResponse(prompt, email, emitter);
         return emitter;
     }
 

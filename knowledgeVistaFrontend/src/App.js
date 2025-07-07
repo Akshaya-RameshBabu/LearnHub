@@ -126,6 +126,8 @@ import BatchAssignments from "./Assignment/BatchAssignments.js";
 import ValidateAssignment from "./Assignment/ValidateAssignment.js";
 import LicenceFileCreation from "./AuthenticationPages/LicenceFileCreation.js";
 import GenerateQuestions from "./course/ModuleTest.js/GenerateQuestions.js";
+import OpenRouterKeys from "./UserSettings/OpenRouterKeys.js";
+import UserCommonSetting from "./UserSettings/UserCommonSetting.js";
 
 function App() {
   useEffect(() => {
@@ -1398,6 +1400,17 @@ function App() {
                 <ErrorBoundary>
                   <PrivateRoute authenticationRequired={true} sysadmin={true}>
                     <ViewStudents />
+                  </PrivateRoute>
+                </ErrorBoundary>
+              }
+            />
+
+            <Route
+              path="/settings"
+              element={
+                <ErrorBoundary>
+                  <PrivateRoute authenticationRequired={true} onlyuser={true} >
+                    <UserCommonSetting />
                   </PrivateRoute>
                 </ErrorBoundary>
               }
