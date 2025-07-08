@@ -54707,6 +54707,7 @@ overflow: auto;
   background: linear-gradient(45deg, #4f8cff 0%, #6f6fff 100%);
   color: #fff;
   box-shadow: 0 2px 8px rgba(79,140,255,0.08);
+  text-align: left;
 }
 
 /* AI message bubble */

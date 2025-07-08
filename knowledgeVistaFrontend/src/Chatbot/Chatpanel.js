@@ -22,6 +22,15 @@ const Chatpanel = ({ onClose }) => {
     }
   }, [input]);
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (msg) => {
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500); // hide after 1.5s
+    });
+  };
+
   const handleSend = async () => {
     if (input.trim() === '' || loading) return;
     const userMsg = { text: input, sender: 'user' };
@@ -90,7 +99,7 @@ const Chatpanel = ({ onClose }) => {
       </div>
       <div className="chatbot-messages">
         {messages.length === 0 && !streamedText && !loading && (
-          <div className="chatbot-empty-msg">Start a conversation with AI...</div>
+          <div className="chatbot-empty-msg">Hi there! Ask me anything to get started...</div>
         )}
         {messages.map((msg, idx) => (
           <div
@@ -102,10 +111,38 @@ const Chatpanel = ({ onClose }) => {
             }
           >
             {msg.sender === 'ai' ? (
-              <span
-                className="chatbot-msg-bubble chatbot-msg-bubble-ai"
-                dangerouslySetInnerHTML={renderMarkdown(msg.text)}
-              />
+              <>
+                <span
+                  className="chatbot-msg-bubble chatbot-msg-bubble-ai"
+                  dangerouslySetInnerHTML={renderMarkdown(msg.text)}
+                />
+                <div style={{ textAlign: 'right', marginTop: '0.25em', position: 'relative', display: 'inline-block' }}>
+      <i
+        className="fa-solid fa-copy text-muted"
+        title="Copy response"
+        style={{ cursor: 'pointer' }}
+        onClick={()=>{handleCopy(msg.text)}}
+      ></i>
+
+      {copied && (
+        <span
+          style={{
+            position: 'absolute',
+            top: '-1.5em',
+            right: 0,
+            background: '#4caf50',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Copied...!
+        </span>
+      )}
+    </div>
+              </>
             ) : (
               <span className="chatbot-msg-bubble chatbot-msg-bubble-user">
                 {msg.text}
@@ -124,9 +161,12 @@ const Chatpanel = ({ onClose }) => {
                 <span className="dot"></span>
               </span>
             </span>
+            
           </div>
         )}
-        <div ref={messagesEndRef} />
+        
+        <div ref={messagesEndRef} /> 
+       
       </div>
       <div className="chatbot-input-area-bubble">
         <div className="chatbot-input-bubble">

@@ -6,7 +6,6 @@ import { GlobalStateProvider } from "./Context/GlobalStateProvider";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import baseUrl from '../src/api/utils';
-import axios from 'axios';
 // Your error handling code below the imports
 let alertShown = false;
 const MySwal = withReactContent(Swal);

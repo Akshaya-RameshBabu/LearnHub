@@ -98,6 +98,7 @@ public class AiService {
                         }
                         if (content != null && !content.isEmpty()) {
                             fullContent.append(content);
+                            logger.info(content);
                             emitter.send(content);
                         }
                     } catch (Exception e) {
