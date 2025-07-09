@@ -5,6 +5,7 @@
     <!-- <link rel="icon" href="%PUBLIC_URL%/favicon.ico" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:8080 https://www.googletagmanager.com; frame-ancestors 'none';">
     <meta
       name="description"
       content="Web site created using create-react-app"
@@ -45,13 +46,11 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <!-- <title>Learn Hub</title> -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16676502340">
-    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16676502340"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
       gtag('config', 'AW-16676502340');
     </script>
 
@@ -62,60 +61,11 @@
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script type="module">
-  import baseUrl from '../src/api/utils.js';
-</script>
 <script>
-  // Wait for the page to load before applying the theme
-  window.addEventListener('DOMContentLoaded', (event) => {
-    const fetchTheme = async () => {
-      try {
-        // Check if theme is already in sessionStorage
-        const theme = sessionStorage.getItem("theme");
-
-        if (theme) {
-          // If theme is found, parse it and apply colors
-          const colors = JSON.parse(theme);
-          updateCSSVariables(colors);
-        } else {
-          // Fetch theme from the server if not in sessionStorage
-          const response = await axios.get(`${baseUrl}/getTheme`);
-          const colors = response.data;
-          // Apply colors
-          updateCSSVariables(colors);
-
-          // Store the theme in sessionStorage as a string
-          sessionStorage.setItem("theme", JSON.stringify(colors));
-        }
-      } catch (err) {
-        const styleTag = document.getElementById('theme-style');
-        
-        console.error("Error fetching theme:", err);
-      }
-    };
-
-    // Helper function to update the CSS variables in the style tag
-    const updateCSSVariables = (colors) => {
-      const styleTag = document.getElementById('theme-style');
-      const rootStyles = getComputedStyle(document.documentElement);
-  const currentPrimary = rootStyles.getPropertyValue('--primary').trim();
-  const currentLightPrimary = rootStyles.getPropertyValue('--lightprimary').trim();
-
-  // Check if new colors are different from the current ones
-  if (currentPrimary !== colors.primaryColor || currentLightPrimary !== colors.lightPrimaryColor) {
-    styleTag.innerHTML = `
-      :root {
-        --primary: ${colors.primaryColor};
-        --lightprimary: ${colors.lightPrimaryColor};
-      }
-    `;
-  }
-    };
-
-    // Call fetchTheme as soon as the page loads
-    fetchTheme();
-  });
+  // Define baseUrl globally for theme-loader.js
+  const baseUrl = 'http://localhost:8080';
 </script>
+<script src="%PUBLIC_URL%/theme-loader.js"></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
