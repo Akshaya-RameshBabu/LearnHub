@@ -10,9 +10,13 @@ const Sidebar = ({ filter, handleFilterChange }) => {
   const [ActiveLink, setActiveLink] = useState();
   const userRole = sessionStorage.getItem("role");
   const token = sessionStorage.getItem("token");
+
   const navigate = useNavigate();
   const { displayname, Activeprofile } = useContext(GlobalStateContext);
-const [joinUrl,setjoinUrl]=useState();
+  const [joinUrl, setjoinUrl] = useState();
+  const profile = sessionStorage.getItem("Activeprofile")
+  const result = profile === "SAS" ? true : false;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -38,7 +42,7 @@ const [joinUrl,setjoinUrl]=useState();
         console.error("Error fetching data:", error);
       }
     };
-    const fetchVirtualMeet =async ()=>{
+    const fetchVirtualMeet = async () => {
       try {
         if (userRole !== "SYSADMIN" && token) {
           const response = await axios.get(`${baseUrl}/api/zoom/getVirtualMeet`, {
@@ -46,14 +50,14 @@ const [joinUrl,setjoinUrl]=useState();
               Authorization: token,
             },
           });
-          if(response.status===200){
-          if (
-            typeof response.data === "string" &&
-            response.data.startsWith("http")
-          ) {
-            setjoinUrl(response.data)
+          if (response.status === 200) {
+            if (
+              typeof response.data === "string" &&
+              response.data.startsWith("http")
+            ) {
+              setjoinUrl(response.data)
+            }
           }
-        }
         }
       } catch (error) {
         console.error("Error fetching virual class:", error);
@@ -83,8 +87,8 @@ const [joinUrl,setjoinUrl]=useState();
     });
   }
 
-  
-  const handleClick = (e,link) => {
+
+  const handleClick = (e, link) => {
     e.preventDefault();
     if (userRole === "ADMIN" || userRole === "TRAINER") {
       if (
@@ -120,8 +124,8 @@ const [joinUrl,setjoinUrl]=useState();
 
   return (
     <nav className="pcoded-navbar menu-light  "
-   //  style={{position:"fixed"}}
-     >
+    //  style={{position:"fixed"}}
+    >
       <div className="navbar-wrapper">
         <div className="navbar-content scroll-div ">
           {/* Admin Sidebar */}
@@ -150,7 +154,7 @@ const [joinUrl,setjoinUrl]=useState();
                     <span className="pcoded-mtext">Courses</span>
                   </a>
                   <ul className="pcoded-submenu">
-                  
+
 
                     <li>
                       <a
@@ -264,7 +268,7 @@ const [joinUrl,setjoinUrl]=useState();
                     <span className="pcoded-mtext">Batch</span>
                   </a>
                   <ul className="pcoded-submenu">
-                  
+
 
                     <li>
                       <a
@@ -290,7 +294,7 @@ const [joinUrl,setjoinUrl]=useState();
                         View batch
                       </a>
                     </li>
-                
+
                   </ul>
                 </li>
                 <li className="nav-item pcoded-hasmenu">
@@ -461,7 +465,7 @@ const [joinUrl,setjoinUrl]=useState();
                     </li>
                   </ul>
                 </li>
-              
+
 
                 <li className="nav-item pcoded-hasmenu">
                   <a href="#!" className="nav-link ">
@@ -504,17 +508,17 @@ const [joinUrl,setjoinUrl]=useState();
                   </ul>
                 </li>
                 {joinUrl && <li className="nav-item no-hasmenu">
-                <a
-                  href="#"
-                  onClick={(e) =>{window.open(joinUrl, "_blank");}}
-                  className="nav-link "
-                >
-                  <span className="pcoded-micon">
-                  <i className="fa-solid fa-display text-primary mr-2"></i>
-                  </span>
-                  <span className="pcoded-mtext">Virual ClassRoom</span>
-                </a>
-              </li>}
+                  <a
+                    href="#"
+                    onClick={(e) => { window.open(joinUrl, "_blank"); }}
+                    className="nav-link "
+                  >
+                    <span className="pcoded-micon">
+                      <i className="fa-solid fa-display text-primary mr-2"></i>
+                    </span>
+                    <span className="pcoded-mtext">Virual ClassRoom</span>
+                  </a>
+                </li>}
                 <li className="nav-item pcoded-hasmenu">
                   <a href="#!" className="nav-link ">
                     <span className="pcoded-micon">
@@ -589,18 +593,18 @@ const [joinUrl,setjoinUrl]=useState();
           {userRole === "SYSADMIN" && (
             <ul className="nav pcoded-inner-navbar ">
               <li className="nav-item no-hasmenu pt-2">
-                  <a
-                    href="#"
-                    onClick={(e) => handleClick(e, "/admin/dashboard")}
-                    className="nav-link has-ripple"
-                  >
-                    <span className="pcoded-micon">
-                      <i className="feather icon-home"></i>
-                    </span>
-                    <span className="pcoded-mtext">Dashboard</span>
-                  </a>
-                </li>
-                
+                <a
+                  href="#"
+                  onClick={(e) => handleClick(e, "/admin/dashboard")}
+                  className="nav-link has-ripple"
+                >
+                  <span className="pcoded-micon">
+                    <i className="feather icon-home"></i>
+                  </span>
+                  <span className="pcoded-mtext">Dashboard</span>
+                </a>
+              </li>
+
               <li className="nav-item no-hasmenu pt-2">
                 <a
                   href="#"
@@ -696,19 +700,21 @@ const [joinUrl,setjoinUrl]=useState();
                 </a>
               </li>
 
-              <li className="nav-item no-hasmenu">
-                <a
-                  href="#"
-                  data-path="/getlicence "
-                  onClick={(e) => handleClick(e, "/getlicence")}
-                  className="nav-link "
-                >
-                  <span className="pcoded-micon">
-                    <i className="feather icon-file-plus"></i>
-                  </span>
-                  <span className="pcoded-mtext">Licence Creation</span>
-                </a>
-              </li>
+              {result && (
+                <li className="nav-item no-hasmenu">
+                  <a
+                    href="#"
+                    data-path="/getlicence"
+                    onClick={(e) => handleClick(e, "/getlicence")}
+                    className="nav-link"
+                  >
+                    <span className="pcoded-micon">
+                      <i className="feather icon-file-plus"></i>
+                    </span>
+                    <span className="pcoded-mtext">Licence Creation</span>
+                  </a>
+                </li>
+              )}
             </ul>
           )}
           {/* Sysadmin Sidebar */}
@@ -761,42 +767,42 @@ const [joinUrl,setjoinUrl]=useState();
                 </ul>
               </li>
               <li className="nav-item pcoded-hasmenu">
-                  <a href="#!" className="nav-link">
-                    <span className="pcoded-micon">
-                      <i className="fa-solid fa-object-group"></i>
-                    </span>
-                    <span className="pcoded-mtext">Batch</span>
-                  </a>
-                  <ul className="pcoded-submenu">
-                  
+                <a href="#!" className="nav-link">
+                  <span className="pcoded-micon">
+                    <i className="fa-solid fa-object-group"></i>
+                  </span>
+                  <span className="pcoded-mtext">Batch</span>
+                </a>
+                <ul className="pcoded-submenu">
 
-                    <li>
-                      <a
-                        href="#"
-                        data-path="/batch/addNew"
-                        onClick={(e) => {
-                          handleClick(e, "/batch/addNew");
-                        }}
-                      >
-                        <i className="fa-solid fa-square-plus pr-2"></i>
-                        Create batch
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="#"
-                        data-path="/batch/viewall"
-                        onClick={(e) => {
-                          handleClick(e, "/batch/viewall");
-                        }}
-                      >
-                        <i className="fa-regular fa-eye pr-2"></i>
-                        View batch
-                      </a>
-                    </li>
-                
-                  </ul>
-                </li>
+
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/batch/addNew"
+                      onClick={(e) => {
+                        handleClick(e, "/batch/addNew");
+                      }}
+                    >
+                      <i className="fa-solid fa-square-plus pr-2"></i>
+                      Create batch
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/batch/viewall"
+                      onClick={(e) => {
+                        handleClick(e, "/batch/viewall");
+                      }}
+                    >
+                      <i className="fa-regular fa-eye pr-2"></i>
+                      View batch
+                    </a>
+                  </li>
+
+                </ul>
+              </li>
               <li className="nav-item no-hasmenu">
                 <a
                   href="#"
@@ -884,11 +890,11 @@ const [joinUrl,setjoinUrl]=useState();
               {joinUrl && <li className="nav-item no-hasmenu">
                 <a
                   href="#"
-                  onClick={(e) =>{window.open(joinUrl, "_blank");}}
+                  onClick={(e) => { window.open(joinUrl, "_blank"); }}
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                  <i className="fa-solid fa-display text-primary mr-2"></i>
+                    <i className="fa-solid fa-display text-primary mr-2"></i>
                   </span>
                   <span className="pcoded-mtext">Virual ClassRoom</span>
                 </a>
@@ -944,7 +950,7 @@ const [joinUrl,setjoinUrl]=useState();
                   </li>
                 </ul>
               </li>
-             
+
               <li className="nav-item no-hasmenu ">
                 <a
                   href="#"
@@ -959,8 +965,8 @@ const [joinUrl,setjoinUrl]=useState();
                 </a>
               </li>
 
-             
-          
+
+
               <li className="nav-item no-hasmenu">
                 <a
                   href="#"
@@ -982,7 +988,7 @@ const [joinUrl,setjoinUrl]=useState();
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                  <i className="fas fa-file-alt"></i> 
+                    <i className="fas fa-file-alt"></i>
                   </span>
                   <span className="pcoded-mtext"> Assignments </span>
                 </a>
@@ -995,11 +1001,11 @@ const [joinUrl,setjoinUrl]=useState();
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                  <i className="fa-solid fa-vial-circle-check"></i></span>
+                    <i className="fa-solid fa-vial-circle-check"></i></span>
                   <span className="pcoded-mtext"> Test </span>
                 </a>
               </li>
-            
+
               <li className="nav-item no-hasmenu">
                 <a
                   href="#"
@@ -1022,7 +1028,7 @@ const [joinUrl,setjoinUrl]=useState();
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                  <i className="fa-solid fa-calendar-plus"></i>
+                    <i className="fa-solid fa-calendar-plus"></i>
                   </span>
                   <span className="pcoded-mtext">Program Calender</span>
                 </a>
@@ -1055,55 +1061,55 @@ const [joinUrl,setjoinUrl]=useState();
               </li>
 
               <li className="nav-item pcoded-hasmenu">
-                  <a href="#!" className="nav-link ">
-                    <span className="pcoded-micon">
+                <a href="#!" className="nav-link ">
+                  <span className="pcoded-micon">
                     <i className="fa-solid fa-credit-card"></i>
-                    </span>
-                    <span className="pcoded-mtext">payments</span>
-                  </a>
-                  <ul className="pcoded-submenu">
-                    <li>
-                      <a
-                        href="#"
-                        data-path="/myPayments"
-                        onClick={(e) => {
-                          handleClick(e, "/myPayments");
-                        }}
-                        className="nav-link "
-                      >
-                       <span className="pcoded-micon">
-                       <i className="fa-solid fa-clock-rotate-left"></i>
                   </span>
-                  <span className="pcoded-mtext">History</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="#"
-                        data-path="/pendingInstallments"
-                        onClick={(e) => {
-                          handleClick(e, "/pendingInstallments");
-                        }}
-                        className="nav-link "
-                      >
-                       <span className="pcoded-micon">
-                       <i className="fa-solid fa-list"></i> </span>
-                  <span className="pcoded-mtext">Pendings</span>
-                      </a>
-                    </li>
-                  
-                  </ul>
-                </li>
-           
-           
-             {joinUrl && <li className="nav-item no-hasmenu">
+                  <span className="pcoded-mtext">payments</span>
+                </a>
+                <ul className="pcoded-submenu">
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/myPayments"
+                      onClick={(e) => {
+                        handleClick(e, "/myPayments");
+                      }}
+                      className="nav-link "
+                    >
+                      <span className="pcoded-micon">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
+                      </span>
+                      <span className="pcoded-mtext">History</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/pendingInstallments"
+                      onClick={(e) => {
+                        handleClick(e, "/pendingInstallments");
+                      }}
+                      className="nav-link "
+                    >
+                      <span className="pcoded-micon">
+                        <i className="fa-solid fa-list"></i> </span>
+                      <span className="pcoded-mtext">Pendings</span>
+                    </a>
+                  </li>
+
+                </ul>
+              </li>
+
+
+              {joinUrl && <li className="nav-item no-hasmenu">
                 <a
                   href="#"
-                  onClick={(e) =>{window.open(joinUrl, "_blank");}}
+                  onClick={(e) => { window.open(joinUrl, "_blank"); }}
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                  <i className="fa-solid fa-display text-primary mr-2"></i>
+                    <i className="fa-solid fa-display text-primary mr-2"></i>
                   </span>
                   <span className="pcoded-mtext">Virual ClassRoom</span>
                 </a>

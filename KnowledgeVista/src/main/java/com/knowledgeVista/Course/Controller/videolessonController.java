@@ -222,13 +222,13 @@ public class videolessonController {
 	}
 
 	public ResponseEntity<?> EditLessons(Long lessonId, MultipartFile file, String Lessontitle,
-			String LessonDescription, MultipartFile videoFile, String fileUrl, List<MultipartFile> newDocumentFiles,
-			List<Long> removedDetails, String token) {
-		try {
-			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getEmailFromToken(token);
-			String username = "";
-			String institution = "";
+	        String LessonDescription, MultipartFile videoFile, String fileUrl,
+	        List<MultipartFile> newDocumentFiles, List<Long> removedDetails, String token) {
+try{
+	    String role = jwtUtil.getRoleFromToken(token);
+	    String email = jwtUtil.getEmailFromToken(token);
+	    String username = "";
+	    String institution = "";
 
 			Optional<Muser> opuser = muserRepository.findByEmail(email);
 			if (opuser.isPresent()) {
@@ -379,29 +379,26 @@ public class videolessonController {
 							notiservice.CommoncreateNotificationUser(notifyId, notiUserList, institution);
 						}
 
-						return ResponseEntity.ok("{\"message\": \"Lessons edited successfully\"}");
-					} else {
-						return ResponseEntity.notFound().build();
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					logger.error("", e);
-					;
-					return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
+	                return ResponseEntity.ok("{\"message\": \"Lessons edited successfully\"}");
+	            } else {
+	                return ResponseEntity.notFound().build();
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();    logger.error("", e);;
+	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+	        }
+	    } else {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+	    }
+}catch(Exception e){
+	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+}
 	}
-
-	public ResponseEntity<?> getDocFile(String fileName, int slideNumber, String token) {
-		try {
-			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getEmailFromToken(token);
-			Optional<Muser> opuser = muserRepo.findByEmail(email);
+public ResponseEntity<?>getDocFile(String fileName, int slideNumber,String token){
+	try {
+		String role = jwtUtil.getRoleFromToken(token);
+		String email = jwtUtil.getEmailFromToken(token);
+		Optional<Muser> opuser = muserRepo.findByEmail(email);
 
 			if (!opuser.isPresent()) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -717,110 +714,105 @@ public class videolessonController {
 
 	}
 
-	public ResponseEntity<?> getDocsName(Long lessonId, String token) {
-		try {
-			String role = jwtUtil.getRoleFromToken(token);
-			if ("ADMIN".equals(role)) {
-				return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
-			}
-			String email = jwtUtil.getEmailFromToken(token);
-			Optional<Muser> opuser = muserRepository.findByEmail(email);
-			if (opuser.isPresent()) {
-				Muser user = opuser.get();
-				if (user.getRole().getRoleName().equals("USER")) {
-					Optional<CourseDetail> opcourse = lessonrepo.FindbyCourseByLessonId(lessonId);
-					if (opcourse.isPresent()) {
-						CourseDetail course = opcourse.get();
 
-						if (course.getAmount() == 0 || user.getCourses().contains(course)) {
-							return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
-						} else {
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body("user Not allowed to Access this course");
-						}
-					} else {
-						return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
-					}
-				} else if (user.getRole().getRoleName().equals("TRAINER")) {
-					Optional<CourseDetail> opcourse = lessonrepo.FindbyCourseByLessonId(lessonId);
-					if (opcourse.isPresent()) {
-						CourseDetail course = opcourse.get();
 
-						if (course.getAmount() == 0 || user.getAllotedCourses().contains(course)) {
-							return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
-						} else {
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body("user Not allowed to Access this course");
-						}
-					} else {
-						return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
-					}
-				} else {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot Find the User Role");
+public ResponseEntity<?>getDocsName(Long lessonId , String token){
+	try {
+        String role=jwtUtil.getRoleFromToken(token);
+        if("ADMIN".equals(role)) {
+        	return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
+        }
+		String email = jwtUtil.getEmailFromToken(token);
+		Optional<Muser> opuser = muserRepository.findByEmail(email);
+		if (opuser.isPresent()) {
+			Muser user = opuser.get();
+			if(user.getRole().getRoleName().equals("USER")) {
+			Optional<CourseDetail> opcourse= lessonrepo.FindbyCourseByLessonId(lessonId);
+			if(opcourse.isPresent()) {
+				CourseDetail course=opcourse.get();
+				
+				if(course.getAmount()==0 ||user.getCourses().contains(course)) {
+					return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
+				}else {
+					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not allowed to Access this course");
 				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not Found");
+			}else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("", e);
-			;
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			}else if(user.getRole().getRoleName().equals("TRAINER")) {
+				Optional<CourseDetail> opcourse= lessonrepo.FindbyCourseByLessonId(lessonId);
+				if(opcourse.isPresent()) {
+					CourseDetail course=opcourse.get();
+					
+					if(course.getAmount()==0 ||user.getAllotedCourses().contains(course)) {
+						return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
+					}else {
+						return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not allowed to Access this course");
+					}
+				}else {
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
+				}
+			}else {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot Find the User Role");
+			}
+		}else {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not Found");
 		}
+	}catch (Exception e) {
+		e.printStackTrace();    logger.error("", e);;
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
+}
+
 
 //==================get Miniatures=========================
-	public ResponseEntity<?> getMiniatureDetails(Long lessonId, Long Id, String token) {
-		try {
-			String role = jwtUtil.getRoleFromToken(token);
-			if ("ADMIN".equals(role)) {
-				return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
-			}
-			String email = jwtUtil.getEmailFromToken(token);
-			Optional<Muser> opuser = muserRepository.findByEmail(email);
-			if (opuser.isPresent()) {
-				Muser user = opuser.get();
-				if (user.getRole().getRoleName().equals("USER")) {
-					Optional<CourseDetail> opcourse = docsDetailsRepository.FindCourseBylessonId(lessonId);
-					if (opcourse.isPresent()) {
-						CourseDetail course = opcourse.get();
-
-						if (course.getAmount() == 0 || user.getCourses().contains(course)) {
-							return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
-						} else {
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body("user Not allowed to Access this course");
-						}
-					} else {
-						return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
-					}
-				} else if (user.getRole().getRoleName().equals("TRAINER")) {
-					Optional<CourseDetail> opcourse = docsDetailsRepository.FindCourseBylessonId(lessonId);
-					if (opcourse.isPresent()) {
-						CourseDetail course = opcourse.get();
-
-						if (course.getAmount() == 0 || user.getAllotedCourses().contains(course)) {
-							return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
-						} else {
-							return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-									.body("user Not allowed to Access this course");
-						}
-					} else {
-						return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
-					}
-				} else {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot Find the User Role");
+public ResponseEntity<?>getMiniatureDetails(Long lessonId,Long Id , String token){
+	try {
+        String role=jwtUtil.getRoleFromToken(token);
+        if("ADMIN".equals(role)) {
+        	return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
+        }
+		String email = jwtUtil.getEmailFromToken(token);
+		Optional<Muser> opuser = muserRepository.findByEmail(email);
+		if (opuser.isPresent()) {
+			Muser user = opuser.get();
+			if(user.getRole().getRoleName().equals("USER")) {
+			Optional<CourseDetail> opcourse= docsDetailsRepository.FindCourseBylessonId(lessonId);
+			if(opcourse.isPresent()) {
+				CourseDetail course=opcourse.get();
+				
+				if(course.getAmount()==0 ||user.getCourses().contains(course)) {
+					return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
+				}else {
+					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not allowed to Access this course");
 				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not Found");
+			}else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("", e);
-			;
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			}else if(user.getRole().getRoleName().equals("TRAINER")) {
+				Optional<CourseDetail> opcourse= docsDetailsRepository.FindCourseBylessonId(lessonId);
+				if(opcourse.isPresent()) {
+					CourseDetail course=opcourse.get();
+					
+					if(course.getAmount()==0 ||user.getAllotedCourses().contains(course)) {
+						return ResponseEntity.ok(docsDetailsRepository.findMiniatureById(Id));
+					}else {
+						return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not allowed to Access this course");
+					}
+				}else {
+					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Not Found");
+				}
+			}else {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot Find the User Role");
+			}
+		}else {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("user Not Found");
 		}
+	}catch (Exception e) {
+		e.printStackTrace();    logger.error("", e);;
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
+}
 //======================================================
 
 	public ResponseEntity<?> deleteLessonsByLessonId(Long lessonId, String Lessontitle, String token) {
