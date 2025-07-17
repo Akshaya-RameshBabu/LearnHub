@@ -5,7 +5,7 @@ import Sidebar from './Sidebar';
 import ErrorBoundary from "../ErrorBoundary.js";
 import Chatpanel from '../Chatbot/Chatpanel';
 
-const Layout = ({ searchQuery, handleSearchChange, setSearchQuery,filter,handleFilterChange }) => {
+const Layout = ({aiAvailable, searchQuery, handleSearchChange, setSearchQuery,filter,handleFilterChange }) => {
   const location = useLocation();
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -53,7 +53,7 @@ const Layout = ({ searchQuery, handleSearchChange, setSearchQuery,filter,handleF
     </div>
     </div>
     {/* Floating AI Button */}
-    <button
+    {aiAvailable && (<div>  <button
       style={aiBtnStyle}
       onClick={() => setIsChatOpen(true)}
       title="Ask AI"
@@ -65,7 +65,7 @@ const Layout = ({ searchQuery, handleSearchChange, setSearchQuery,filter,handleF
     {/* Chatpanel */}
     {isChatOpen && (
       <Chatpanel onClose={() => setIsChatOpen(false)} />
-    )}
+    )}</div>)}
   </div>
   );
 };

@@ -150,7 +150,13 @@ function App() {
     },
   ]);
   const [filter, setFilter] = useState({ paid: true, unpaid: true }); // Filter state
+  const [aiAvailable, setAiAvailable] = useState(false);
 
+  useEffect(() => {
+    axios.get(`${baseUrl}/ai/available`)
+      .then(res => setAiAvailable(res.data.available))
+      .catch(() => setAiAvailable(false));
+  }, []);
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
@@ -221,6 +227,7 @@ function App() {
           <Route
             element={
               <Layout
+              aiAvailable={aiAvailable}
                 searchQuery={searchQuery}
                 handleSearchChange={handleSearchChange}
                 setSearchQuery={setSearchQuery}
@@ -492,33 +499,16 @@ function App() {
                 </ErrorBoundary>
               }
             />
-            {/* <Route
-              path="/course/AddTest/:courseName/:courseId"
-              element={
-                <ErrorBoundary>
-                  <PrivateRoute
-                    authenticationRequired={true}
-                    authorizationRequired={true}
-                  >
-                    <CreateTest />
-                  </PrivateRoute>
-                </ErrorBoundary>
-              }
-            /> */}
             <Route
-              path="/course/AddTest/:courseName/:courseId"
-              element={
-                <ErrorBoundary>
-                  <PrivateRoute
-                    authenticationRequired={true}
-                    authorizationRequired={true}
-                  >
-                    <GenerateQuestions />
-                  </PrivateRoute>
-                </ErrorBoundary>
-              }
-            />
-            
+  path="/course/AddTest/:courseName/:courseId"
+  element={
+    <ErrorBoundary>
+      <PrivateRoute authenticationRequired={true} authorizationRequired={true}>
+        {aiAvailable ? <GenerateQuestions /> : <CreateTest />}
+      </PrivateRoute>
+    </ErrorBoundary>
+  }
+/>
             <Route
               path="/test/start/:courseName/:courseId"
               element={
@@ -1176,7 +1166,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <PrivateRoute authorizationRequired={true} onlyadmin={true}>
-                    <SettingsComponent />
+                    <SettingsComponent aiAvailable={aiAvailable} />
                   </PrivateRoute>
                 </ErrorBoundary>
               }

@@ -1,31 +1,32 @@
 package com.knowledgeVista.Settings.Controller;
 
 import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.knowledgeVista.Course.Repository.CourseDetailRepository;
-import com.knowledgeVista.Settings.OpenRouterKeys;
 import com.knowledgeVista.Settings.ViewSettings;
-import com.knowledgeVista.Settings.OpenRouterKeys.KeyType;
-import com.knowledgeVista.Settings.Repo.OpenRouterKeyRepo;
 import com.knowledgeVista.Settings.Repo.ViewSettingsRepo;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
-import com.knowledgeVista.config.EncryptionUtil;
 
 @RestController
 @CrossOrigin
 public class SettingsController {
 	@Autowired
 	private ViewSettingsRepo settingsrepo;
-	@Autowired
-	private OpenRouterKeyRepo openrouterKEyRepo;
+
 	private static final Logger logger = LoggerFactory.getLogger(SettingsController.class);
 
+	@Value("${openrouter.api.key}")
+	private String openRouterApiKey;
+
+	@Value("${ai.plugin.jar.path:plugins/qwen-integration.jar}")
+	private String pluginPath;
 	@Autowired
 	private JwtUtil jwtUtil;
 	@Autowired
@@ -163,69 +164,6 @@ public class SettingsController {
 			}
 		} catch (Exception e) {
 			return 10L;
-		}
-	}
-
-	public ResponseEntity<?> saveOpenRouterKeys(String token, String openRouterKey) {
-		try {
-			String email = jwtUtil.getEmailFromToken(token);
-			String role = jwtUtil.getRoleFromToken(token);
-				Optional<OpenRouterKeys> keys = openrouterKEyRepo.FindByEmail(email);
-				String encryptedKey;
-				OpenRouterKeys saving = new OpenRouterKeys();
-				if ("SYSADMIN".equals(role)) {
-					saving.setType(KeyType.DEFAULT);
-				}else{
-					saving.setType(KeyType.PERSONAL);
-				}
-				
-				try {
-					encryptedKey = EncryptionUtil.encrypt(openRouterKey);
-				} catch (Exception e) {
-					e.printStackTrace();
-					return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Encryption failed");
-				}
-				if (keys.isPresent()) {
-                        saving=keys.get();
-						saving.setOpenRouterKey(encryptedKey);
-						openrouterKEyRepo.save(saving);
-						return ResponseEntity.ok("Updated");
-					}
-				else{
-				saving.setOpenRouterKey(encryptedKey);
-				saving.setEmail(email);
-				openrouterKEyRepo.save(saving);
-				return ResponseEntity.ok("Saved");
-				}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
-		}
-	}
-
-	public ResponseEntity<?> getOpenRouterKeys(String token) {
-		try {
-			String email = jwtUtil.getEmailFromToken(token);
-				String encryptedKey = openrouterKEyRepo.FindKeyByEmail(email);
-				if (encryptedKey != null) {
-					String decryptedKey;
-					try {
-						decryptedKey = EncryptionUtil.decrypt(encryptedKey);
-					} catch (Exception e) {
-						e.printStackTrace();
-						return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Decryption failed");
-					}
-					java.util.Map<String, String> result = new java.util.HashMap<>();
-					result.put("openRouterKey", decryptedKey);
-					return ResponseEntity.ok(result);
-				} else {
-					return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-				}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
 		}
 	}
 

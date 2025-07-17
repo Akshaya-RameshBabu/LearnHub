@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
-import com.knowledgeVista.AiIntegration.AiService;
+import com.knowledgeVista.AiIntegration.GwenAiService;
 import com.knowledgeVista.Attendance.AttendanceService;
 import com.knowledgeVista.Batch.BatchInstallmentdetails;
 import com.knowledgeVista.Batch.SearchDto;
@@ -95,7 +96,7 @@ import com.knowledgeVista.User.SecurityConfiguration.CheckAccessAnnotation;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 import com.knowledgeVista.User.Usersettings.RoleDisplayController;
 import com.knowledgeVista.User.Usersettings.Role_display_name;
-import org.springframework.http.MediaType;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 
@@ -108,6 +109,8 @@ public class FrontController {
 	private String environment;
 	@Value("${currency}")
 	private String currency;
+	@Value("${openrouter.api.key}")
+	private String airouterkey;
 	@Autowired
 	private CourseController courseController;
 
@@ -231,10 +234,17 @@ public class FrontController {
 	private AssignmentService2 assignmentService2;
 	@Autowired
 	private GenerateModuleTest generateModule;
-	@Autowired
-	private AiService aiservice;
+
+	@Value("${openrouter.api.key}")
+	private String openRouterApiKey;
+
+	@Value("${ai.plugin.jar.path:plugins/qwen-integration.jar}")
+	private String pluginPath;
 	@Autowired
 	private JwtUtil jwtutil;
+
+	@Autowired
+	private GwenAiService gwenservice;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -362,11 +372,13 @@ public class FrontController {
 	public ResponseEntity<?> getAllStudentCourseDetails(@RequestHeader("Authorization") String token) {
 		return coursesec.getAllStudentCourseDetails(token);
 	}
+
 	@GetMapping("/get/lessonIdBycourseID/{courseId}")
-   @CheckAccessAnnotation
-   public ResponseEntity<?> getLessonIdBycourseID(@PathVariable Long courseId, @RequestHeader("Authorization") String token) {
-	return coursesec.getLessonIdBycourseID(courseId, token);
-   }
+	@CheckAccessAnnotation
+	public ResponseEntity<?> getLessonIdBycourseID(@PathVariable Long courseId,
+			@RequestHeader("Authorization") String token) {
+		return coursesec.getLessonIdBycourseID(courseId, token);
+	}
 
 //----------------------------videolessonController-------------------------------
 	@GetMapping("/getDocs/{lessonId}")
@@ -1473,16 +1485,6 @@ public class FrontController {
 			return null;
 		}
 	}
-	@PostMapping("/openRouter/savekeys")
-@CheckAccessAnnotation
-public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestParam String keys ,@RequestHeader("Authorization") String token){
-	return settingcontroller.saveOpenRouterKeys(token,keys);
-}
-@GetMapping("/openRouter/getkeys")
-@CheckAccessAnnotation
-public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization") String token){
-	return settingcontroller.getOpenRouterKeys(token);
-}
 
 	// ========================================GoogleLogin=================================
 
@@ -2247,7 +2249,7 @@ public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization
 			@PathVariable Long assignmentId, @RequestHeader("Authorization") String token) {
 		return assignmentService2.AddMoreQuestionForQuizzInAssignment(assignmentId, question, token);
 	}
-   
+
 	// --------------------------OTP Verification----------------------
 	@PostMapping("/auth/send-otp")
 	public ResponseEntity<?> sendOTP(@RequestParam String email) {
@@ -2259,39 +2261,59 @@ public ResponseEntity<?>SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization
 		return muserreg.verifyOTP(email, otp);
 	}
 
-	
 	@GetMapping(value = "/generate/stream/{lessonId}/{count}", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseBodyEmitter streamQuestions(@PathVariable Long lessonId,@PathVariable Long count,@RequestHeader("Authorization") String token) {
-        ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
-        emitter.onTimeout(() -> {
-            emitter.complete();
-        });
-        emitter.onCompletion(() -> {
-            // Optionally log or clean up
-        });
-        emitter.onError((throwable) -> {
-            // Optionally log or clean up
-        });
-        generateModule.streamQuestionsFromLessonQwen(lessonId,count, emitter,token);
-        return emitter;
-    }
+	public ResponseBodyEmitter streamQuestions(@PathVariable Long lessonId, @PathVariable Long count,
+			@RequestHeader("Authorization") String token) {
+		ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
+		emitter.onTimeout(() -> {
+			emitter.complete();
+		});
+		emitter.onCompletion(() -> {
+			// Optionally log or clean up
+		});
+		emitter.onError((throwable) -> {
+			// Optionally log or clean up
+		});
+		generateModule.streamQuestionsFromLessonQwen(lessonId, count, emitter, token);
+		return emitter;
+	}
 
 	@GetMapping(value = "/user/chat", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseBodyEmitter chatwithQwen(@RequestHeader("Authorization") String token,@RequestParam String prompt ) {
-        ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
-        emitter.onTimeout(() -> {
-            emitter.complete();
-        });
-        emitter.onCompletion(() -> {
-            // Optionally log or clean up
-        });
-        emitter.onError((throwable) -> {
-            // Optionally log or clean up
-        });
-		String email=jwtutil.getEmailFromToken(token);
-        aiservice.callQwenAIAndStreamResponse(prompt, email, emitter);
-        return emitter;
+	public ResponseBodyEmitter chatwithQwen(@RequestHeader("Authorization") String token, @RequestParam String prompt) {
+		ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
+
+		String email = jwtutil.getEmailFromToken(token);
+
+		try {
+			gwenservice.callaiPlugin(email, emitter, prompt);
+		} catch (Exception e) {
+			e.printStackTrace();
+			try {
+				emitter.send("An error occurred while calling the AI plugin.");
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			emitter.completeWithError(e);
+		}
+
+		return emitter;
+	}
+
+	@PostMapping("/openRouter/savekeys")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> SaveOrUpdateOpenRouterKeys(@RequestParam String keys,
+			@RequestHeader("Authorization") String token) {
+		return gwenservice.saveOpenRouterKeys(token, keys);
+	}
+
+	@GetMapping("/openRouter/getkeys")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization") String token) {
+		return gwenservice.getOpenRouterKeys(token);
+	}
+	@GetMapping("/ai/available")
+    public ResponseEntity<?> isAiAvailable() {
+        boolean available = gwenservice.isAiPluginAvailable();
+        return ResponseEntity.ok(Map.of("available", available));
     }
-
 }
-

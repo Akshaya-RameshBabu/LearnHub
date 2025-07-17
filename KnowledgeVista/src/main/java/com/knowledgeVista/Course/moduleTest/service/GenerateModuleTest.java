@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
@@ -17,7 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
-import com.knowledgeVista.AiIntegration.AiService;
+
+import com.knowledgeVista.AiIntegration.GwenAiService;
 import com.knowledgeVista.Course.DocsDetails;
 import com.knowledgeVista.Course.videoLessons;
 import com.knowledgeVista.Course.Repository.videoLessonRepo;
@@ -27,7 +29,8 @@ import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 @Service
 public class GenerateModuleTest {
 	private static final Logger logger = LoggerFactory.getLogger(GenerateModuleTest.class);
-
+	@Value("${ai.plugin.jar.path:plugins/qwen-integration.jar}")
+	private String pluginPath;
 	@Autowired
 	private videoLessonRepo lessonRepository;
 
@@ -39,17 +42,20 @@ public class GenerateModuleTest {
 	@Autowired
 	private JwtUtil jwtUtil;
 
-@Autowired
-private AiService aiservice;
-	
+	@Value("${openrouter.api.key}")
+	private String openRouterApiKey;
 
-	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter,String token) {
+	@Autowired
+	private GwenAiService gwenService;
+
+	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter, String token) {
 		Optional<videoLessons> lessonOpt = lessonRepository.findById(lessonId);
 		if (!lessonOpt.isPresent()) {
 			emitter.completeWithError(new Exception("Lesson not found"));
 			return;
 		}
-        String email=jwtUtil.getEmailFromToken(token);
+
+		String email = jwtUtil.getEmailFromToken(token);
 		videoLessons lesson = lessonOpt.get();
 		List<DocsDetails> docs = lesson.getDocuments();
 		if (docs.isEmpty()) {
@@ -76,52 +82,53 @@ private AiService aiservice;
 
 		String prompt = buildQuestionPrompt(contentBuilder.toString(), count);
 		logger.info(prompt);
-         aiservice.callQwenAIAndStreamResponse(prompt, email, emitter);
-		
+
+		// 🔁 Use plugin instead of aiservice
+		gwenService.callaiPlugin(email, emitter, prompt);
+
 	}
 
 	/**
-	 * Extracts only the 'content' field from a JSON line (for streaming Qwen/OpenRouter).
+	 * Extracts only the 'content' field from a JSON line (for streaming
+	 * Qwen/OpenRouter).
 	 */
 
 	/**
 	 * Build the prompt for the LLM.
 	 */
 	private String buildQuestionPrompt(String textContent, Long count) {
-		return String.format(
-			"""
-			You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
-		
-			Your task:
-			- Generate exactly %d multiple-choice type question based ONLY on the lesson content below.
-			-no need to give any explanation just give the questions with options 
-			Output must be:
-			- Plain text only.
-			- Enclosed entirely in a <question>...</question> tag.
-		    - please Dont make any mistakes in tags opening and closing always open and close the tag correctly. 
-			- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
-			- Formatted exactly like this:
-			<question>
-			<questiontext>
-			 [Question text]
-			</questiontext>
-			<opt1>Option A</opt1>
-			<opt2>Option B</opt2>
-			<opt3>Option C</opt3>
-			<opt4>Option D</opt4>
-			<answer>[answer text]</answer>
-			</question>
-		
-			Lesson Content:
-			%s
-			""",
-			count, textContent
-		);
+		return String.format("""
+				You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
+
+				Your task:
+				- Generate exactly %d multiple-choice type question based ONLY on the lesson content below.
+				-no need to give any explanation just give the questions with options
+				Output must be:
+				- Plain text only.
+				- Enclosed entirely in a <question>...</question> tag.
+				   - please Dont make any mistakes in tags opening and closing always open and close the tag correctly.
+				- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
+				- Formatted exactly like this:
+				<question>
+				<questiontext>
+				 [Question text]
+				</questiontext>
+				<opt1>Option A</opt1>
+				<opt2>Option B</opt2>
+				<opt3>Option C</opt3>
+				<opt4>Option D</opt4>
+				<answer>[answer text]</answer>
+				</question>
+
+				Lesson Content:
+				%s
+				""", count, textContent);
 	}
+
 	/**
 	 * Synchronous call for Qwen via OpenRouter API (replaces Ollama).
 	 */
-	
+
 	/**
 	 * Extracts text from PDF bytes.
 	 */
@@ -136,8 +143,7 @@ private AiService aiservice;
 	 * Extracts text from PPT/PPTX bytes.
 	 */
 	private static String extractPptText(byte[] fileData) throws IOException {
-		try (InputStream is = new ByteArrayInputStream(fileData);
-			 XMLSlideShow ppt = new XMLSlideShow(is)) {
+		try (InputStream is = new ByteArrayInputStream(fileData); XMLSlideShow ppt = new XMLSlideShow(is)) {
 			StringBuilder sb = new StringBuilder();
 			for (XSLFSlide slide : ppt.getSlides()) {
 				for (XSLFShape shape : slide.getShapes()) {

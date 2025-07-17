@@ -43,7 +43,7 @@ const OpenRouterKeys = () => {
         if(token){
             fetchOpenRouterKey();
         }
-    }, [token, navigate]);
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

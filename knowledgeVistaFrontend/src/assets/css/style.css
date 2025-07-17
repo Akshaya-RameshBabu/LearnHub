@@ -27182,123 +27182,6 @@ overflow: auto;
   40% { opacity: 1; }
 }
 
-/* Chatbot Panel */
-.chatbot-panel {
-  position: fixed;
-  top: 60px;
-  right: 30px;
-  width: 350px;
-  max-width: 90vw;
-  height: 90vh;
-  min-height: 320px;
-  background: #fff;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  border-radius: 18px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.chatbot-send-btn {
-  background: linear-gradient(45deg, #4f8cff 0%, #6f6fff 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-weight: 600;
-  font-size: 1rem;
-  height: 50px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-@media (max-width: 600px) {
-  .chatbot-panel {
-    right: 0;
-    left: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 80vh;
-    min-height: 60vh;
-    border-radius: 18px 18px 0 0;
-    max-width: 100vw;
-  }
-}
-
-@media (max-width: 900px) and (min-width: 601px) {
-  .chatbot-panel {
-    right: 10px;
-    left: auto;
-    width: 90vw;
-    height: 80vh;
-    min-height: 60vh;
-    max-width: 95vw;
-  }
-}
-
-.chatbot-header {
-  background: linear-gradient(90deg, #4f8cff 0%, #6f6fff 100%);
-  color: #fff;
-  padding: 16px;
-  font-weight: 600;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chatbot-close-btn {
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.chatbot-messages {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: #f7f9fa;
-}
-
-.chatbot-input-area {
-  display: flex;
-  border-top: 1px solid #eee;
-  padding: 12px;
-  background: #fff;
-}
-
-.chatbot-input {
-  flex: 1;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 1rem;
-  outline: none;
-  margin-right: 8px;
-}
-
-
-.ai-float-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  background: linear-gradient(90deg, #4f8cff 0%, #6f6fff 100%);
-  color: #fff;
-  border: none;
-  border-radius: 50px;
-  box-shadow: 0 4px 16px rgba(79,140,255,0.18);
-  padding: 10px 18px 10px 12px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-  gap: 10px;
-}
-
 /**======================================================================
 =========================================================================
 Template Name: Able pro Bootstrap Admin Template
@@ -54471,17 +54354,7 @@ overflow: auto;
   }
 }
 
-/* Animated thinking dots */
-.dots .dot {
-  animation: blink 1.4s infinite both;
-}
-.dots .dot:nth-child(2) { animation-delay: 0.2s; }
-.dots .dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes blink {
-  0%, 80%, 100% { opacity: 0.2; }
-  40% { opacity: 1; }
-}
 
 /* Chatbot Panel */
 .chatbot-panel {
