@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.validation.constraints.NotBlank;
 
 public class VideoLessonsMigrationDto {
 	   @Id
@@ -12,6 +13,7 @@ public class VideoLessonsMigrationDto {
 	    private Long lessonId;
 	    @Column(name="institution")
 	    private String institutionName;
+	    @NotBlank
 	    private String Lessontitle;
 	    @Column(length=1000)
 	    private String LessonDescription;

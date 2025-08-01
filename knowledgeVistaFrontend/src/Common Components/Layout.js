@@ -1,7 +1,7 @@
 import React, {  useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
-import Sidebar from './Sidebar';
+import Sidebar from './Sidebar'; 
 import ErrorBoundary from "../ErrorBoundary.js";
 import Chatpanel from '../Chatbot/Chatpanel';
 

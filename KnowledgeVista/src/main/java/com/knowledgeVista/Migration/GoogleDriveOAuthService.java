@@ -1,0 +1,265 @@
+package com.knowledgeVista.Migration;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.InputStreamContent;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.FileList;
+import com.knowledgeVista.Email.EmailService;
+import com.knowledgeVista.Migration.model.OAuthCredential;
+import com.knowledgeVista.Migration.repo.OAuthCredentialRepo;
+import com.knowledgeVista.User.Repository.MuserRepositories;
+import com.knowledgeVista.config.EncryptionUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Service
+public class GoogleDriveOAuthService {
+
+	private static final String APPLICATION_NAME = "Learnhub";
+	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+	private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE_FILE);
+	private static final Logger logger = LoggerFactory.getLogger(GoogleDriveOAuthService.class);
+	@Autowired
+	private MuserRepositories muserRepo;
+	@Autowired
+	private EmailService emailService;
+	@Autowired
+	private OAuthCredentialsService2 oAuthCredentialService2;
+	@Autowired
+	private OAuthCredentialRepo OAuthCredentialRepo;
+	@Autowired
+	private EncryptionUtil encryptionUtil;
+
+	public Credential exchangeCodeAndSaveToken(String code, String institutionName, HttpServletRequest request)
+			throws Exception {
+		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+
+		Optional<OAuthCredential> opcredential = OAuthCredentialRepo.findByInstitutionName(institutionName);
+		if (opcredential.isEmpty()) {
+			return null;
+		}
+		OAuthCredential credential = opcredential.get();
+		GoogleClientSecrets.Details details = new GoogleClientSecrets.Details();
+		details.setClientId(encryptionUtil.decrypt(credential.getClientId()));
+		details.setClientSecret(encryptionUtil.decrypt(credential.getClientSecret()));
+		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
+
+		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
+				clientSecrets, SCOPES).setAccessType("offline").build();
+		String domain = request.getScheme() + "://" + request.getServerName();
+		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
+			domain += ":" + request.getServerPort();
+		}
+		String redirectUri = domain + "/driveoauth/callback";
+		TokenResponse tokenResponse = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
+
+		Credential finalCredential = flow.createAndStoreCredential(tokenResponse, "user");
+
+		String refreshToken = tokenResponse.getRefreshToken();
+		if (refreshToken != null) {
+			credential.setRefreshToken(encryptionUtil.encrypt(refreshToken));
+			credential.setUpdatedAt(LocalDateTime.now());
+			OAuthCredentialRepo.save(credential);
+		}
+
+		return finalCredential;
+	}
+
+	public String generateAuthUrl(OAuthCredential credential, HttpServletRequest request) throws Exception {
+		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		GoogleClientSecrets.Details details = new GoogleClientSecrets.Details();
+		details.setClientId(encryptionUtil.decrypt(credential.getClientId()));
+		details.setClientSecret(encryptionUtil.decrypt(credential.getClientSecret()));
+		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
+		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
+				clientSecrets, SCOPES).setAccessType("offline").setApprovalPrompt("force").build();
+		String domain = request.getScheme() + "://" + request.getServerName();
+		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
+			domain += ":" + request.getServerPort();
+		}
+		String redirectUri = domain + "/driveoauth/callback";
+		AuthorizationCodeRequestUrl url = flow.newAuthorizationUrl().setRedirectUri(redirectUri)
+				.setState(credential.getInstitutionName());
+		return url.build();
+	}
+
+	public Credential authorizeUserAndGetRefreshToken(String institutionName) throws Exception {
+		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		OAuthCredential credentials = oAuthCredentialService2.getCredential(institutionName);
+		if (credentials == null) {
+			throw new RuntimeException(
+					"❌ No credentials found for your institution. Please go to 'Drive Backup Settings' and add your Google Cloud OAuth credentials.");
+		}
+
+		String clientId = credentials.getClientId();
+		String clientSecret = credentials.getClientSecret();
+		String RefreshToken = credentials.getRefreshToken();
+
+		GoogleClientSecrets.Details details = new GoogleClientSecrets.Details();
+		details.setClientId(clientId);
+		details.setClientSecret(clientSecret);
+		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
+
+		if (RefreshToken != null && !RefreshToken.isEmpty()) {
+
+			return new GoogleCredential.Builder().setTransport(httpTransport).setJsonFactory(JSON_FACTORY)
+					.setClientSecrets(clientId, clientSecret).build().setRefreshToken(RefreshToken);
+		} else {
+			throw new RuntimeException(
+					"❌ Refresh Token not found for your institution. Please authorize your Google Drive access in 'Drive Backup Settings'.");
+		}
+
+	}
+
+	public String uploadFileToDrive(InputStream inputStream, String fileName, String folderName, String institutionName)
+			throws IOException, GeneralSecurityException, Exception {
+		Credential credential = authorizeUserAndGetRefreshToken(institutionName);
+		Drive driveService = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		String folderId = getOrCreateFolderId(driveService, folderName);
+
+		File fileMetadata = new File();
+		fileMetadata.setName(fileName);
+		fileMetadata.setParents(Collections.singletonList(folderId));
+
+		InputStreamContent mediaContent = new InputStreamContent("application/sql", inputStream);
+		File uploadedFile = driveService.files().create(fileMetadata, mediaContent).setFields("id, name").execute();
+		return uploadedFile.getId();
+	}
+
+	private String getOrCreateFolderId(Drive driveService, String folderName) throws IOException {
+		String query = "mimeType='application/vnd.google-apps.folder' and name='" + folderName + "' and trashed=false";
+		List<File> folders = driveService.files().list().setQ(query).setFields("files(id, name)").execute().getFiles();
+
+		if (!folders.isEmpty()) {
+			return folders.get(0).getId();
+		} else {
+			File folderMetadata = new File();
+			folderMetadata.setName(folderName);
+			folderMetadata.setMimeType("application/vnd.google-apps.folder");
+
+			File createdFolder = driveService.files().create(folderMetadata).setFields("id").execute();
+			return createdFolder.getId();
+		}
+	}
+
+	/// For Sheduled Drive Backup -----------------------------------------
+
+	public Credential authorizeUserAndGetRefreshTokensheduled(String institutionName) throws Exception {
+		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		OAuthCredential credentials = oAuthCredentialService2.getCredential(institutionName);
+		if (credentials == null) {
+			notifyAdminOfBackupFailure(
+					"❌ No credentials found for your institution. Please go to 'Drive Backup Settings' and add your Google Cloud OAuth credentials.",
+					institutionName);
+			return null;
+		}
+
+		String clientId = credentials.getClientId();
+		String clientSecret = credentials.getClientSecret();
+		String RefreshToken = credentials.getRefreshToken();
+
+		GoogleClientSecrets.Details details = new GoogleClientSecrets.Details();
+		details.setClientId(clientId);
+		details.setClientSecret(clientSecret);
+		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
+
+		if (RefreshToken != null && !RefreshToken.isEmpty()) {
+
+			return new GoogleCredential.Builder().setTransport(httpTransport).setJsonFactory(JSON_FACTORY)
+					.setClientSecrets(clientId, clientSecret).build().setRefreshToken(RefreshToken);
+		} else {
+			logger.error("Errror Uploading the Sheduled Backups REASON: RefreshToken Not Found");
+			notifyAdminOfBackupFailure("Errror Uploading the Sheduled Backups REASON: RefreshToken Not Found",
+					institutionName);
+			return null;
+		}
+
+	}
+
+	public void uploadFileToDrivesheduled(InputStream inputStream, String fileName, String folderName,
+			String institutionName) throws IOException, GeneralSecurityException, Exception {
+		Credential credential = authorizeUserAndGetRefreshTokensheduled(institutionName);
+		Drive driveService = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		String folderId = getOrCreateFolderId(driveService, folderName);
+
+		File fileMetadata = new File();
+		fileMetadata.setName(fileName);
+		fileMetadata.setParents(Collections.singletonList(folderId));
+		InputStreamContent mediaContent = new InputStreamContent("application/sql", inputStream);
+		driveService.files().create(fileMetadata, mediaContent).setFields("id, name").execute();
+
+	}
+
+	public void deleteOldFilesInDriveFolder(String folderName, int maxFilesToKeep, String institutionName)
+			throws Exception {
+		Credential credential = authorizeUserAndGetRefreshTokensheduled(institutionName);
+		if (credential == null) {
+			notifyAdminOfBackupFailure(
+					"❌ No credentials found for your institution. Please go to 'Drive Backup Settings' and add your Google Cloud OAuth credentials.",
+					institutionName);
+		}
+		Drive driveService = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		String folderId = getOrCreateFolderId(driveService, folderName);
+
+		FileList fileList = driveService.files().list()
+				.setQ("'" + folderId + "' in parents and mimeType='application/sql' and trashed = false")
+				.setFields("files(id, name, createdTime)").setOrderBy("createdTime asc") // oldest first
+				.execute();
+		List<File> files = fileList.getFiles();
+		if (files.size() > maxFilesToKeep) {
+			int toDelete = files.size() - maxFilesToKeep;
+			for (int i = 0; i < toDelete; i++) {
+				driveService.files().delete(files.get(i).getId()).execute();
+			}
+		}
+	}
+
+	private void notifyAdminOfBackupFailure(String issue, String institutionName) {
+		String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+		String subject = "⚠️ Backup Credential Error - " + institutionName;
+
+		String body = "<h2 style='color:#d9534f;'>Backup Initialization Failed</h2>" + "<p><strong>Time:</strong> "
+				+ timestamp + "</p>" + "<p><strong>Institution:</strong> " + institutionName + "</p>"
+				+ "<p><strong>Issue:</strong> " + issue + "</p>"
+				+ "<p><strong>Action Needed:</strong> Please verify Google Drive credentials in the backup settings.</p>";
+
+		try {
+			List<String> adminemails = muserRepo.findAdminEmailfromInstitutionName(institutionName);
+			emailService.sendHtmlEmailAsync(institutionName, adminemails, List.of(), List.of(), subject, body);
+		} catch (Exception e) {
+			logger.error("❌ Failed to notify admin about backup failure: {}", e.getMessage());
+		}
+	}
+
+}

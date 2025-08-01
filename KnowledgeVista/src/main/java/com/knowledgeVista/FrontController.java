@@ -69,6 +69,10 @@ import com.knowledgeVista.Meeting.ZoomAccountKeys;
 import com.knowledgeVista.Meeting.ZoomMeetAccountController;
 import com.knowledgeVista.Meeting.ZoomMeetingService;
 import com.knowledgeVista.Meeting.zoomclass.MeetingRequest;
+import com.knowledgeVista.Migration.Backupcomponent;
+import com.knowledgeVista.Migration.OAuthCredentialService;
+import com.knowledgeVista.Migration.model.BackupScheduleConfig;
+import com.knowledgeVista.Migration.model.OAuthCredential;
 import com.knowledgeVista.Notification.Controller.NotificationController;
 import com.knowledgeVista.Payments.Paymentsettings;
 import com.knowledgeVista.Payments.Paypalsettings;
@@ -99,6 +103,7 @@ import com.knowledgeVista.User.Usersettings.Role_display_name;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 @RestController
 @CrossOrigin
@@ -235,6 +240,8 @@ public class FrontController {
 	@Autowired
 	private GenerateModuleTest generateModule;
 
+	@Autowired
+	private Backupcomponent backupcomp;
 	@Value("${openrouter.api.key}")
 	private String openRouterApiKey;
 
@@ -245,6 +252,9 @@ public class FrontController {
 
 	@Autowired
 	private GwenAiService gwenservice;
+
+	@Autowired
+	private OAuthCredentialService drivecredentialsservice;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -2281,10 +2291,8 @@ public class FrontController {
 	@GetMapping(value = "/user/chat", produces = MediaType.TEXT_PLAIN_VALUE)
 	public ResponseBodyEmitter chatwithQwen(@RequestHeader("Authorization") String token, @RequestParam String prompt) {
 		ResponseBodyEmitter emitter = new ResponseBodyEmitter(5 * 60 * 1000L); // 5 minutes
-
-		String email = jwtutil.getEmailFromToken(token);
-
 		try {
+			String email = jwtutil.getEmailFromToken(token);
 			gwenservice.callaiPlugin(email, emitter, prompt);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -2311,9 +2319,132 @@ public class FrontController {
 	public ResponseEntity<?> SaveOrUpdateOpenRouterKeys(@RequestHeader("Authorization") String token) {
 		return gwenservice.getOpenRouterKeys(token);
 	}
+
 	@GetMapping("/ai/available")
-    public ResponseEntity<?> isAiAvailable() {
-        boolean available = gwenservice.isAiPluginAvailable();
-        return ResponseEntity.ok(Map.of("available", available));
-    }
+	public ResponseEntity<?> isAiAvailable() {
+		boolean available = gwenservice.isAiPluginAvailable();
+		return ResponseEntity.ok(Map.of("available", available));
+	}
+
+	// --------------------------------------BackupComponent-------------------------
+	@GetMapping("/backup/download")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> downloadWholeBackup(@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return backupcomp.DownloadBackup(token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+
+	@GetMapping("/backup/SaveToDrive")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> SaveBackupInDrive(@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return backupcomp.BackupAndSaveToDrive(token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+
+	@PostMapping("/backup/shedule/SaveorUpdate")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> saveOrUpdatebackupSchedule(@RequestBody BackupScheduleConfig config,
+			@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return backupcomp.saveOrUpdatebackupSchedule(config, token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+
+	@GetMapping("/backup/shedule/get")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> getBackupShedule(@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return backupcomp.getBackupShedule(token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
+
+//------------------------------OAuthCredentials Service---------------
+	@PostMapping("/save/DriveCredentials")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> storeCredential(HttpServletRequest request, @Valid @RequestBody OAuthCredential credential,
+			@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return drivecredentialsservice.saveOrUpdateCredential(request, credential, token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@GetMapping("/get/DriveCredentials")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> storeCredential(@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return drivecredentialsservice.getDecryptedCredentialByInstitution(token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@GetMapping("/driveoauth/callback")
+	public ResponseEntity<String> oauthCallback(HttpServletRequest request, @RequestParam("code") String code,
+			@RequestParam("state") String institutionName) {
+		return drivecredentialsservice.oauthCallback(code, institutionName, request);
+	}
 }

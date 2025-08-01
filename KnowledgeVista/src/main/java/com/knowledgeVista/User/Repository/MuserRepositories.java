@@ -141,6 +141,9 @@ public interface MuserRepositories extends JpaRepository<Muser, Long> {
 
 	List<Muser> findByInstitutionNameall(String institutionName);
 
+	@Query("SELECT u.email FROM Muser u WHERE u.role.roleName = 'ADMIN' AND u.institutionName = :institutionname")
+	List<String> findAdminEmailfromInstitutionName(@Param("institutionname") String institutionName);
+
 	@Query("SELECT u FROM Muser u WHERE u.role.roleName = :rolename AND u.institutionName = :institutionname")
 	List<Muser> findByRoleNameAndInstitutionName(@Param("rolename") String roleName,
 			@Param("institutionname") String institutionName);

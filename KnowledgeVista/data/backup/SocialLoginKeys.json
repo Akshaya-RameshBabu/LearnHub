@@ -1,8 +1,0 @@
-[ {
-  "id" : 2,
-  "provider" : "GOOGLE",
-  "institutionName" : "Admin",
-  "clientid" : "63277612167-5ifumpg63qilb1eii253dfqvk13e85d4.apps.googleusercontent.com",
-  "clientSecret" : "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",
-  "redirectUrl" : "http://localhost:3000"
-} ]

@@ -5,17 +5,27 @@ import java.time.LocalDateTime;
 
 import com.knowledgeVista.User.MuserRoles;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 @Getter@Setter@NoArgsConstructor
 public class MuserMigrationDto {
+	 @NotNull
 	 private Long userId;
+	 @NotBlank
 	    private String username;
+	    @NotNull
 	    private String psw;
+	    @Email
 	    private String email;
+	    @NotNull
 	    private String phone;
 	    private Boolean isActive;
+	    @Past
 	    private LocalDate dob;
 	    private String skills;
 	    private String institutionName;

@@ -559,7 +559,42 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     </li>
                   </ul>
                 </li>
+     <li className={`nav-item pcoded-hasmenu ${Activeprofile !== "VPS" ? "d-none" : ""}`}>
+  <a href="#!" className="nav-link">
+    <span className="pcoded-micon">
+      <i className="fa-solid fa-arrows-rotate"></i>
+    </span>
+    <span className="pcoded-mtext">Manage Backups</span>
+  </a>
+  <ul className="pcoded-submenu">
+    <li>
+      <a
+        href="#"
+        data-path="/admin/driveCredentials"
+        onClick={(e) => handleClick(e, "/admin/driveCredentials")}
+        className="nav-link"
+      >
+        <span className="pcoded-micon"><i className="fa-solid fa-key"></i></span>
+        <span className="pcoded-mtext">Drive keys</span>
+      </a>
+    </li>
+    <li>
+      <a
+        href="#"
+        data-path="/admin/backup-shedule"
+        onClick={(e) => handleClick(e, "/admin/backup-shedule")}
+        className="nav-link"
+      >
+        <span className="pcoded-micon"><i className="fa-solid fa-calendar-days"></i></span>
+        <span className="pcoded-mtext">Shedule backup</span>
+      </a>
+    </li>
+  </ul>
+</li>
 
+
+              
+              
                 <li className="nav-item no-hasmenu">
                   <a
                     href="#"
@@ -584,8 +619,8 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     <span className="pcoded-mtext">About us</span>
                   </a>
                 </li>
+    </ul>
 
-              </ul>
             </>
           )}
           {/* Admin Sidebar */}

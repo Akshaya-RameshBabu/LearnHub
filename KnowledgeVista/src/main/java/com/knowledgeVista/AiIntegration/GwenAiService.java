@@ -25,13 +25,10 @@ public class GwenAiService {
 	private String openRouterApiKey;
 	@Autowired
 	private JwtUtil jwtUtil;
-	private final EncryptionUtil encryptionUtil;
+	@Autowired
+	private EncryptionUtil EncryptionUtil;
 	@Autowired
 	private OpenRouterKeyRepo openrouterKeysRepo;
-
-	GwenAiService(EncryptionUtil encryptionUtil) {
-		this.encryptionUtil = encryptionUtil;
-	}
 
 	public ResponseEntity<?> getOpenRouterKeys(String token) {
 		try {
@@ -133,7 +130,7 @@ public class GwenAiService {
 			}
 		} catch (Exception e) {
 			try {
-				emitter.send("Error while invoking AI Plugin.");
+				emitter.send("Error while invoking AI Plugin.. Try updating new key");
 			} catch (Exception ignored) {
 			}
 			emitter.completeWithError(e);

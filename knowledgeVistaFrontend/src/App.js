@@ -128,6 +128,8 @@ import LicenceFileCreation from "./AuthenticationPages/LicenceFileCreation.js";
 import GenerateQuestions from "./course/ModuleTest.js/GenerateQuestions.js";
 import OpenRouterKeys from "./UserSettings/OpenRouterKeys.js";
 import UserCommonSetting from "./UserSettings/UserCommonSetting.js";
+import BackupManager from "./backupmanager/BackupManager.js";
+import DriveBackupKeys from "./backupmanager/DriveBackupKeys.js";
 
 function App() {
   useEffect(() => {
@@ -1466,6 +1468,31 @@ function App() {
                 </ErrorBoundary>
               }
             />
+             <Route
+              path="/admin/backup-shedule"
+              element={
+                <PrivateRoute
+                  authenticationRequired={true}
+                  authorizationRequired={true}
+                   vpsonly={true} 
+                >
+                  <BackupManager />
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/admin/driveCredentials"
+              element={
+                <PrivateRoute
+                  authenticationRequired={true}
+                  authorizationRequired={true}
+                   vpsonly={true} 
+                >
+                  <DriveBackupKeys />
+                </PrivateRoute>
+              }
+            />
+            
             {/* SysAdminRoutes */}
           </Route>
           <Route
@@ -1552,6 +1579,7 @@ function App() {
               </ErrorBoundary>
             }
           />
+       
           <Route
             path="/TrainerRegistration"
             element={
