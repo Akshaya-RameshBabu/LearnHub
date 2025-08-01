@@ -6,6 +6,7 @@ import { GlobalStateProvider } from "./Context/GlobalStateProvider";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import baseUrl from '../src/api/utils';
+
 // Your error handling code below the imports
 let alertShown = false;
 const MySwal = withReactContent(Swal);
@@ -73,9 +74,19 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+
+fetch("/config.json")
+  .then((res) => res.json())
+  .then((config) => {
+    window.baseUrl = config.REACT_APP_API_URL;
+
+  const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <GlobalStateProvider>
         <App />
     </GlobalStateProvider>
 );
+  })
+  .catch((err) => {
+    console.error("❌ Failed to load config", err);
+  });

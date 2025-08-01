@@ -440,10 +440,9 @@ public class FrontController {
 	}
 
 	@GetMapping("/lessons/getvideoByid/{lessId}/{courseId}/{token}")
-	@CheckAccessAnnotation
 	public ResponseEntity<?> getVideoFile(@PathVariable Long lessId, @PathVariable Long courseId,
 			@PathVariable String token, HttpServletRequest request) {
-
+		System.out.println("getting video");
 		return videoless.getVideoFile(lessId, courseId, token, request);
 	}
 
@@ -907,7 +906,7 @@ public class FrontController {
 		return authcontrol.refreshtoken(token);
 	}
 
-	@PostMapping("/logout")
+	@PostMapping("/logoutuser")
 	@CheckAccessAnnotation
 	public ResponseEntity<String> logout(@RequestHeader("Authorization") String token) {
 		return authcontrol.logout(token);

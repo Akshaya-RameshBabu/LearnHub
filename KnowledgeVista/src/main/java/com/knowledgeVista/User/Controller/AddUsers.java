@@ -133,7 +133,7 @@ public class AddUsers {
 								+ "<p>Best Regards,<br>LearnHub Team</p>" + "</body>" + "</html>",
 								trainer.getUsername(), // Trainer Name
 								trainer.getEmail(), // Trainer Username (email)
-								trainer.getPsw() // Trainer Password
+								psw // Trainer Password
 						);
 
 						if (institutionname != null && !institutionname.isEmpty()) {

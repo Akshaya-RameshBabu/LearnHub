@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,15 @@ public class VideoFileService {
 
 	// Allowed video MIME types
 	private static final Set<String> ALLOWED_VIDEO_TYPES = new HashSet<>(Arrays.asList("video/mp4", "video/mpeg",
-			"video/webm", "video/quicktime", "video/x-msvideo", "video/x-flv"));
+			"video/webm", "video/quicktime", "video/x-msvideo", "video/x-flv", "video/x-matroska" // ✅ for MKV support
+	));
+
+	private static final Set<String> ALLOWED_VIDEO_EXTENSIONS = Set.of("mp4", "mpeg", "webm", "mov", "avi", "flv",
+			"mkv");
+	// Build regex pattern from allowed extensions
+	private static final Pattern VIDEO_EXTENSION_PATTERN = Pattern
+			.compile(".*\\.(" + String.join("|", ALLOWED_VIDEO_EXTENSIONS) + ")$", Pattern.CASE_INSENSITIVE);
+
 	private static final Set<String> ALLOWED_FILE_TYPES = new HashSet<>(
 			Arrays.asList("application/pdf", "application/vnd.ms-powerpoint",
 					"application/vnd.openxmlformats-officedocument.presentationml.presentation"));
@@ -60,7 +69,6 @@ public class VideoFileService {
 
 		// Define the file path where the video file will be stored
 		String filePath = uploadPath.resolve(uniqueFileName).toString();
-		filePath = filePath.replace("video\\", "");
 
 		// Save the file to the server
 		Files.copy(videoFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
@@ -138,15 +146,15 @@ public class VideoFileService {
 
 		// Validate file extension
 		String originalFilename = file.getOriginalFilename();
-		if (originalFilename == null || !originalFilename.matches(".*\\.(mp4|mpeg|webm|mov|avi|flv)$")) {
+		if (originalFilename == null || !VIDEO_EXTENSION_PATTERN.matcher(originalFilename).matches()) {
 			throw new SecurityException("Invalid file extension. Allowed: mp4, mpeg, webm, mov, avi, flv");
 		}
 
 		// Additional validation: Check first few bytes of the file
 		try (InputStream is = file.getInputStream()) {
-			byte[] header = new byte[8];
+			byte[] header = new byte[32]; // gives more room for deeper format signatures
 			int bytesRead = is.read(header);
-			if (bytesRead < 8) {
+			if (bytesRead < 12) {
 				throw new SecurityException("Invalid file format: file too small");
 			}
 			validateFileSignature(header);
@@ -156,29 +164,37 @@ public class VideoFileService {
 	}
 
 	private void validateFileSignature(byte[] header) throws SecurityException {
-		// Common video file signatures
-		// MP4: ftyp, mdat
-		// MPEG: 0x00 0x00 0x01 0xBA or 0x00 0x00 0x01 0xB3
-		// WebM: 1A 45 DF A3
-		// AVI: RIFF....AVI
-		// FLV: FLV\1
-
-		if (matchesSignature(header, new byte[] { 0x66, 0x74, 0x79, 0x70 }) || // MP4
-				matchesSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xBA }) || // MPEG
-				matchesSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xB3 }) || // MPEG
-				matchesSignature(header, new byte[] { 0x1A, 0x45, (byte) 0xDF, (byte) 0xA3 }) || // WebM
-				matchesSignature(header, "RIFF".getBytes()) || // AVI
-				matchesSignature(header, "FLV\1".getBytes())) { // FLV
+		// Scan first 16 bytes to check for known video signatures
+		if (searchSignature(header, new byte[] { 0x66, 0x74, 0x79, 0x70 }) || // MP4/MOV/3GP
+				searchSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xBA }) || // MPEG-PS
+				searchSignature(header, new byte[] { 0x00, 0x00, 0x01, (byte) 0xB3 }) || // MPEG-1/2
+				searchSignature(header,
+						new byte[] { 0x30, 0x26, (byte) 0xB2, 0x75, (byte) 0x8E, 0x66, (byte) 0xCF, 0x11 })
+				|| // WMV/ASF
+				searchSignature(header, new byte[] { 0x1A, 0x45, (byte) 0xDF, (byte) 0xA3 }) || // WebM/MKV
+				searchSignature(header, "RIFF".getBytes()) || // AVI (check for "AVI " at offset 8 ideally)
+				searchSignature(header, new byte[] { 0x46, 0x4C, 0x56, 0x01 }) // FLV ('FLV' + version)
+		) {
 			return;
 		}
 		throw new SecurityException("Invalid file signature: file does not match known video formats");
 	}
 
-	private boolean matchesSignature(byte[] header, byte[] signature) {
-		if (signature.length > header.length)
+	private boolean searchSignature(byte[] fileBytes, byte[] signature) {
+		int maxOffset = Math.min(16, fileBytes.length - signature.length);
+		for (int i = 0; i <= maxOffset; i++) {
+			if (matchesAtOffset(fileBytes, signature, i)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean matchesAtOffset(byte[] fileBytes, byte[] signature, int offset) {
+		if (fileBytes.length < offset + signature.length)
 			return false;
 		for (int i = 0; i < signature.length; i++) {
-			if (header[i] != signature[i])
+			if (fileBytes[offset + i] != signature[i])
 				return false;
 		}
 		return true;

@@ -2,15 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- <link rel="icon" href="%PUBLIC_URL%/favicon.ico" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:8080 https://www.googletagmanager.com; frame-ancestors 'none';">
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+   <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="LearnHub is a comprehensive e-learning platform for institutes to deliver video lessons, study materials, quizzes, and certifications. Designed to support interactive, self-paced learning, it empowers institutions to track student progress and offer high-quality education anytime, anywhere." />
+
     <!-- Load custom fonts from Google Fonts -->
 <!-- <link href="https://fonts.googleapis.com/css2?family=Arial&family=Courier+New&family=Georgia&family=Roboto&family=Times+New+Roman&family=Verdana&display=swap" rel="stylesheet"> -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
@@ -62,13 +57,31 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-  // Define baseUrl globally for theme-loader.js
-  const baseUrl = 'http://localhost:8080';
+  // Fetch backend config and store globally
+  fetch("%PUBLIC_URL%/config.json")
+    .then((response) => response.json())
+    .then((config) => {
+      window.baseUrl = config.REACT_APP_API_URL;
+
+      // Now load theme-loader.js AFTER baseUrl is available
+      var script = document.createElement("script");
+      script.src = "%PUBLIC_URL%/theme-loader.js";
+      document.head.appendChild(script);
+    })
+    .catch((error) => {
+      console.error("❌ Failed to load config.json", error);
+    });
 </script>
-<script src="%PUBLIC_URL%/theme-loader.js"></script>
+
+  <!-- Load the CSP loader -->
+    <script src="%PUBLIC_URL%/csp-loader.js"></script>
+
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+   <noscript>
+  <strong>JavaScript is required to use this eLearning platform. Please enable it in your browser settings.</strong>
+</noscript>
+
     <div id="root"></div>
     <!--
       This HTML file is a template.

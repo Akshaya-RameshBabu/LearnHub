@@ -252,8 +252,21 @@ const UploadVideo = () => {
       setIsSubmitting(false);
       if (error.response && error.response.status === 413) {
         MySwal.fire({
+            toast:true,
+            position: 'top-end', 
+              timer: 3000,
           title: "Storage Limit Exceeded",
           text: error.response.data,
+          icon: "warning",
+        });
+      }else  if (error.response && error.response.status === 415) {
+        MySwal.fire({
+          
+          toast:true,
+            position: 'top-end', 
+              timer: 3000,
+          title: "unsupported File Type",
+          text: error?.response?.data,
           icon: "warning",
         });
       } else {

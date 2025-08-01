@@ -103,6 +103,7 @@ const Header = ({searchQuery,handleSearchChange}) => {
        }
        const MySwal = withReactContent(Swal);
   const imageSource = data.profileImage ? `data:image/jpeg;base64,${data.profileImage}` : undraw_profile;
+  
   const handleLogout = async () => {
     Swal.fire({
       title: "Logout",
@@ -119,7 +120,7 @@ const Header = ({searchQuery,handleSearchChange}) => {
         }
   
         try {
-          const response = await axios.post(`${baseUrl}/logout`,{}, {
+          const response = await axios.post(`${baseUrl}/logoutuser`,{}, {
             headers: {
               Authorization: token 
             }

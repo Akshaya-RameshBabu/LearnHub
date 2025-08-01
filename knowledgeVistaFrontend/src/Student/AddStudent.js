@@ -725,7 +725,7 @@ const AddStudent = () => {
                             name="confirm_password"
                             value={formData.confirm_password}
                             style={{ outline: "none" }}
-                            id="pswinp"
+                            id="cpswinp"
                             onChange={handleChange}
                             autoComplete="new-password"
                             placeholder="Repeat Password"

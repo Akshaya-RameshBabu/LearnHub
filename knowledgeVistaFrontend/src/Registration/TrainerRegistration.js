@@ -678,7 +678,7 @@ const handleSendOTP = async () => {
                         name="confirm_password"
                         value={formData.confirm_password}
                         style={{ outline: "none" }}
-                        id="pswinp"
+                        id="cpswinp"
                         className="form-control "
                         onChange={handleChange}
                         autoComplete="new-password"

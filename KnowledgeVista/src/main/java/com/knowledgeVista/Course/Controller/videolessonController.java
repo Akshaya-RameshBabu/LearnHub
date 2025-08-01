@@ -1,5 +1,6 @@
 package com.knowledgeVista.Course.Controller;
 
+import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,21 +100,8 @@ public class videolessonController {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
 			String email = jwtUtil.getEmailFromToken(token);
-			String username = "";
-			String institution = "";
-
-			Optional<Muser> opuser = muserRepository.findByEmail(email);
-			if (opuser.isPresent()) {
-				Muser user = opuser.get();
-				username = user.getUsername();
-				institution = user.getInstitutionName();
-				boolean adminIsActive = muserRepository.getactiveResultByInstitutionName("ADMIN", institution);
-				if (!adminIsActive) {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
+			String username = jwtUtil.getUsernameFromToken(token);
+			String institution = jwtUtil.getInstitutionFromToken(token);
 
 			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
 				Optional<CourseDetail> courseDetailOptional = coursedetailrepostory
@@ -212,7 +200,13 @@ public class videolessonController {
 			} else {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 			}
+		} catch (SecurityException e) {
+			e.printStackTrace();
+			logger.error("Invalid File Format", e);
+			return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+					.body("File type not supported:" + e.getMessage());
 		} catch (Exception e) {
+
 			e.printStackTrace();
 			logger.error("", e);
 			;
@@ -392,6 +386,11 @@ public class videolessonController {
 			} else {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 			}
+		} catch (SecurityException e) {
+			e.printStackTrace();
+			logger.error("Invalid File Format", e);
+			return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+					.body("File type not supported:" + e.getMessage());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
@@ -477,6 +476,7 @@ public class videolessonController {
 
 	public ResponseEntity<?> getVideoFile(Long lessId, Long courseId, String token, HttpServletRequest request) {
 		try {
+			System.out.println("get video FIle");
 			String role = jwtUtil.getRoleFromToken(token);
 			String email = jwtUtil.getEmailFromToken(token);
 			Optional<Muser> opuser = muserRepo.findByEmail(email);
@@ -555,17 +555,17 @@ public class videolessonController {
 
 			videoLessons lesson = optionalLesson.get();
 			String filename = lesson.getVideofilename();
-
+			System.out.println("filename" + filename);
 			if (filename != null) {
 				Path filePath = Paths.get(videoStorageDirectory, filename);
 				System.out.println("filePath" + filePath);
-
+				File vdofile = filePath.toFile();
 				logger.info("-------------------------------------------------------");
 				logger.info("file path of Video File");
 				logger.info("path= " + filePath);
 				logger.info("-------------------------------------------------------");
 				try {
-					if (filePath.toFile().exists() && filePath.toFile().isFile()) {
+					if (vdofile.exists() && vdofile.isFile()) {
 						Resource resource = new UrlResource(filePath.toUri());
 						if (resource.exists() && resource.isReadable()) {
 							HttpHeaders headers = new HttpHeaders();

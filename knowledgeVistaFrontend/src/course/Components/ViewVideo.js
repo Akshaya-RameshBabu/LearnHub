@@ -20,7 +20,6 @@ const ViewVideo = () => {
   const [currentLesson, setCurrentLesson] = useState();
   const role = sessionStorage.getItem("role");
   const token = sessionStorage.getItem("token");
-  const [found, notfound] = useState(true);
   const [currentDocs, setcurrentDocs] = useState([]);
   const navigate = useNavigate();
   useEffect(() => {
@@ -178,6 +177,7 @@ const ViewVideo = () => {
           setVideoSource(url);
         } else {
           // If URL is null or doesn't contain 'youtube.com' or 'youtu.be', consider it as a local video
+          console.log("fetching video")
           setVideoType("local");
           setVideoSource(
             `${baseUrl}/lessons/getvideoByid/${lessId}/${courseId}/${token}`
