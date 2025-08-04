@@ -1,6 +1,9 @@
 package com.knowledgeVista.Migration.model;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
@@ -57,24 +61,35 @@ public class BackupScheduleConfig {
 	@Column(name = "day_of_week")
 	private DayOfWeek dayOfWeek;
 
-	@Min(value = 1, message = "Day of month must be between 1 and 31")
-	@Max(value = 31, message = "Day of month must be between 1 and 31")
+	@Min(1)
+	@Max(31)
 	@Column(name = "day_of_month")
 	private Integer dayOfMonth;
 
-	@Min(value = 2, message = "Minimum backups to keep must be 2")
-	@Max(value = 5, message = "Maximum backups to keep cannot exceed 5")
+	@Min(2)
+	@Max(5)
 	@Column(name = "max_backups_to_keep", nullable = false)
-	private Integer maxBackupsToKeep = 2; // Default to 2
+	private Integer maxBackupsToKeep = 2;
 
 	@Column(name = "created_at", updatable = false)
-	private LocalDateTime createdAt = LocalDateTime.now();
+	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at")
-	private LocalDateTime updatedAt = LocalDateTime.now();
+	private LocalDateTime updatedAt;
+
+	@NotNull(message = "Backup time is required")
+	@Column(name = "backup_time", nullable = false)
+	@JsonFormat(pattern = "HH:mm")
+	private LocalTime backupTime;
+
+	@PrePersist
+	public void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
 
 	@PreUpdate
-	public void setUpdatedAt() {
+	public void onUpdate() {
 		this.updatedAt = LocalDateTime.now();
 	}
 }

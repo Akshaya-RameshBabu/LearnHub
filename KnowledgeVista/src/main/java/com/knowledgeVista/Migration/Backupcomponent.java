@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.repo.BackupSheduleConfigRepo;
+import com.knowledgeVista.Migration.sheduler.BackupSchedulerService;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 
 @Component
@@ -43,6 +44,8 @@ public class Backupcomponent {
 	private String dbPassword;
 	@Value("${database.name}")
 	private String dbName;
+	@Autowired
+	private BackupSchedulerService backupSchedulerService;
 
 	public ResponseEntity<?> DownloadBackup(String token) {
 		try {
@@ -78,7 +81,6 @@ public class Backupcomponent {
 
 	public ResponseEntity<?> saveOrUpdatebackupSchedule(BackupScheduleConfig config, String token) {
 		try {
-
 			String institutionName = jwtUtil.getInstitutionFromToken(token);
 			String role = jwtUtil.getRoleFromToken(token);
 			if (!"ADMIN".equals(role)) {
@@ -87,29 +89,30 @@ public class Backupcomponent {
 			}
 
 			Optional<BackupScheduleConfig> existingConfigOpt = configRepo.findByInstitutionName(institutionName);
-			String res = "Updated";
 			BackupScheduleConfig scheduleToSave;
+			String result = "Updated";
+
 			if (existingConfigOpt.isPresent()) {
-				// Update existing
 				scheduleToSave = existingConfigOpt.get();
 				scheduleToSave.setScheduleType(config.getScheduleType());
 				scheduleToSave.setDayOfWeek(config.getDayOfWeek());
 				scheduleToSave.setDayOfMonth(config.getDayOfMonth());
 				scheduleToSave.setMaxBackupsToKeep(config.getMaxBackupsToKeep());
+				scheduleToSave.setBackupTime(config.getBackupTime());
 			} else {
-				// Create new
 				config.setInstitutionName(institutionName);
 				scheduleToSave = config;
-				res = "Saved";
+				result = "Saved";
 			}
 
 			configRepo.save(scheduleToSave);
-			return ResponseEntity.ok(res);
+			backupSchedulerService.rescheduleBackupForInstitution(institutionName);
+			return ResponseEntity.ok(result);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("❌ Internal server error occurred while saving/updating the schedule.");
+					.body("❌ Error while saving/updating the schedule.");
 		}
 	}
 

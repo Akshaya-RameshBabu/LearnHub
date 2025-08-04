@@ -2,12 +2,20 @@ package com.knowledgeVista.Migration.sheduler;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.knowledgeVista.Email.EmailService;
@@ -15,46 +23,114 @@ import com.knowledgeVista.Migration.BackupService;
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.repo.BackupSheduleConfigRepo;
 import com.knowledgeVista.User.Repository.MuserRepositories;
+import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class BackupSchedulerService {
 
 	@Autowired
 	private BackupSheduleConfigRepo configRepo;
+
 	@Autowired
 	private EmailService emailService;
+
 	@Autowired
 	private BackupService backupService;
+
+	@Autowired
+	private MuserRepositories muserRepo;
+
+	@Autowired
+	private TaskScheduler taskScheduler;
+
+	@Autowired
+	private JwtUtil jwtUtil;
+
 	@Value("${backend.domain}")
 	private String backendDomain;
 
 	@Value("${developer.mail}")
 	private String devmail;
-	@Autowired
-	private MuserRepositories muserRepo;
 
-	@Scheduled(cron = "0 0 2 * * *") // Runs daily at 2 AM
-	public void executeScheduledBackups() {
+	private final Map<String, ScheduledFuture<?>> scheduledTasks = new HashMap<>();
+
+	@PostConstruct
+	public void scheduleAllBackups() {
+		System.out.println("🟢 Loading backup configurations from database...");
 		List<BackupScheduleConfig> configs = configRepo.findAll();
-		LocalDate today = LocalDate.now();
 		for (BackupScheduleConfig config : configs) {
+			scheduleBackup(config);
+		}
+		scheduleDailyBackupTask(); // Optional generic daily 2AM backup
+	}
+
+	private void scheduleBackup(BackupScheduleConfig config) {
+		LocalTime time = config.getBackupTime();
+		if (time == null) {
+			System.out.println("⚠️ Skipping scheduling due to null time for: " + config.getInstitutionName());
+			return;
+		}
+
+		Runnable task = () -> {
+			System.out.println(
+					"📦 Running scheduled backup for: " + config.getInstitutionName() + " at " + LocalTime.now());
+			LocalDate today = LocalDate.now();
 			if (shouldBackupToday(config, today)) {
 				try {
 					backupService.performBackupAndUpload(config.getInstitutionName(), config.getMaxBackupsToKeep());
 				} catch (Exception e) {
-					List<String> adminemails = muserRepo.findAdminEmailfromInstitutionName(config.getInstitutionName());
-					handleBackupFailure(e, adminemails, List.of(devmail));
+					List<String> adminEmails = muserRepo.findAdminEmailfromInstitutionName(config.getInstitutionName());
+					handleBackupFailure(e, adminEmails, List.of(devmail));
 				}
 			}
-		}
+		};
+
+		scheduleDailyAt(time, task, config.getInstitutionName());
 	}
 
-	@Scheduled(cron = "0 0 2 * * *") // Runs daily at 2 AM
-	public void executedailyBackups() {
-		try {
-			backupService.backupDatabaseToFolder();
-		} catch (Exception e) {
-			handleBackupFailure(e, List.of(devmail), List.of());
+	private void scheduleDailyBackupTask() {
+		LocalTime time = LocalTime.of(2, 0); // 2 AM
+		Runnable dailyTask = () -> {
+			System.out.println("🛡️ Running generic daily 2AM backup at " + LocalTime.now());
+			try {
+				backupService.backupDatabaseToFolder();
+			} catch (Exception e) {
+				handleBackupFailure(e, List.of(devmail), List.of());
+			}
+		};
+
+		scheduleDailyAt(time, dailyTask, "generic-daily-backup");
+	}
+
+	private void scheduleDailyAt(LocalTime time, Runnable task, String taskKey) {
+		ZonedDateTime now = ZonedDateTime.now();
+		ZonedDateTime firstRun = now.withHour(time.getHour()).withMinute(time.getMinute()).withSecond(0).withNano(0);
+		if (now.compareTo(firstRun) >= 0) {
+			firstRun = firstRun.plusDays(1);
+		}
+
+		long initialDelay = Duration.between(now, firstRun).toMillis();
+		long period = Duration.ofDays(1).toMillis();
+
+		System.out.println("⏰ Scheduling task '" + taskKey + "' for " + firstRun);
+
+		ScheduledFuture<?> future = taskScheduler.scheduleAtFixedRate(task,
+				new Date(System.currentTimeMillis() + initialDelay), period);
+		scheduledTasks.put(taskKey, future);
+	}
+
+	private boolean shouldBackupToday(BackupScheduleConfig config, LocalDate today) {
+		switch (config.getScheduleType()) {
+		case DAILY:
+			return true;
+		case WEEKLY:
+			return config.getDayOfWeek() != null && today.getDayOfWeek().equals(config.getDayOfWeek());
+		case MONTHLY:
+			return config.getDayOfMonth() != null && today.getDayOfMonth() == config.getDayOfMonth();
+		default:
+			return false;
 		}
 	}
 
@@ -63,33 +139,21 @@ public class BackupSchedulerService {
 		String subject = "🚨 Database Backup Failure Alert";
 
 		try {
-			// Developer Email Body (detailed)
 			String devBody = "<h2 style='color: #d9534f;'>Database Backup Failed</h2>"
 					+ "<p><strong>Timestamp:</strong> " + timestamp + "</p>" + "<p><strong>Backend Server:</strong> "
-					+ backendDomain + "</p>" + "<p><strong>Exception Details:</strong></p>"
-					+ "<pre style='background-color: #f8f9fa; color: #212529; padding: 12px; border-radius: 5px; border: 1px solid #dee2e6;'>"
-					+ "<p><strong>Issue:</strong> " + (e.getMessage() != null ? e.getMessage() : "Unknown error")
-					+ "</p>" + "<p><strong>Cause:</strong> " + (e.getCause() != null ? e.getCause().toString() : "N/A")
-					+ "</p>" + "<p><strong>StackTrace:</strong> " + getStackTraceAsString(e) + "</pre>"
-					+ "<p>Please investigate the root cause. This is a system-generated alert.</p>";
+					+ backendDomain + "</p>" + "<p><strong>Issue:</strong> "
+					+ (e.getMessage() != null ? e.getMessage() : "Unknown error") + "</p>"
+					+ "<p><strong>Cause:</strong> " + (e.getCause() != null ? e.getCause().toString() : "N/A") + "</p>"
+					+ "<pre>" + getStackTraceAsString(e) + "</pre>" + "<p>This is a system-generated alert.</p>";
 
-			// Admin Email Body (simplified)
 			String adminBody = "<h2 style='color: #d9534f;'>System Alert: Backup Failed</h2>"
-					+ "<p>The automated backup process failed at <strong>" + timestamp + "</strong>.</p>"
-					+ "<p><strong>Server:</strong> " + backendDomain + "</p>"
-					+ "<p>The automated backup process failed at <strong>" + timestamp + "</strong>.</p>"
-					+ "<p><strong>Issue:</strong> " + (e.getMessage() != null ? e.getMessage() : "Unknown error")
-					+ "</p>" + "<p><strong>Cause:</strong> " + (e.getCause() != null ? e.getCause().toString() : "N/A")
-					+ "</p>"
-					+ "<p>Please investigate the cause immediately. If this is a recurring issue, review the backup configurations and logs.</p>"
-					+ "<p style='font-size: 0.9em; color: gray;'>This message was auto-generated by the backup monitoring service.</p>";
+					+ "<p>The backup failed at <strong>" + timestamp + "</strong>.</p>" + "<p><strong>Server:</strong> "
+					+ backendDomain + "</p>" + "<p><strong>Issue:</strong> "
+					+ (e.getMessage() != null ? e.getMessage() : "Unknown error") + "</p>";
 
-			// Send Developer Email
 			if (!developerMails.isEmpty()) {
 				emailService.sendHtmlEmailAsync("Default", developerMails, List.of(), List.of(), subject, devBody);
 			}
-
-			// Send Admin Email
 			if (!adminMails.isEmpty()) {
 				emailService.sendHtmlEmailAsync("Default", adminMails, List.of(), List.of(), subject, adminBody);
 			}
@@ -105,18 +169,22 @@ public class BackupSchedulerService {
 		return sw.toString();
 	}
 
-	private boolean shouldBackupToday(BackupScheduleConfig config, LocalDate today) {
-		switch (config.getScheduleType()) {
-		case DAILY:
-			return true;
-		case WEEKLY:
-			return config.getDayOfWeek() != null
-					&& today.getDayOfWeek().toString().equalsIgnoreCase(config.getDayOfWeek().toString());
-		case MONTHLY:
-			System.out.println("monthly");
-			return config.getDayOfMonth() != null && today.getDayOfMonth() == config.getDayOfMonth();
-		default:
-			return false;
+	public void rescheduleBackupForInstitution(String institutionName) {
+		Optional<BackupScheduleConfig> configOpt = configRepo.findByInstitutionName(institutionName);
+		if (configOpt.isPresent()) {
+			BackupScheduleConfig config = configOpt.get();
+
+			// Cancel existing task
+			ScheduledFuture<?> existingTask = scheduledTasks.get(institutionName);
+			if (existingTask != null) {
+				existingTask.cancel(false);
+			}
+
+			// Re-schedule with updated time
+			scheduleBackup(config);
+		} else {
+			System.out.println("⚠️ No schedule found to re-schedule for: " + institutionName);
 		}
 	}
+
 }

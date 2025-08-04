@@ -28,42 +28,46 @@ export default function BackupManager() {
   const token = sessionStorage.getItem("token");
   const [loading, setLoading] = useState({});
   const [newSchedule, setNewSchedule] = useState({
-    scheduleType: "", 
-    dayOfWeek: "",    // MUST match enum
+    scheduleType: "",
+    dayOfWeek: "", // MUST match enum
     dayOfMonth: 0,
-    maxBackupsToKeep: 0,    // MUST match Java field name
+    maxBackupsToKeep: 0, // MUST match Java field name
+    backupTime:"02:00"
   });
 
   const weekDays = [
-    "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
   ];
-useEffect(() => {
+  useEffect(() => {
     fetchSchedule();
   }, []);
-   const fetchSchedule = async () => {
+  const fetchSchedule = async () => {
     setLoading((prev) => ({ ...prev, getshedule: true }));
     try {
-      const response = await axios.get(
-        `${baseUrl}/backup/shedule/get`,
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
-
-     setNewSchedule(response?.data)
-    } catch (error) {
-      if(error?.response?.status===401){
-        navigate("/unauthorized");
-      }else{
-      MySwal.fire({
-        icon: "error",
-        title: "Failed to save schedule",
-        text: error?.response?.data || "Something went wrong.",
-        confirmButtonText:"ok"
+      const response = await axios.get(`${baseUrl}/backup/shedule/get`, {
+        headers: {
+          Authorization: token,
+        },
       });
-    }
+
+      setNewSchedule(response?.data);
+    } catch (error) {
+      if (error?.response?.status === 401) {
+        navigate("/unauthorized");
+      } else {
+        MySwal.fire({
+          icon: "error",
+          title: "Failed to save schedule",
+          text: error?.response?.data || "Something went wrong.",
+          confirmButtonText: "ok",
+        });
+      }
     } finally {
       setLoading((prev) => ({ ...prev, getshedule: false }));
     }
@@ -81,30 +85,28 @@ useEffect(() => {
           },
         }
       );
-MySwal.fire({
-  icon: "success",
-  title: `Schedule ${response?.data}`,
-  text: `Backup schedule ${response?.data} successfully!` || "Your backup schedule was saved.",
-  confirmButtonText: "OK"
-}).then((result) => {
-    fetchSchedule();
-  
-});
-
+      MySwal.fire({
+        icon: "success",
+        title: `Schedule ${response?.data}`,
+        text:
+          `Backup schedule ${response?.data} successfully!` ||
+          "Your backup schedule was saved.",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        fetchSchedule();
+      });
     } catch (error) {
       console.error("Error saving schedule:", error);
       MySwal.fire({
         icon: "error",
         title: "Failed to save schedule",
         text: error?.response?.data || "Something went wrong.",
-        confirmButtonText:"ok"
+        confirmButtonText: "ok",
       });
     } finally {
       setLoading((prev) => ({ ...prev, saveSchedule: false }));
     }
   };
-
-  
 
   const setLoadingFor = (key, value) => {
     setLoading((prev) => ({ ...prev, [key]: value }));
@@ -221,8 +223,6 @@ MySwal.fire({
     }
   };
 
-  
-
   return (
     <div>
       <div className="page-header"></div>
@@ -243,35 +243,33 @@ MySwal.fire({
           <div>
             <h5 className="mb-3">Automated Schedule</h5>
             {loading.getshedule ? (
-  <div className="skeleton-wrapper">
-    <div className="form-group row">
-     <label className="col-sm-3 col-form-label">
+              <div className="skeleton-wrapper">
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">
                     Schedule Type
                   </label>
-      <div className="col-sm-9">
-        <div className="skeleton skeleton-input"></div>
-      </div>
-    </div>
+                  <div className="col-sm-9">
+                    <div className="skeleton skeleton-input"></div>
+                  </div>
+                </div>
 
-    <div className="form-group row">
-      <label className="col-sm-3 col-form-label">
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">
                     Max Backups to Keep
                   </label>
-      <div className="col-sm-9">
-        <div className="skeleton skeleton-input"></div>
-      </div>
-    </div>
+                  <div className="col-sm-9">
+                    <div className="skeleton skeleton-input"></div>
+                  </div>
+                </div>
 
-   <div className="skeleton skeleton-input"></div>
+                <div className="skeleton skeleton-input"></div>
 
-    <div className="cornerbtn mt-3">
-      <div></div>
-      <div className="skeleton skeleton-button"></div>
-    </div>
-  </div>
-) : (
-
-
+                <div className="cornerbtn mt-3">
+                  <div></div>
+                  <div className="skeleton skeleton-button"></div>
+                </div>
+              </div>
+            ) : (
               <div>
                 <div className="form-group row">
                   <label className="col-sm-3 col-form-label">
@@ -372,9 +370,29 @@ MySwal.fire({
                     </select>
                     <small className="form-text text-muted">
                       Only the latest{" "}
-                      <strong>{newSchedule.maxBackupsToKeep}</strong> backups will
-                      be retained in Drive. Older ones will be automatically
-                      deleted.
+                      <strong>{newSchedule.maxBackupsToKeep}</strong> backups
+                      will be retained in Drive. Older ones will be
+                      automatically deleted.
+                    </small>
+                  </div>
+                </div>
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">Backup Time</label>
+                  <div className="col-sm-9">
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={newSchedule.backupTime}
+                      onChange={(e) =>
+                        setNewSchedule({
+                          ...newSchedule,
+                          backupTime: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                    <small className="form-text text-muted">
+                      Choose the time when backup should be executed.
                     </small>
                   </div>
                 </div>
@@ -403,15 +421,12 @@ MySwal.fire({
 
                 <div className="cornerbtn">
                   <div></div>
-                  <button
-                    className="btn btn-primary"
-                    onClick={createSchedule}
-                  >
+                  <button className="btn btn-primary" onClick={createSchedule}>
                     Save Schedule
                   </button>
                 </div>
               </div>
-)}
+            )}
           </div>
 
           <hr />

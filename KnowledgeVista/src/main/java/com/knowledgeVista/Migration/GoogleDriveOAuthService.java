@@ -57,37 +57,81 @@ public class GoogleDriveOAuthService {
 
 	public Credential exchangeCodeAndSaveToken(String code, String institutionName, HttpServletRequest request)
 			throws Exception {
+		// --- Troubleshooting Tip ---
+		// The "connection timed out" issue most likely occurs during the network call
+		// to Google's token endpoint. This is usually due to a network or firewall
+		// configuration issue on the server where this code is running.
+		//
+		// The following code adds a try-catch block to provide more detailed error
+		// information.
+		// Check your application logs for the full stack trace when the timeout occurs.
+
+		// Initialize HTTP transport and JSON factory
 		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
 		Optional<OAuthCredential> opcredential = OAuthCredentialRepo.findByInstitutionName(institutionName);
 		if (opcredential.isEmpty()) {
+			System.err.println("OAuthCredential not found for institution: " + institutionName);
 			return null;
 		}
 		OAuthCredential credential = opcredential.get();
+
 		GoogleClientSecrets.Details details = new GoogleClientSecrets.Details();
 		details.setClientId(encryptionUtil.decrypt(credential.getClientId()));
 		details.setClientSecret(encryptionUtil.decrypt(credential.getClientSecret()));
 		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
 
+		// Set up the Authorization Code Flow
 		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
 				clientSecrets, SCOPES).setAccessType("offline").build();
+
+		// Construct the redirect URI dynamically
+		// Ensure this URI is an exact match for one of the authorized redirect URIs
+		// configured in your Google Cloud Console for the OAuth 2.0 client.
 		String domain = request.getScheme() + "://" + request.getServerName();
 		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
 			domain += ":" + request.getServerPort();
 		}
 		String redirectUri = domain + "/driveoauth/callback";
-		TokenResponse tokenResponse = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
 
-		Credential finalCredential = flow.createAndStoreCredential(tokenResponse, "user");
+		try {
+			// --- This is the critical network call that is likely timing out ---
+			TokenResponse tokenResponse = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
+			System.out.println("Successfully received token response from Google.");
 
-		String refreshToken = tokenResponse.getRefreshToken();
-		if (refreshToken != null) {
-			credential.setRefreshToken(encryptionUtil.encrypt(refreshToken));
-			credential.setUpdatedAt(LocalDateTime.now());
-			OAuthCredentialRepo.save(credential);
+			Credential finalCredential = flow.createAndStoreCredential(tokenResponse, "user");
+
+			String refreshToken = tokenResponse.getRefreshToken();
+			if (refreshToken != null) {
+				credential.setRefreshToken(encryptionUtil.encrypt(refreshToken));
+				credential.setUpdatedAt(LocalDateTime.now());
+				OAuthCredentialRepo.save(credential);
+				System.out.println("Refreshed token saved to repository.");
+			} else {
+				System.out.println("No refresh token received in the response.");
+			}
+
+			return finalCredential;
+
+		} catch (java.net.SocketTimeoutException e) {
+			// Handle specific timeout exception
+			System.err.println("Connection timed out while exchanging code. This is likely a network issue.");
+			System.err.println("Exception details: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+		} catch (com.google.api.client.http.HttpResponseException e) {
+			// Handle API-specific errors, which could sometimes be misleading
+			System.err.println("Google API returned an error response. Status code: " + e.getStatusCode());
+			System.err.println("Error details: " + e.getContent());
+			e.printStackTrace();
+			return null;
+		} catch (Exception e) {
+			// Catch any other unexpected exceptions
+			System.err.println("An unexpected error occurred during code exchange.");
+			System.err.println("Exception details: " + e.getMessage());
+			e.printStackTrace();
+			return null;
 		}
-
-		return finalCredential;
 	}
 
 	public String generateAuthUrl(OAuthCredential credential, HttpServletRequest request) throws Exception {
