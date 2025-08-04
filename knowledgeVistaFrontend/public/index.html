@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
    <meta name="theme-color" content="#ffffff" />
   <meta name="description" content="LearnHub is a comprehensive e-learning platform for institutes to deliver video lessons, study materials, quizzes, and certifications. Designed to support interactive, self-paced learning, it empowers institutions to track student progress and offer high-quality education anytime, anywhere." />
+<!-- Inject API base URL from environment -->
+<meta name="api-base-url" content="%REACT_APP_API_URL%" />
 
     <!-- Load custom fonts from Google Fonts -->
 <!-- <link href="https://fonts.googleapis.com/css2?family=Arial&family=Courier+New&family=Georgia&family=Roboto&family=Times+New+Roman&family=Verdana&display=swap" rel="stylesheet"> -->
@@ -31,16 +33,7 @@
       integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
       crossorigin="anonymous"
     ></script>
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <!-- <title>Learn Hub</title> -->
+   
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-16676502340"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -56,25 +49,13 @@
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script>
-  // Fetch backend config and store globally
-  fetch("%PUBLIC_URL%/config.json")
-    .then((response) => response.json())
-    .then((config) => {
-      window.baseUrl = config.REACT_APP_API_URL;
 
-      // Now load theme-loader.js AFTER baseUrl is available
-      var script = document.createElement("script");
-      script.src = "%PUBLIC_URL%/theme-loader.js";
-      document.head.appendChild(script);
-    })
-    .catch((error) => {
-      console.error("❌ Failed to load config.json", error);
-    });
-</script>
+ <!-- Load the CSP loader -->
+<script src="/csp-loader.js"></script>
 
-  <!-- Load the CSP loader -->
-    <script src="%PUBLIC_URL%/csp-loader.js"></script>
+<!-- Load the theme loader -->
+<script src="/theme-loader.js"></script>
+
 
   </head>
   <body>

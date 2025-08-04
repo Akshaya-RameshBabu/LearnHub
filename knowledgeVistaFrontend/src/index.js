@@ -75,10 +75,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 
 
-fetch("/config.json")
-  .then((res) => res.json())
-  .then((config) => {
-    window.baseUrl = config.REACT_APP_API_URL;
+
 
   const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -86,7 +83,4 @@ root.render(
         <App />
     </GlobalStateProvider>
 );
-  })
-  .catch((err) => {
-    console.error("❌ Failed to load config", err);
-  });
+ 

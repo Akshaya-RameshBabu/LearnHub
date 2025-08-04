@@ -1,38 +1,28 @@
-// Theme loading functionality
-window.addEventListener('DOMContentLoaded', () => {
-  const fetchTheme = async () => {
-    try {
-      const theme = sessionStorage.getItem("theme");
+window.addEventListener("DOMContentLoaded", () => {
+  const baseUrlMeta = document.querySelector("meta[name='api-base-url']");
+  const baseUrl = baseUrlMeta ? baseUrlMeta.content : null;
+  if (!baseUrl) {
+    console.error("❌ baseUrl not found in meta tag");
+    return;
+  }
 
-      if (theme) {
-        updateCSSVariables(JSON.parse(theme));
-      } else {
-        if (!window.baseUrl) {
-          console.error("❌ baseUrl is not defined.");
-          return;
+  window.baseUrl = baseUrl;
+
+  // Example: Load theme
+  axios.get(`${baseUrl}/getTheme`)
+    .then((res) => {
+      const colors = res.data;
+      const styleTag = document.getElementById("theme-style");
+      if (!styleTag) return;
+      styleTag.innerHTML = `
+        :root {
+          --primary: ${colors.primaryColor};
+          --lightprimary: ${colors.lightPrimaryColor};
         }
-
-        const response = await axios.get(`${window.baseUrl}/getTheme`);
-        const colors = response.data;
-        updateCSSVariables(colors);
-        sessionStorage.setItem("theme", JSON.stringify(colors));
-      }
-    } catch (err) {
-      console.error("❌ Error fetching theme:", err);
-    }
-  };
-
-  const updateCSSVariables = (colors) => {
-    const styleTag = document.getElementById('theme-style');
-    if (!styleTag) return;
-
-    styleTag.innerHTML = `
-      :root {
-        --primary: ${colors.primaryColor};
-        --lightprimary: ${colors.lightPrimaryColor};
-      }
-    `;
-  };
-
-  fetchTheme();
+      `;
+      sessionStorage.setItem("theme", JSON.stringify(colors));
+    })
+    .catch((err) => {
+      console.error("❌ Failed to fetch theme:", err);
+    });
 });

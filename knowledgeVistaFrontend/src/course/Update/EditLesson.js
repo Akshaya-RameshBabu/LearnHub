@@ -131,8 +131,6 @@ const EditLesson = () => {
     };
 
     fetchVideoData(); // Call the async function
-
-    // Add any dependencies if needed
   }, [lessonId, token]);
 
   const handleChange = (e) => {

@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import baseUrl from '../api/utils';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 const MyPayments = () => {
   const navigate=useNavigate();
     const token=sessionStorage.getItem("token")
-    const MySwal = withReactContent(Swal);
     const[paymenthistory,setpaymenthistory]=useState([{
        id:"",
        orderId:"",
@@ -43,9 +40,7 @@ const MyPayments = () => {
     
   const [filterOption, setFilterOption] = useState("All");
   const [searchQuery, setSearchQuery] = useState('');
-    useEffect(() => {
-        // Simulating fetching data from the server
-        const fetchData = async () => {
+    const fetchData = async () => {
           try {
             // Fetch data from server
             const response = await axios.get(`${baseUrl}/myPaymentHistory`,{
@@ -70,7 +65,7 @@ const MyPayments = () => {
             }
           }
         };
-    
+    useEffect(() => {
         fetchData();
       }, []);
   return (
