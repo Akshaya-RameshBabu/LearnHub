@@ -6,10 +6,8 @@ import moment, { months } from 'moment';
 import baseUrl from '../api/utils';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import CustomEvent from './CustomeEvent'; // Import the custom event component
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { event } from 'jquery';
 const localizer = momentLocalizer(moment);
 
 const CalenderView = () => {
@@ -22,13 +20,6 @@ const CalenderView = () => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-      //   const id="71115826084"
-      //  const res=await axios.get(`${baseUrl}/getzoom/${id}`,{
-      //   headers: {
-      //     'Authorization': token,
-      //   },
-      //  })
-      //  console.log("meetDetails",res)
         const response = await axios.get(`${baseUrl}/api/zoom/getMyMeetings`, {
           headers: {
             'Authorization': token,
@@ -81,35 +72,19 @@ const CalenderView = () => {
     
   };
 
-  
-  const handleDeleteEvent = async (event) => {
+   const handlClickJoinUrl = async (event) => {
     try {
-      const result = await MySwal.fire({
-        title: "Delete Meeting?",
-        text: `Are you sure you want to delete this Meeting ${event.title}?`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        confirmButtonText: "Delete",
-        cancelButtonText: "Cancel",
-      });
-  
-      if (result.isConfirmed) {
-        await axios.delete(`${baseUrl}/api/zoom/delete/${event.id}`, {
+      console.log("hii in handlClickJoinUrl",event)
+        const response =await axios.get(`${baseUrl}/api/zoom/Join/${event.id}`, {
           headers: {
             'Authorization': token,
           },
         });
   
-        // Remove the deleted event from the state
-        setEvents(events.filter(e => e.id !== event.id));
-        
-        MySwal.fire({
-          title: "Deleted!",
-          text: " Meeting has been deleted.",
-          icon: "success",
-        })
-      }
+       console.log(response.data);
+       if (typeof response.data === 'string' && response.data.startsWith('http')) {
+        window.open(response.data, '_blank');
+    }
       
     } catch (error) {
       console.error(error);
@@ -118,8 +93,6 @@ const CalenderView = () => {
       throw error
     }
   };
-  
-
   const eventStyleGetter = (event) => {
     // Define an array of colors
     const colors = ['#D5C1FF', '#D7F1BD', '#FFC1EE', '#FFDDC1'];
@@ -176,10 +149,8 @@ const CalenderView = () => {
           startAccessor="start"
           endAccessor="end"
           style={{ height: 500 }}
-          components={{
-            event: (props) => <CustomEvent {...props} onDelete={handleDeleteEvent} />
-          }}
           eventPropGetter={eventStyleGetter}
+          onSelectEvent={handlClickJoinUrl}
         />
         </div>
       </div>

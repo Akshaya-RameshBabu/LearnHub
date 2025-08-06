@@ -156,16 +156,26 @@ public class videolessonController {
 
 // Save the lesson and documents
 				if (videoFile != null) {
-					String videoFilePath = fileService.saveVideoFile(videoFile);
-					lesson.setVideofilename(videoFilePath);
+					String videoFilePath = fileService.saveVideoFile(videoFile, institution); // e.g.,
+																								// InstitutionA/videos/169123.mp4
+
+					// Extract filename from path
+					String videoFileName = Paths.get(videoFilePath).getFileName().toString(); // →
+																								// 1691234567890_abc123.mp4
+
+					// Save in lesson
+					lesson.setVideofilename(videoFileName); // ✅ Just the file name
+					lesson.setPath(videoFilePath);
 				}
 				videoLessons savedLesson = lessonrepo.save(lesson);
 				if (documentFiles != null) {
 					for (MultipartFile documentFile : documentFiles) {
 						if (documentFile != null && !documentFile.isEmpty()) {
 							DocsDetails document = new DocsDetails();
-							String documentPath = fileService.saveDocumentFile(documentFile); // Save the file using
-																								// your
+							String documentPath = fileService.saveDocumentFile(documentFile, institution); // Save the
+																											// file
+																											// using
+							// your
 							List<MiniatureDetail> minis = pptreader.getMiniatures(documentPath);
 							// file service
 							document.setMiniatureDetails(minis);
@@ -221,22 +231,8 @@ public class videolessonController {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
 			String email = jwtUtil.getEmailFromToken(token);
-			String username = "";
-			String institution = "";
-
-			Optional<Muser> opuser = muserRepository.findByEmail(email);
-			if (opuser.isPresent()) {
-				Muser user = opuser.get();
-				username = user.getUsername();
-				institution = user.getInstitutionName();
-				boolean adminIsactive = muserRepository.getactiveResultByInstitutionName("ADMIN", institution);
-				if (!adminIsactive) {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
+			String username = jwtUtil.getUsernameFromToken(token);
+			String institution = jwtUtil.getInstitutionFromToken(token);
 			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
 				try {
 					Optional<videoLessons> opvideo = lessonrepo.findBylessonIdAndInstitutionName(lessonId, institution);
@@ -273,9 +269,11 @@ public class videolessonController {
 
 								if (existingDocument != null) {
 
-									Long size = fileService.getFileSize(existingDocument.getDocumentPath());
+									Long size = fileService.getFileSize(existingDocument.getDocumentName(),
+											existingDocument.getDocumentPath());
 									if (size > 0) {
-										boolean result = fileService.deleteFile(existingDocument.getDocumentPath());
+										boolean result = fileService.deleteFile(existingDocument.getDocumentName(),
+												existingDocument.getDocumentPath());
 										Deleted += size;
 
 										// Only delete the document from the repository if the file deletion was
@@ -296,19 +294,29 @@ public class videolessonController {
 						}
 						if (videoFile != null) {
 							if (video.getVideofilename() != null) {
-								fileService.deleteFile(video.getVideofilename());
+								fileService.deleteFile(video.getVideofilename(), video.getPath());
 							} else {
 								video.setFileUrl(null);
 							}
-							String videoFilePath = fileService.saveVideoFile(videoFile);
 							newelyaddedsize += videoFile.getSize();
-							video.setVideofilename(videoFilePath);
+							String videoFilePath = fileService.saveVideoFile(videoFile, institution); // e.g.,
+																										// InstitutionA/videos/169123.mp4
+
+							// Extract filename from path
+							String videoFileName = Paths.get(videoFilePath).getFileName().toString(); // →
+																										// 1691234567890_abc123.mp4
+
+							// Save in lesson
+							video.setVideofilename(videoFileName); // ✅ Just the file name
+							video.setPath(videoFilePath);
 						} else if (fileUrl != null && !fileUrl.isEmpty()) {
 							if (video.getVideofilename() != null) {
-								Long videoFileDeleted = fileService.getFileSize(video.getVideofilename());
+								Long videoFileDeleted = fileService.getFileSize(video.getVideofilename(),
+										video.getPath());
 
 								if (videoFileDeleted > 0) {
-									Boolean videoresult = fileService.deleteFile(video.getVideofilename());
+									Boolean videoresult = fileService.deleteFile(video.getVideofilename(),
+											video.getPath());
 
 									if (videoresult) {
 										Deleted += videoFileDeleted;
@@ -328,7 +336,7 @@ public class videolessonController {
 							for (MultipartFile newDocFile : newDocumentFiles) {
 								if (newDocFile != null && !newDocFile.isEmpty()) {
 									DocsDetails newDoc = new DocsDetails();
-									String documentPath = fileService.saveDocumentFile(newDocFile);
+									String documentPath = fileService.saveDocumentFile(newDocFile, institution);
 									List<MiniatureDetail> minis = pptreader.getMiniatures(documentPath);
 									// file service
 									newDoc.setMiniatureDetails(minis);
@@ -407,11 +415,7 @@ public class videolessonController {
 			}
 
 			Muser user = opuser.get();
-			String institution = user.getInstitutionName();
-			boolean adminIsactive = muserRepository.getactiveResultByInstitutionName("ADMIN", institution);
-			if (!adminIsactive) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
+
 			if ("USER".equals(role)) {
 				return this.UserAccessCheck(fileName, slideNumber, user);
 			} else if ("ADMIN".equals(role)) {
@@ -552,12 +556,21 @@ public class videolessonController {
 			if (!optionalLesson.isPresent()) {
 				return ResponseEntity.notFound().build();
 			}
-
 			videoLessons lesson = optionalLesson.get();
 			String filename = lesson.getVideofilename();
-			System.out.println("filename" + filename);
 			if (filename != null) {
 				Path filePath = Paths.get(videoStorageDirectory, filename);
+				String path = lesson.getPath();
+
+				if (path != null && !path.isBlank()) {
+					System.out.println("new" + path);
+					// New format with full relative path (e.g., InstitutionA/videos/filename.mp4)
+					filePath = Paths.get(videoStorageDirectory, path);
+				} else {
+					System.out.println("old");
+					// Old format: only filename (flat folder structure)
+					filePath = Paths.get(videoStorageDirectory, filename);
+				}
 				System.out.println("filePath" + filePath);
 				File vdofile = filePath.toFile();
 				logger.info("-------------------------------------------------------");
@@ -699,6 +712,7 @@ public class videolessonController {
 					videoLessons video = oplesson.get();
 					video.setCourseDetail(null);
 					video.setVideoFile(null);
+					video.setDocuments(null);
 					return ResponseEntity.ok(video);
 				}
 				return ResponseEntity.notFound().build();
@@ -721,6 +735,7 @@ public class videolessonController {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
 			if ("ADMIN".equals(role)) {
+				System.out.println("in admin");
 				return ResponseEntity.ok(docsDetailsRepository.findByLessonId(lessonId));
 			}
 			String email = jwtUtil.getEmailFromToken(token);
@@ -847,19 +862,20 @@ public class videolessonController {
 					List<DocsDetails> docs = videolesson.getDocuments();
 					if (docs.size() > 0) {
 						for (DocsDetails doc : docs) {
-							Long sizeone = fileService.getFileSize(doc.getDocumentPath());
+							Long sizeone = fileService.getFileSize(doc.getDocumentName(), doc.getDocumentPath());
 							System.out.println("sizeone" + sizeone);
 							if (sizeone > 0) {
-								fileService.deleteFile(doc.getDocumentName());
+								fileService.deleteFile(doc.getDocumentName(), doc.getDocumentPath());
 							}
 							docsDetailsRepository.deleteById(doc.getId());
 
 						}
 					}
 					if (videolesson.getVideofilename() != null) {
-						Long sizeone = fileService.getFileSize(videolesson.getVideofilename());
+						Long sizeone = fileService.getFileSize(videolesson.getVideofilename(), videolesson.getPath());
 						if (sizeone > 0) {
-							Boolean resultdeleted = fileService.deleteFile(videolesson.getVideofilename());
+							Boolean resultdeleted = fileService.deleteFile(videolesson.getVideofilename(),
+									videolesson.getPath());
 							if (resultdeleted) {
 								videolesson.getDocuments().clear();
 								lessonrepo.deleteById(lessonId);

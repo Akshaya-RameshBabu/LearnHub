@@ -1,5 +1,6 @@
 package com.knowledgeVista.Migration;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -22,6 +23,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -182,7 +184,9 @@ public class GoogleDriveOAuthService {
 
 	public String uploadFileToDrive(InputStream inputStream, String fileName, String folderName, String institutionName)
 			throws IOException, GeneralSecurityException, Exception {
+
 		Credential credential = authorizeUserAndGetRefreshToken(institutionName);
+
 		Drive driveService = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
 				.setApplicationName(APPLICATION_NAME).build();
 
@@ -192,8 +196,38 @@ public class GoogleDriveOAuthService {
 		fileMetadata.setName(fileName);
 		fileMetadata.setParents(Collections.singletonList(folderId));
 
-		InputStreamContent mediaContent = new InputStreamContent("application/sql", inputStream);
-		File uploadedFile = driveService.files().create(fileMetadata, mediaContent).setFields("id, name").execute();
+		byte[] zipBytes = inputStream.readAllBytes(); // Required for getting content length
+		InputStreamContent mediaContent = new InputStreamContent("application/zip", new ByteArrayInputStream(zipBytes));
+		mediaContent.setLength(zipBytes.length); // Required for resumable
+
+		Drive.Files.Create createRequest = driveService.files().create(fileMetadata, mediaContent)
+				.setFields("id, name");
+
+		MediaHttpUploader uploader = createRequest.getMediaHttpUploader();
+		uploader.setDirectUploadEnabled(false); // Use resumable
+		uploader.setChunkSize(5 * 1024 * 1024); // ✅ 5 MB chunk size
+
+		uploader.setProgressListener(u -> {
+			switch (u.getUploadState()) {
+			case INITIATION_STARTED:
+				logger.info("⏳ Upload initiation started");
+				break;
+			case INITIATION_COMPLETE:
+				logger.info("✅ Upload initiation complete");
+				break;
+			case MEDIA_IN_PROGRESS:
+				logger.info("📤 Uploaded {} bytes", u.getNumBytesUploaded());
+				break;
+			case MEDIA_COMPLETE:
+				logger.info("🎉 Upload complete");
+				break;
+			case NOT_STARTED:
+				logger.info("🚫 Upload not started");
+				break;
+			}
+		});
+
+		File uploadedFile = createRequest.execute();
 		return uploadedFile.getId();
 	}
 
@@ -248,19 +282,67 @@ public class GoogleDriveOAuthService {
 	}
 
 	public void uploadFileToDrivesheduled(InputStream inputStream, String fileName, String folderName,
-			String institutionName) throws IOException, GeneralSecurityException, Exception {
-		Credential credential = authorizeUserAndGetRefreshTokensheduled(institutionName);
-		Drive driveService = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
+			String institutionName) throws Exception {
+
+		// Authorize
+		var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		var credentials = oAuthCredentialService2.getCredential(institutionName);
+		if (credentials == null) {
+			notifyAdminOfBackupFailure(
+					"❌ No credentials found. Please go to 'Drive Backup Settings' and add your Google Cloud OAuth credentials.",
+					institutionName);
+			return;
+		}
+
+		String clientId = credentials.getClientId();
+		String clientSecret = credentials.getClientSecret();
+		String refreshToken = credentials.getRefreshToken();
+
+		GoogleCredential credential = new GoogleCredential.Builder().setTransport(httpTransport)
+				.setJsonFactory(JSON_FACTORY).setClientSecrets(clientId, clientSecret).build()
+				.setRefreshToken(refreshToken);
+
+		Drive driveService = new Drive.Builder(httpTransport, JSON_FACTORY, credential)
 				.setApplicationName(APPLICATION_NAME).build();
 
+		// Get or create folder
 		String folderId = getOrCreateFolderId(driveService, folderName);
 
 		File fileMetadata = new File();
 		fileMetadata.setName(fileName);
 		fileMetadata.setParents(Collections.singletonList(folderId));
-		InputStreamContent mediaContent = new InputStreamContent("application/sql", inputStream);
-		driveService.files().create(fileMetadata, mediaContent).setFields("id, name").execute();
 
+		InputStreamContent mediaContent = new InputStreamContent("application/zip", inputStream);
+		mediaContent.setLength(-1); // Unknown size for stream
+		mediaContent.setCloseInputStream(false);
+
+		Drive.Files.Create createRequest = driveService.files().create(fileMetadata, mediaContent)
+				.setFields("id, name");
+
+		// Enable resumable upload with large chunk size
+		MediaHttpUploader uploader = createRequest.getMediaHttpUploader();
+		uploader.setDirectUploadEnabled(false); // Use resumable
+		uploader.setChunkSize(5 * 1024 * 1024); // ✅ 5 MB chunk size
+
+		// Optional: Progress listener
+		uploader.setProgressListener((MediaHttpUploader uploaderProgress) -> {
+			switch (uploaderProgress.getUploadState()) {
+			case INITIATION_STARTED:
+				System.out.println("Upload initiation started.");
+				break;
+			case INITIATION_COMPLETE:
+				System.out.println("Upload initiation completed.");
+				break;
+			case MEDIA_IN_PROGRESS:
+				System.out.printf("Uploaded so far: %d bytes\n", uploaderProgress.getNumBytesUploaded());
+				break;
+			case MEDIA_COMPLETE:
+				System.out.println("Upload completed!");
+				break;
+			}
+		});
+
+		createRequest.execute(); // Start upload
 	}
 
 	public void deleteOldFilesInDriveFolder(String folderName, int maxFilesToKeep, String institutionName)
@@ -277,7 +359,7 @@ public class GoogleDriveOAuthService {
 		String folderId = getOrCreateFolderId(driveService, folderName);
 
 		FileList fileList = driveService.files().list()
-				.setQ("'" + folderId + "' in parents and mimeType='application/sql' and trashed = false")
+				.setQ("'" + folderId + "' in parents and mimeType='application/zip' and trashed = false")
 				.setFields("files(id, name, createdTime)").setOrderBy("createdTime asc") // oldest first
 				.execute();
 		List<File> files = fileList.getFiles();

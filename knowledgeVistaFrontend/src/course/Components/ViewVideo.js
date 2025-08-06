@@ -362,8 +362,9 @@ const ViewVideo = () => {
                             className="doclink"
                               key={doc.id}
                               onClick={() => {
-                                navigate(`/viewDocument/${doc.documentPath}/${lessonId}/${doc.id}`);
-                              }}
+                             const encodedPath = encodeURIComponent(doc.documentPath);
+navigate(`/viewDocument/${encodedPath}/${lessonId}/${doc.id}`);
+ }}
                             >
                               {doc.documentName != null
                                 ? doc.documentName

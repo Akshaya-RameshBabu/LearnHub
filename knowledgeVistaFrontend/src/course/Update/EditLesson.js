@@ -718,8 +718,9 @@ const EditLesson = () => {
                                 className="doclinkedit"
                                > {doc.documentName &&(
                                   < div onClick={() => {
-                                    navigate(`/viewDocument/${doc.documentPath}/${lessonId}/${doc.id}`);
-                                    }}>
+                                    const encodedPath = encodeURIComponent(doc.documentPath);
+navigate(`/viewDocument/${encodedPath}/${lessonId}/${doc.id}`);
+}}>
                                     {doc.documentName && doc.documentName.length<40?doc.documentName:doc.documentName.slice(0,40)+"..."}
                                     {doc.documentName.endsWith(".pdf") && (
                                       <i className="fa-regular fa-file-pdf"></i>

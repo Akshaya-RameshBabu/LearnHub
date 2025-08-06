@@ -222,30 +222,52 @@ public class BatchService {
 	public ResponseEntity<?> SaveBatchforCourseCreation(String batchTitle, LocalDate startDate, LocalDate endDate,
 			String token) {
 		try {
+			System.out.println("in save batch------------");
 			String role = jwtUtil.getRoleFromToken(token);
 			String email = jwtUtil.getEmailFromToken(token);
-			String institutionName = muserRepo.findinstitutionByEmail(email);
-			if (institutionName == null || institutionName.isEmpty()) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized User Institution Not Found");
+			String institutionName = jwtUtil.getInstitutionFromToken(token);
+
+			// Allow only ADMIN or TRAINER to create batch
+			if (!("ADMIN".equals(role) || "TRAINER".equals(role))) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Student cannot add a batch.");
 			}
-			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
 
-				Batch batch = new Batch();
-				batch.setBatchTitle(batchTitle);
-				batch.setInstitutionName(institutionName);
-				batch.setStartDate(startDate);
-				batch.setEndDate(endDate);
+			// Create and save batch
+			Batch batch = new Batch();
+			batch.setBatchTitle(batchTitle);
+			batch.setInstitutionName(institutionName);
+			batch.setStartDate(startDate);
+			batch.setEndDate(endDate);
+			Batch savedBatch = batchrepo.save(batch);
 
-				Batch savedBatch = batchrepo.save(batch);
+			// Fetch user by email
+			Optional<Muser> opaddingMuser = muserRepo.findByEmail(email);
+			if (opaddingMuser.isPresent()) {
+				Muser user = opaddingMuser.get();
 
-				return ResponseEntity.ok(savedBatch);
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Student Cannot add Batch");
+				// Only assign batch to the user if they are TRAINER
+				if ("TRAINER".equals(user.getRole().getRoleName())) {
+					if (!user.getBatches().contains(batch)) {
+						System.out.println("in userbatch");
+						user.getBatches().add(batch);
+						muserRepo.save(user);
+					}
+					savedBatch.setTrainers(Optional.ofNullable(savedBatch.getTrainers()).orElseGet(ArrayList::new));
+
+					if (!savedBatch.getTrainers().contains(user)) {
+						savedBatch.getTrainers().add(user);
+						batchrepo.save(savedBatch);
+					}
+
+				}
 			}
+
+			return ResponseEntity.ok(savedBatch);
+
 		} catch (Exception e) {
-			logger.error("Exception occurs in save Batch", e);
-			;
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			logger.error("Exception occurs in SaveBatchforCourseCreation", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Something went wrong while saving batch.");
 		}
 	}
 

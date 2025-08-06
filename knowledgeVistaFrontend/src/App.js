@@ -130,6 +130,7 @@ import OpenRouterKeys from "./UserSettings/OpenRouterKeys.js";
 import UserCommonSetting from "./UserSettings/UserCommonSetting.js";
 import BackupManager from "./backupmanager/BackupManager.js";
 import DriveBackupKeys from "./backupmanager/DriveBackupKeys.js";
+import ListMeeting from "./Meetings/ListMeeting.js";
 
 function App() {
   useEffect(() => {
@@ -1030,6 +1031,19 @@ function App() {
                 </ErrorBoundary>
               }
             />
+             <Route
+              path="/meeting/manage"
+              element={
+                <ErrorBoundary>
+                  <PrivateRoute
+                    authenticationRequired={true}
+                    authorizationRequired={true}
+                  >
+                    <ListMeeting />
+                  </PrivateRoute>
+                </ErrorBoundary>
+              }
+            />
             <Route
               path="/meet/edit/:meetingId"
               element={
@@ -1053,6 +1067,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
+            
             <Route
               path="/user/ProgramCalender"
               element={

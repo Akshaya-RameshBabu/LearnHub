@@ -91,7 +91,7 @@ public class BackupSchedulerService {
 	}
 
 	private void scheduleDailyBackupTask() {
-		LocalTime time = LocalTime.of(2, 0); // 2 AM
+		LocalTime time = LocalTime.of(15, 43); // 2 AM
 		Runnable dailyTask = () -> {
 			System.out.println("🛡️ Running generic daily 2AM backup at " + LocalTime.now());
 			try {

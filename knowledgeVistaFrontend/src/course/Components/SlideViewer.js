@@ -12,6 +12,7 @@ const SlideViewer = () => {
   const [miniatures, setMiniatures] = useState([]);
   const navigate = useNavigate();
   const { documentPath, lessonId, docid } = useParams();
+  const edocumentPath = decodeURIComponent(documentPath);
   const [actualwidth, setactualwidth] = useState("");
   const [slideImages, setSlideImages] = useState([]); // To store all slide images
   const [totalSlides, setTotalSlides] = useState(0); // To store total slides count
@@ -60,8 +61,12 @@ const SlideViewer = () => {
   const fetchSlideImage = async (slideNumber) => {
     try {
       const response = await axios.get(
-        `${baseUrl}/slide/${documentPath}/${slideNumber}`,
+        `${baseUrl}/slide`,
         {
+            params: {
+          filePath: edocumentPath,   // Pass file path as query param
+          pageNumber: slideNumber    // Pass page number as query param
+        },
           responseType: "json",
           headers: {
             Authorization: token,
@@ -218,7 +223,7 @@ const SlideViewer = () => {
         </div>
         <div className="wrapppt">
           <div className="headdocu">
-            <div>{documentPath.substring(documentPath.indexOf("_") + 1)}</div>
+            <div>{edocumentPath.substring(edocumentPath.indexOf("_") + 1)}</div>
             <div className="pageshow">
               <span className="pageshowchild">
                 <span className="currentslide">{currentSlide}</span> /{" "}
@@ -271,7 +276,7 @@ const SlideViewer = () => {
                     {" "}
                     <div
                       className={`  ${
-                        documentPath.endsWith(".pdf") ? "heightmini" : ""
+                        edocumentPath.endsWith(".pdf") ? "heightmini" : ""
                       }`}
                     >
                       <img

@@ -54,54 +54,109 @@ public class VideoFileService {
 		return Files.readAllBytes(path);
 	}
 
-	public String saveVideoFile(MultipartFile videoFile) throws IOException, SecurityException {
+//	public String saveVideoFile(MultipartFile videoFile) throws IOException, SecurityException {
+//		// Validate file
+//		validateVideoFile(videoFile);
+//
+//		// Ensure the upload directory exists
+//		Path uploadPath = Paths.get(videoUploadDirectory);
+//		if (!Files.exists(uploadPath)) {
+//			Files.createDirectories(uploadPath);
+//		}
+//
+//		// Generate a unique file name with timestamp and hash
+//		String uniqueFileName = generateSecureFileName(videoFile);
+//
+//		// Define the file path where the video file will be stored
+//		String filePath = uploadPath.resolve(uniqueFileName).toString();
+//
+//		// Save the file to the server
+//		Files.copy(videoFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+//
+//		// Calculate and store file hash for integrity checks
+//		String fileHash = calculateFileHash(videoFile);
+//		storeFileHash(uniqueFileName, fileHash);
+//
+//		return uniqueFileName;
+//	}
+
+	public String saveVideoFile(MultipartFile videoFile, String institutionName) throws IOException {
 		// Validate file
 		validateVideoFile(videoFile);
 
-		// Ensure the upload directory exists
-		Path uploadPath = Paths.get(videoUploadDirectory);
+		// Build directory: assets/{institutionName}/videos
+		String sanitizedInstitution = sanitize(institutionName);
+		Path uploadPath = Paths.get(videoUploadDirectory, sanitizedInstitution, "videos");
+
+		// Ensure the directory exists
 		if (!Files.exists(uploadPath)) {
 			Files.createDirectories(uploadPath);
 		}
 
-		// Generate a unique file name with timestamp and hash
+		// Generate unique file name
 		String uniqueFileName = generateSecureFileName(videoFile);
-
-		// Define the file path where the video file will be stored
-		String filePath = uploadPath.resolve(uniqueFileName).toString();
-
-		// Save the file to the server
-		Files.copy(videoFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-
-		// Calculate and store file hash for integrity checks
-		String fileHash = calculateFileHash(videoFile);
-		storeFileHash(uniqueFileName, fileHash);
-
-		return uniqueFileName;
-	}
-
-	public String saveDocumentFile(MultipartFile documentFile) throws IOException, SecurityException {
-		// Validate the document file
-		validateDocumentFile(documentFile);
-
-		// Ensure upload directory exists
-		Path uploadPath = Paths.get(videoUploadDirectory); // You can separate doc dir if needed
-		if (!Files.exists(uploadPath)) {
-			Files.createDirectories(uploadPath);
-		}
-
-		// Generate a secure file name
-		String uniqueFileName = generateSecureFileName(documentFile);
-		String filePath = uploadPath.resolve(uniqueFileName).toString();
+		Path fullFilePath = uploadPath.resolve(uniqueFileName);
 
 		// Save the file
-		Files.copy(documentFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(videoFile.getInputStream(), fullFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+		// Hash and log
+		String fileHash = calculateFileHash(videoFile);
+		storeFileHash(uniqueFileName, fileHash);
+		return Paths.get(sanitizedInstitution, "videos", uniqueFileName).toString().replace("\\", "/");
+
+	}
+
+//	public String saveDocumentFile(MultipartFile documentFile) throws IOException, SecurityException {
+//		// Validate the document file
+//		validateDocumentFile(documentFile);
+//
+//		// Ensure upload directory exists
+//		Path uploadPath = Paths.get(videoUploadDirectory); // You can separate doc dir if needed
+//		if (!Files.exists(uploadPath)) {
+//			Files.createDirectories(uploadPath);
+//		}
+//
+//		// Generate a secure file name
+//		String uniqueFileName = generateSecureFileName(documentFile);
+//		String filePath = uploadPath.resolve(uniqueFileName).toString();
+//
+//		// Save the file
+//		Files.copy(documentFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+//
+//		// Hash and log
+//		String fileHash = calculateFileHash(documentFile);
+//		storeFileHash(uniqueFileName, fileHash);
+//
+//		return uniqueFileName;
+//	}
+
+	public String saveDocumentFile(MultipartFile documentFile, String institutionName) throws IOException {
+		// Validate file
+		validateDocumentFile(documentFile);
+
+		// Build directory: assets/{institutionName}/documents
+		String sanitizedInstitution = sanitize(institutionName);
+		Path uploadPath = Paths.get(videoUploadDirectory, sanitizedInstitution, "documents");
+
+		// Ensure the directory exists
+		if (!Files.exists(uploadPath)) {
+			Files.createDirectories(uploadPath);
+		}
+
+		// Generate unique file name
+		String uniqueFileName = generateSecureFileName(documentFile);
+		Path fullFilePath = uploadPath.resolve(uniqueFileName);
+
+		// Save the file
+		Files.copy(documentFile.getInputStream(), fullFilePath, StandardCopyOption.REPLACE_EXISTING);
 
 		// Hash and log
 		String fileHash = calculateFileHash(documentFile);
 		storeFileHash(uniqueFileName, fileHash);
 
-		return uniqueFileName;
+		// Return relative path
+		return Paths.get(sanitizedInstitution, "documents", uniqueFileName).toString().replace("\\", "/");
 	}
 
 	private void validateDocumentFile(MultipartFile file) throws SecurityException {
@@ -223,32 +278,38 @@ public class VideoFileService {
 		// In production, store this in a database
 		logger.info("File hash for {}: {}", fileName, hash);
 	}
+//
+//	public boolean deleteVideoFile(String fileName) {
+//		Path filePath = Paths.get(videoUploadDirectory, fileName);
+//
+//		try {
+//			boolean deleted = Files.deleteIfExists(filePath);
+//
+//			if (deleted) {
+//				logger.info("File deleted successfully: {}", fileName);
+//			} else {
+//				logger.warn("File does not exist or deletion failed: {}", fileName);
+//			}
+//
+//			return deleted; // Return the result to the caller
+//		} catch (IOException e) {
+//			logger.error("Error occurred while deleting file: " + fileName, e);
+//			return false; // Return false in case of an exception
+//		}
+//	}
 
-	public boolean deleteVideoFile(String fileName) {
-		Path filePath = Paths.get(videoUploadDirectory, fileName);
+	public long getFileSize(String fileName, String path) {
+		Path filePath;
 
-		try {
-			boolean deleted = Files.deleteIfExists(filePath);
-
-			if (deleted) {
-				logger.info("File deleted successfully: {}", fileName);
-			} else {
-				logger.warn("File does not exist or deletion failed: {}", fileName);
-			}
-
-			return deleted; // Return the result to the caller
-		} catch (IOException e) {
-			logger.error("Error occurred while deleting file: " + fileName, e);
-			return false; // Return false in case of an exception
+		if (path != null && !path.isBlank()) {
+			// New format with full relative path (e.g., InstitutionA/videos/filename.mp4)
+			filePath = Paths.get(videoUploadDirectory, path);
+		} else {
+			// Old format: only filename (flat folder structure)
+			filePath = Paths.get(videoUploadDirectory, fileName);
 		}
-	}
-
-	public long getFileSize(String fileName) {
-		Path filePath = Paths.get(videoUploadDirectory, fileName);
 
 		try {
-			logger.info("Path: {}", filePath);
-			System.out.println(filePath);
 			if (Files.exists(filePath)) {
 				// Fetch file size safely
 				try (SeekableByteChannel channel = Files.newByteChannel(filePath)) {
@@ -266,23 +327,32 @@ public class VideoFileService {
 		}
 	}
 
-	public boolean deleteFile(String fileName) {
-		Path filePath = Paths.get(videoUploadDirectory, fileName);
+	public boolean deleteFile(String fileName, String path) {
+		Path filePath;
+
+		if (path != null && !path.isBlank()) {
+			// New format with full relative path (e.g., InstitutionA/videos/filename.mp4)
+			filePath = Paths.get(videoUploadDirectory, path);
+		} else {
+			// Old format: only filename (flat folder structure)
+			filePath = Paths.get(videoUploadDirectory, fileName);
+		}
 
 		try {
-			logger.info("Deleting file: {}", filePath);
+			boolean deleted = Files.deleteIfExists(filePath);
 
-			if (Files.deleteIfExists(filePath)) {
-				logger.info("File deleted successfully.");
-				return true;
+			if (deleted) {
+				logger.info("File deleted successfully: {}", filePath);
 			} else {
-				logger.info("File does not exist.");
-				return false;
+				logger.warn("File does not exist or deletion failed: {}", filePath);
 			}
+
+			return deleted;
 		} catch (IOException e) {
-			logger.error("Error occurred while deleting the file.", e);
+			logger.error("Error occurred while deleting file: " + filePath, e);
 			return false;
 		}
+
 	}
 
 	public String updateVideoFile(String existingFileName, MultipartFile newVideoFile, String videoUploadDirectory)
@@ -319,7 +389,7 @@ public class VideoFileService {
 	public String saveAssignmentFile(MultipartFile videoFile, String institutionName, Long batchId, Long courseId,
 			Long userId) throws IOException {
 		// Validate file
-		validateVideoFile(videoFile);
+		validateDocumentFile(videoFile);
 
 		// Build the relative path structure
 		String relativePath = Paths

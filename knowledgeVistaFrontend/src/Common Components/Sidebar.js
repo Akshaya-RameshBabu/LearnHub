@@ -485,9 +485,24 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         className="nav-link "
                       >
                         <span className="pcoded-micon">
-                          <i className="fa-solid fa-video"></i>
+                         <i className="fa-solid fa-calendar-days"></i>
                         </span>
-                        <span className="pcoded-mtext">My Meetings</span>
+                        <span className="pcoded-mtext">  Calender</span>
+                      </a>
+                    </li>
+                     <li>
+                      <a
+                        href="#"
+                        data-path="/meeting/manage"
+                        onClick={(e) => {
+                          handleClick(e, "/meeting/manage");
+                        }}
+                        className="nav-link "
+                      >
+                        <span className="pcoded-micon">
+                        <i class="fa-solid fa-video"></i>
+                        </span>
+                        <span className="pcoded-mtext">Manage</span>
                       </a>
                     </li>
                     <li>
@@ -859,19 +874,36 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   <span className="pcoded-mtext">Meeting</span>
                 </a>
                 <ul className="pcoded-submenu">
-                  <li>
-                    <a
-                      href="#"
-                      data-path="/meeting/calender"
-                      onClick={(e) => handleClick(e, "/meeting/calender")}
-                      className="nav-link "
-                    >
-                      <span className="pcoded-micon">
-                        <i className="fa-solid fa-user-clock"></i>
-                      </span>
-                      <span className="pcoded-mtext">My Meetings</span>
-                    </a>
-                  </li>
+                <li>
+                      <a
+                        href="#"
+                        data-path="/meeting/calender"
+                        onClick={(e) => {
+                          handleClick(e, "/meeting/calender");
+                        }}
+                        className="nav-link "
+                      >
+                        <span className="pcoded-micon">
+                         <i className="fa-solid fa-calendar-days"></i>
+                        </span>
+                        <span className="pcoded-mtext">  Calender</span>
+                      </a>
+                    </li>
+                         <li>
+                      <a
+                        href="#"
+                        data-path="/meeting/manage"
+                        onClick={(e) => {
+                          handleClick(e, "/meeting/manage");
+                        }}
+                        className="nav-link "
+                      >
+                        <span className="pcoded-micon">
+                        <i class="fa-solid fa-video"></i>
+                        </span>
+                        <span className="pcoded-mtext">Manage</span>
+                      </a>
+                    </li>
                   <li>
                     <a
                       href="#"

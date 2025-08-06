@@ -432,11 +432,12 @@ public class FrontController {
 				newDocumentFiles, removedDetails, token);
 	}
 
-	@GetMapping("/slide/{fileName}/{pageNumber}")
+	@GetMapping("/slide")
 	@CheckAccessAnnotation
-	public ResponseEntity<?> getDocFile(@PathVariable String fileName, @PathVariable int pageNumber,
+	public ResponseEntity<?> getDocFile(@RequestParam String filePath, @RequestParam int pageNumber,
 			@RequestHeader("Authorization") String token) {
-		return videoless.getDocFile(fileName, pageNumber, token);
+
+		return videoless.getDocFile(filePath, pageNumber, token);
 	}
 
 	@GetMapping("/lessons/getvideoByid/{lessId}/{courseId}/{token}")

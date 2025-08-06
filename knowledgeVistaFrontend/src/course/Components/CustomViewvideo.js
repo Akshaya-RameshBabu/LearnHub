@@ -366,12 +366,14 @@ const CustomViewvideo = () => {
             <ul className="doclist">
                     <h6><b>Documents</b></h6>
                        
-                         { currentDocs.map((doc) => (
+                         { currentDocs?.map((doc) => (
                             <li
                             className="doclink"
                               key={doc.id}
                               onClick={() => {
-                                navigate(`/viewDocument/${doc.documentPath}/${lessonId}/${doc.id}`);
+                                const encodedPath = encodeURIComponent(doc.documentPath);
+navigate(`/viewDocument/${encodedPath}/${lessonId}/${doc.id}`);
+
                               }}
                             >
                               {doc.documentName != null
