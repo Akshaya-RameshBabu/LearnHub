@@ -20,33 +20,33 @@ const weekDays = [
   "FRIDAY",
   "SATURDAY",
 ];
-const monthDays = Array.from({ length: 28 }, (_, i) => i + 1); // To avoid Feb bugs
+const monthDays = Array.from({ length: 28 }, (_, i) => i + 1);
 
 export default function BackupManager() {
   const MySwal = withReactContent(Swal);
   const navigate = useNavigate();
   const token = sessionStorage.getItem("token");
   const [loading, setLoading] = useState({});
+  const [notfound, setnotfound] = useState();
   const [newSchedule, setNewSchedule] = useState({
-    scheduleType: "",
-    dayOfWeek: "", // MUST match enum
-    dayOfMonth: 0,
-    maxBackupsToKeep: 0, // MUST match Java field name
-    backupTime:"02:00"
+    scheduleType: "DAILY",
+    dayOfWeek: "SUNDAY",
+    dayOfMonth: 1,
+    maxBackupsToKeep: 1,
+    backupTime: "12:00",
   });
 
-  const weekDays = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
+  const handleScheduleChange = (field, value) => {
+    setNewSchedule((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   useEffect(() => {
     fetchSchedule();
   }, []);
+
   const fetchSchedule = async () => {
     setLoading((prev) => ({ ...prev, getshedule: true }));
     try {
@@ -55,8 +55,12 @@ export default function BackupManager() {
           Authorization: token,
         },
       });
-
-      setNewSchedule(response?.data);
+      if (response?.status === 200) {
+        setNewSchedule(response?.data);
+        setnotfound(false)
+      } else if (response?.status === 204) {
+        setnotfound(true);
+      }
     } catch (error) {
       if (error?.response?.status === 401) {
         navigate("/unauthorized");
@@ -72,6 +76,7 @@ export default function BackupManager() {
       setLoading((prev) => ({ ...prev, getshedule: false }));
     }
   };
+
   const createSchedule = async () => {
     setLoading((prev) => ({ ...prev, saveSchedule: true }));
     try {
@@ -92,11 +97,9 @@ export default function BackupManager() {
           `Backup schedule ${response?.data} successfully!` ||
           "Your backup schedule was saved.",
         confirmButtonText: "OK",
-      }).then((result) => {
-        fetchSchedule();
+      }).then(() => {
       });
     } catch (error) {
-      console.error("Error saving schedule:", error);
       MySwal.fire({
         icon: "error",
         title: "Failed to save schedule",
@@ -105,6 +108,7 @@ export default function BackupManager() {
       });
     } finally {
       setLoading((prev) => ({ ...prev, saveSchedule: false }));
+      fetchSchedule();
     }
   };
 
@@ -119,28 +123,22 @@ export default function BackupManager() {
         headers: {
           Authorization: token,
         },
-        responseType: "blob", // 👈 important for binary data
+        responseType: "blob",
       });
 
       if (response.status === 200) {
         const blob = new Blob([response.data], { type: "application/sql" });
-
-        // Generate a filename with timestamp or fallback
         const timestamp = new Date()
           .toISOString()
           .slice(0, 19)
           .replace(/[:T]/g, "-");
         const filename = `backup_${timestamp}.sql`;
-
-        // Create temporary download link
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", filename); // 👈 sets the filename
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
-
-        // Cleanup
         link.remove();
         window.URL.revokeObjectURL(url);
       }
@@ -149,12 +147,9 @@ export default function BackupManager() {
         navigate("/unauthorized");
       } else if (err?.response?.status === 500) {
         const blob = err?.response?.data;
-
-        // Try to read the blob as text
         const reader = new FileReader();
         reader.onload = () => {
           const errorMessage = reader.result || "Unknown server error";
-
           MySwal.fire({
             icon: "error",
             title: "Some Error Occurred",
@@ -170,8 +165,7 @@ export default function BackupManager() {
             confirmButtonText: "OK",
           });
         };
-
-        reader.readAsText(blob); // 👈 reads blob as string
+        reader.readAsText(blob);
       }
     } finally {
       setLoadingFor("downloadBackup", false);
@@ -201,13 +195,12 @@ export default function BackupManager() {
       }
       if (err?.response?.status === 428) {
         const message = err?.response?.data;
-
         MySwal.fire({
           icon: "warning",
           title: "Credentials are Missing ",
           text: message,
           confirmButtonText: "OK",
-        }).then((result) => {
+        }).then(() => {
           navigate("/admin/driveCredentials");
         });
       } else if (err?.response?.status === 500) {
@@ -252,7 +245,6 @@ export default function BackupManager() {
                     <div className="skeleton skeleton-input"></div>
                   </div>
                 </div>
-
                 <div className="form-group row">
                   <label className="col-sm-3 col-form-label">
                     Max Backups to Keep
@@ -261,29 +253,22 @@ export default function BackupManager() {
                     <div className="skeleton skeleton-input"></div>
                   </div>
                 </div>
-
                 <div className="skeleton skeleton-input"></div>
-
                 <div className="cornerbtn mt-3">
                   <div></div>
                   <div className="skeleton skeleton-button"></div>
                 </div>
               </div>
-            ) : (
-              <div>
+            ) : notfound ? (
+               <div>
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">
-                    Schedule Type
-                  </label>
+                  <label className="col-sm-3 col-form-label">Schedule Type</label>
                   <div className="col-sm-9">
                     <select
                       className="form-select"
                       value={newSchedule.scheduleType}
                       onChange={(e) =>
-                        setNewSchedule({
-                          ...newSchedule,
-                          scheduleType: e.target.value,
-                        })
+                        handleScheduleChange("scheduleType", e.target.value)
                       }
                     >
                       {scheduleTypes.map((opt) => (
@@ -297,18 +282,13 @@ export default function BackupManager() {
 
                 {newSchedule.scheduleType === "WEEKLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">
-                      Day of the Week
-                    </label>
+                    <label className="col-sm-3 col-form-label">Day of the Week</label>
                     <div className="col-sm-9">
                       <select
                         className="form-select"
                         value={newSchedule.dayOfWeek}
                         onChange={(e) =>
-                          setNewSchedule({
-                            ...newSchedule,
-                            dayOfWeek: e.target.value,
-                          })
+                          handleScheduleChange("dayOfWeek", e.target.value)
                         }
                       >
                         {weekDays.map((day) => (
@@ -323,18 +303,13 @@ export default function BackupManager() {
 
                 {newSchedule.scheduleType === "MONTHLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">
-                      Day of the Month
-                    </label>
+                    <label className="col-sm-3 col-form-label">Day of the Month</label>
                     <div className="col-sm-9">
                       <select
                         className="form-select"
                         value={newSchedule.dayOfMonth}
                         onChange={(e) =>
-                          setNewSchedule({
-                            ...newSchedule,
-                            dayOfMonth: parseInt(e.target.value),
-                          })
+                          handleScheduleChange("dayOfMonth", parseInt(e.target.value))
                         }
                       >
                         {monthDays.map((day) => (
@@ -348,18 +323,13 @@ export default function BackupManager() {
                 )}
 
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">
-                    Max Backups to Keep
-                  </label>
+                  <label className="col-sm-3 col-form-label">Max Backups to Keep</label>
                   <div className="col-sm-9">
                     <select
                       className="form-select"
                       value={newSchedule.maxBackupsToKeep}
                       onChange={(e) =>
-                        setNewSchedule({
-                          ...newSchedule,
-                          maxBackupsToKeep: parseInt(e.target.value),
-                        })
+                        handleScheduleChange("maxBackupsToKeep", parseInt(e.target.value))
                       }
                     >
                       {[1, 2, 3, 4, 5].map((num) => (
@@ -369,13 +339,11 @@ export default function BackupManager() {
                       ))}
                     </select>
                     <small className="form-text text-muted">
-                      Only the latest{" "}
-                      <strong>{newSchedule.maxBackupsToKeep}</strong> backups
-                      will be retained in Drive. Older ones will be
-                      automatically deleted.
+                      Only the latest <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be retained in Drive.
                     </small>
                   </div>
                 </div>
+
                 <div className="form-group row">
                   <label className="col-sm-3 col-form-label">Backup Time</label>
                   <div className="col-sm-9">
@@ -384,10 +352,7 @@ export default function BackupManager() {
                       className="form-control"
                       value={newSchedule.backupTime}
                       onChange={(e) =>
-                        setNewSchedule({
-                          ...newSchedule,
-                          backupTime: e.target.value,
-                        })
+                        handleScheduleChange("backupTime", e.target.value)
                       }
                       required
                     />
@@ -399,23 +364,14 @@ export default function BackupManager() {
 
                 {newSchedule.scheduleType && (
                   <div className="alert alert-info">
-                    Backups will happen every{" "}
-                    <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
+                    Backups will happen every <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
                     {newSchedule.scheduleType === "WEEKLY" && (
-                      <>
-                        {" "}
-                        on <strong>{newSchedule.dayOfWeek}</strong>
-                      </>
+                      <> on <strong>{newSchedule.dayOfWeek}</strong></>
                     )}
                     {newSchedule.scheduleType === "MONTHLY" && (
-                      <>
-                        {" "}
-                        on day <strong>{newSchedule.dayOfMonth}</strong>
-                      </>
-                    )}{" "}
-                    and stored in <strong>Drive</strong>. Only the last{" "}
-                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will
-                    be kept.
+                      <> on day <strong>{newSchedule.dayOfMonth}</strong></>
+                    )} and stored in <strong>Drive</strong>. Only the last{" "}
+                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be kept.
                   </div>
                 )}
 
@@ -423,6 +379,94 @@ export default function BackupManager() {
                   <div></div>
                   <button className="btn btn-primary" onClick={createSchedule}>
                     Save Schedule
+                  </button>
+                </div>
+              </div>
+             
+            ) : (
+              <div>
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">Schedule Type</label>
+                  <div className="col-sm-9">
+                    <input
+                      className="form-select"
+                      value={newSchedule.scheduleType}
+                     readOnly/>
+                  </div>
+                </div>
+
+                {newSchedule.scheduleType === "WEEKLY" && (
+                  <div className="form-group row">
+                    <label className="col-sm-3 col-form-label">Day of the Week</label>
+                    <div className="col-sm-9">
+                      <input
+                        className="form-select"
+                        value={newSchedule.dayOfWeek}
+                       readOnly
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {newSchedule.scheduleType === "MONTHLY" && (
+                  <div className="form-group row">
+                    <label className="col-sm-3 col-form-label">Day of the Month</label>
+                    <div className="col-sm-9">
+                      <input
+                        className="form-select"
+                        value={newSchedule.dayOfMonth}
+                       readOnly/>
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">Max Backups to Keep</label>
+                  <div className="col-sm-9">
+                    <input
+                      className="form-select"
+                      value={newSchedule.maxBackupsToKeep}
+                       readOnly/>
+                    <small className="form-text text-muted">
+                      Only the latest <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be retained in Drive.
+                    </small>
+                  </div>
+                </div>
+
+                <div className="form-group row">
+                  <label className="col-sm-3 col-form-label">Backup Time</label>
+                  <div className="col-sm-9">
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={newSchedule.backupTime}
+                       readOnly
+                    />
+                    <small className="form-text text-muted">
+                      Choose the time when backup should be executed.
+                    </small>
+                  </div>
+                </div>
+
+                {newSchedule.scheduleType && (
+                  <div className="alert alert-info">
+                    Backups will happen every <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
+                    {newSchedule.scheduleType === "WEEKLY" && (
+                      <> on <strong>{newSchedule.dayOfWeek}</strong></>
+                    )}
+                    {newSchedule.scheduleType === "MONTHLY" && (
+                      <> on day <strong>{newSchedule.dayOfMonth}</strong></>
+                    )} and stored in <strong>Drive</strong>. Only the last{" "}
+                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be kept.
+                  </div>
+                )}
+
+                <div className="cornerbtn">
+                  <div></div>
+                  <button className="btn btn-success" onClick={()=>{
+                    setnotfound(true);
+                  }}>
+                    Edit
                   </button>
                 </div>
               </div>
@@ -438,7 +482,7 @@ export default function BackupManager() {
               disabled={loading?.downloadBackup}
             >
               {loading?.downloadBackup ? (
-                <i className="fa fa-spinner fa-spin"></i> // ⬅️ Spinner icon
+                <i className="fa fa-spinner fa-spin"></i>
               ) : (
                 <i className="fa fa-download"></i>
               )}{" "}
@@ -451,7 +495,7 @@ export default function BackupManager() {
               disabled={loading?.saveToDrive}
             >
               {loading?.saveToDrive ? (
-                <i className="fa fa-spinner fa-spin"></i> // ⬅️ Spinner icon
+                <i className="fa fa-spinner fa-spin"></i>
               ) : (
                 <i className="fa fa-google-drive"></i>
               )}{" "}

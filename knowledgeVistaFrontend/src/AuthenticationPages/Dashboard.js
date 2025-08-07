@@ -183,16 +183,7 @@ const Dashboard = () => {
     const [admins, setAdmins] = useState([]);
     const [selectedInstitution, setSelectedInstitution] = useState("");
     const [institutionNames, setInstitutionNames] = useState([]);
-     // When the selected institution changes, call the dashboard API
-//   useEffect(() => {
-//     if (selectedInstitution) {
-//       axios.get(`http://localhost:8080/sysadmin/dashboard/${selectedInstitution}`)
-//         .then(response => {
-//         //   setDashboardData(response.data);
-//         })
-//         .catch(error => console.error("Error fetching dashboard data:", error));
-//     }
-//   }, [selectedInstitution]);
+    
   
 
     useEffect(() => {
