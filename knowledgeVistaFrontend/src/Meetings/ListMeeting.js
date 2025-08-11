@@ -7,15 +7,19 @@ import Swal from 'sweetalert2';
 const ListMeeting = () => {
   const [meetings, setMeetings] = useState([]);
   const token = sessionStorage.getItem('token');
+  const[date,setdate]=useState(new Date().toISOString().split('T')[0]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [date]);
 
   const fetchItems = async () => {
     try {
-      const response = await axios.get(`${baseUrl}/api/zoom/getMyMeetings`, {
+      const response = await axios.get(`${baseUrl}/api/zoom/getMyMeetingswithdate`, {
+        params:{
+          date:date,
+        },
         headers: {
           'Authorization': token,
         },
@@ -100,11 +104,13 @@ const ListMeeting = () => {
                   <i className="fa-solid fa-xmark"></i>
                 </div>
               </div>
+              <div className='tableheader'>
 <h4 >My Meetings</h4>
+<input type='date' value={date} onChange={(e)=>{setdate(e.target.value)}} className="form-control col-sm-4"/></div>
 <div className='pt-4 vh-65'>
               {/* ✅ Meeting Cards */}
               {meetings.length === 0 ? (
-                <p className="text-muted">No meetings found.</p>
+                <p className="text-muted">No meetings found for the date {date}.</p>
               ) : (
                 meetings.map((meeting, index) => (
                   <div

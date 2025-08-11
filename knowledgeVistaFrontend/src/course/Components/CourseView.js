@@ -5,10 +5,9 @@ import baseUrl from "../../api/utils";
 import errorimg from "../../images/errorimg.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-const CourseView = ({ filteredCourses }) => {
+const CourseView = ({ filteredCourses,loading }) => {
   const MySwal = withReactContent(Swal);
   const userId = sessionStorage.getItem("userid");
-  const [submitting, setsubmitting] = useState(false);
   const token = sessionStorage.getItem("token");
   const role=sessionStorage.getItem("role");
   const navigate =useNavigate();
@@ -66,14 +65,46 @@ const CourseView = ({ filteredCourses }) => {
 
   return (
     <>
-      {submitting && (
-        <div className="outerspinner active">
-          <div className="spinner"></div>
-        </div>
-      )}
       <div className="page-header"></div>
-    
-      {filteredCourses.length > 0 ? (
+    {loading ? (
+  <div className="row">
+    {[...Array(12)].map((_, index) => (
+      <div className=" course" key={index}>
+        <div className="card mb-3">
+          {/* Image skeleton */}
+          <div
+            className="skeleton skeleton-input"
+            style={{ height: "140px", width: "100%" }}
+          ></div>
+
+          <div className="card-body">
+            {/* Title skeleton */}
+            <div
+              className="skeleton skeleton-title"
+              style={{ marginBottom: "10px" }}
+            ></div>
+
+            {/* Description skeleton */}
+            <div
+              className="skeleton skeleton-input"
+              style={{ height: "1rem", marginBottom: "15px" }}
+            ></div>
+
+            {/* Button skeleton */}
+            <div
+              className="skeleton skeleton-button"
+              style={{ marginTop: "10px" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
+ 
+
+
+      filteredCourses.length > 0 ? (
         <div className="row">
         
           {filteredCourses
@@ -208,8 +239,8 @@ const CourseView = ({ filteredCourses }) => {
         <div >
         <h1 className="text-light ">No Course Found </h1>
         </div>
-      )}
-    
+      )
+    )}
     </>
   );
 };

@@ -155,7 +155,7 @@ const ViewStudents = () => {
                       icon: "success",
                       confirmButtonText: "OK",
                   }).then(() => {
-                      window.location.reload();
+                      fetchData();
                   });
                 }
               }
@@ -278,7 +278,7 @@ const ViewStudents = () => {
                     confirmButtonColor: "#3085d6",
                     confirmButtonButtonText: "OK"
                   }).then(() => {
-                    window.location.reload();
+                    fetchData();
                   });
                 } else {
                   // Handle other backend errors (e.g., 400 Bad Request)
@@ -337,7 +337,7 @@ const ViewStudents = () => {
                     icon: "success",
                     confirmButtonText: "OK",
                 }).then(() => {
-                    window.location.reload();
+                    fetchData();
                 });
               }
             }

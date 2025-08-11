@@ -14,12 +14,14 @@ const CalenderView = () => {
   
   const MySwal = withReactContent(Swal);
   const [events, setEvents] = useState([]);
+  const[loading,setloading]=useState(false)
   const navigate = useNavigate();
   const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
+        setloading(true)
         const response = await axios.get(`${baseUrl}/api/zoom/getMyMeetings`, {
           headers: {
             'Authorization': token,
@@ -50,6 +52,8 @@ const CalenderView = () => {
       }
       } catch (error) {
         console.error(error);
+      }finally{
+        setloading(false)
       }
     };
 
@@ -127,6 +131,9 @@ const CalenderView = () => {
             <i className="fa-solid fa-xmark"></i>
           </div>
         </div>
+        {loading &&(    <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>)}
         <div className='calenderheadergrp'>
           <h4>Calendar</h4>
           <div className='d-flex'>

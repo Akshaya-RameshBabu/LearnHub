@@ -9,6 +9,7 @@ import { GlobalStateContext } from "../Context/GlobalStateProvider";
 const Sitesettings = () => {
   const MySwal = withReactContent(Swal);
   const token = sessionStorage.getItem("token");
+  const[loading,setLoading]=useState(false)
   const [isnotFound, setisnotFound] = useState(false);
   const navigate = useNavigate();
   const [siteSettings, setsiteSettings] = useState({
@@ -39,9 +40,9 @@ const Sitesettings = () => {
   });
   // const { Activeprofile} = useContext(GlobalStateContext);
   const { Activeprofile} = useContext(GlobalStateContext);
-  useEffect(()=>{
-     const getLabelings=async()=>{
+   const getLabelings=async()=>{
       try{
+        setLoading(true)
       const response=await axios.get(`${baseUrl}/Get/labellings`,{
         headers:{
           Authorization:token
@@ -62,14 +63,14 @@ const Sitesettings = () => {
       }
     }catch(error){
       console.log(error)
+    }finally{
+      setLoading(false)
     }
    
      }
+  useEffect(()=>{
      getLabelings();
-   
-  },[]
-
-)
+  },[])
   const Edit = (e) => {
     e.preventDefault();
     setisnotFound(true);
@@ -232,7 +233,7 @@ switch(name){
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+         getLabelings();
           }   });
         setisnotFound(false)
       } 
@@ -241,6 +242,70 @@ switch(name){
       console.log(error)
     }
   }
+  const Skeleton = (
+  <div>
+    <h4>Site Settings</h4>
+
+    <div className="form-group row">
+      <label htmlFor="siteurl" className="col-sm-3 col-form-label">
+        Site Url
+      </label>
+      <div className="col-sm-6">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="title" className="col-sm-3 col-form-label">
+        Tab title
+      </label>
+      <div className="col-sm-6">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="courseImage" className="col-sm-3 col-form-label">
+        Site Logo
+      </label>
+      <div className="col-sm-6">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+      <div className="col-sm-3">
+        <div className="skeleton" style={{ width: "150px", height: "50px" }}></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="courseImage" className="col-sm-3 col-form-label">
+        Site Icon
+      </label>
+      <div className="col-sm-6">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+      <div className="col-sm-3">
+        <div className="skeleton" style={{ width: "150px", height: "150px" }}></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="courseImage" className="col-sm-3 col-form-label">
+        Favicon
+      </label>
+      <div className="col-sm-6">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+      <div className="col-sm-3">
+        <div className="skeleton" style={{ width: "150px", height: "150px" }}></div>
+      </div>
+    </div>
+
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
+
   const oldinputs = (
     <div>
       <h4> Site Settings</h4>
@@ -508,7 +573,7 @@ switch(name){
       </div>
     </div>
   );
-  return (<>{Activeprofile ==="VPS" && <div>{isnotFound ? EditInputs : oldinputs}</div>}</>);
+  return (<>{Activeprofile ==="VPS" && <div>{loading?Skeleton: isnotFound ? EditInputs : oldinputs}</div>}</>);
 };
 
 export default Sitesettings;

@@ -10,6 +10,7 @@ const DisplayName = () => {
   const token = sessionStorage.getItem("token");
   const [isnotFound, setisnotFound] = useState(false);
   const navigate = useNavigate();
+  const[loading,setLoading]=useState(false)
   const[errors,seterrors]=useState({
     admin_name:"",
     trainer_name: "",
@@ -29,10 +30,9 @@ const DisplayName = () => {
      student_name: "",
      isActive:true
   })
-  useEffect(() => {
-    if(token){
-      const fetchDisplayNameSettings = async () => {
+    const fetchDisplayNameSettings = async () => {
         try {
+          setLoading(true)
           const response = await axios.get(`${baseUrl}/get/displayName`, {
             headers: {
               "Authorization": token
@@ -44,8 +44,6 @@ const DisplayName = () => {
             setdefaultname(data);
             
         } else if (response.status === 204) {
-          // const data = response.data;
-          // console.log(data)
           setisnotFound(true);
           setinitialsave(true);
           
@@ -61,8 +59,12 @@ const DisplayName = () => {
               throw error
             }
           }
+        }finally{
+          setLoading(false)
         }
       };
+  useEffect(() => {
+    if(token){
       fetchDisplayNameSettings();
     }
     }, []); 
@@ -84,7 +86,7 @@ try{
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+              fetchDisplayNameSettings();
           }   });
         setisnotFound(false)
       } 
@@ -119,7 +121,7 @@ try{
         confirmButtonText: "OK",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+            fetchDisplayNameSettings();
         }   });
       setisnotFound(false)
     } 
@@ -156,14 +158,7 @@ setdisplayname((prev)=>({
 }
 
 const getinputs=(
-  <div className="col-12">
-      <div className='navigateheaders'>
-    <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
-    <div></div>
-    <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-    </div>
-    <div className='innerFrameforset '>
- <h4>Role Display Name</h4>
+<div>
 
  <div className='form-group row'>
            <label htmlFor='admin_name'className="col-sm-3 col-form-label"> Admin Name<span className="text-danger">*</span></label>
@@ -215,7 +210,7 @@ const getinputs=(
            </div>
            </div>
          </div>
- </div>
+ 
  <div className='btngrp'>
        <button className='btn btn-primary' 
        onClick={save}
@@ -228,14 +223,8 @@ const getinputs=(
       e.preventDefault();
       setisnotFound(true);
     }
-  const defaultinputs=(  <div className="col-12">
-    <div className='navigateheaders'>
-     <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
-     <div></div>
-     <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-     </div>
-     
-     <h4>Role Display Name</h4>
+  const defaultinputs=( 
+    <div>
      <div className='formgroup pt-4' >
          <div className='form-group row'>
            <label htmlFor='admin_name' className="col-sm-3 col-form-label">Admin Name <span className="text-danger">*</span></label>
@@ -280,6 +269,44 @@ const getinputs=(
      
  </div>
  )
+
+ const Skeleton = (
+  <div className="skeleton-wrapper">
+
+    <div className="form-group row">
+      <label htmlFor="admin_name" className="col-sm-3 col-form-label">
+        Admin Name <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="trainer_name" className="col-sm-3 col-form-label">
+        Trainer Name <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="student_name" className="col-sm-3 col-form-label">
+        Student Name <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+
+  </div>
+);
+
   return (
     <div>
     <div className="page-header">
@@ -301,7 +328,16 @@ const getinputs=(
     <div className="card">
       <div className=" card-body">
         <div className="row">
-      {isnotFound ? getinputs :defaultinputs }
+           <div className="col-12">
+    <div className='navigateheaders'>
+     <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
+     <div></div>
+     <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
+     </div>
+     
+     <h4>Role Display Name</h4>
+      {loading? Skeleton: isnotFound ? getinputs :defaultinputs }
+      </div>
       </div>
     </div>
     </div>

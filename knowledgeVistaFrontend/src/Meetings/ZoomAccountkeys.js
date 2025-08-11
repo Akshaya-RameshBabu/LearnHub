@@ -9,7 +9,7 @@ const ZoomAccountkeys = () => {
   const MySwal = withReactContent(Swal);
   const token = sessionStorage.getItem("token");
   const [isnotFound, setisnotFound] = useState(false);
-
+  const[loading,setLoading]=useState(false)
   const [initialsave, setinitialsave] = useState(false);
   const [errors, seterrors] = useState({
     client_id: "",
@@ -30,11 +30,9 @@ const ZoomAccountkeys = () => {
   });
   const [valid, setValid] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (token) {
-      const fetchzoomAccountSettings = async () => {
+  const fetchzoomAccountSettings = async () => {
         try {
+          setLoading(true)
           const response = await axios.get(
             `${baseUrl}/zoom/get/Accountdetails`,
             {
@@ -63,9 +61,12 @@ const ZoomAccountkeys = () => {
               throw error;
             }
           }
+        }finally{
+          setLoading(false)
         }
       };
-
+  useEffect(() => {
+    if (token) {
       fetchzoomAccountSettings();
     }
   }, []);
@@ -135,7 +136,7 @@ const ZoomAccountkeys = () => {
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              window.location.reload();
+              fetchzoomAccountSettings();
             }
           });
           setisnotFound(false);
@@ -166,7 +167,7 @@ const ZoomAccountkeys = () => {
                 confirmButtonText: "OK",
               }).then((result) => {
                 if (result.isConfirmed) {
-                  window.location.reload();
+                  fetchzoomAccountSettings();
                 }
               });
               setisnotFound(false);
@@ -248,6 +249,7 @@ const ZoomAccountkeys = () => {
     </div>
   );
 
+
   const EditInputs = (
     <div>
       <div className="form-group row">
@@ -310,6 +312,42 @@ const ZoomAccountkeys = () => {
       )}
     </div>
   );
+
+  const Skeleton = (
+  <div className="skeleton-wrapper">
+    <div className="form-group row">
+      <label htmlFor="clientid" className="col-sm-3 col-form-label">
+        Zoom Client Id <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="clientSecret" className="col-sm-3 col-form-label">
+        zoom client Secret <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="accountid" className="col-sm-3 col-form-label">
+        Account Id <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
+
   return (
     <div>
       <div className="page-header">  <div className="page-block">
@@ -349,7 +387,7 @@ const ZoomAccountkeys = () => {
               </div>
 
               <h4>Zoom Meet Settings</h4>
-              {isnotFound ? EditInputs : oldinputs}
+              {loading? Skeleton :isnotFound ? EditInputs : oldinputs}
             </div>
           </div>
         </div>

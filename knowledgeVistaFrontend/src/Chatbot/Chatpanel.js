@@ -79,12 +79,13 @@ const Chatpanel = ({ onClose }) => {
       setLoading(false);
     }
   };
+const handleInputKeyDown = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault(); // prevent newline
+    handleSend();
+  }
+};
 
-  const handleInputKeyDown = (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      handleSend();
-    }
-  }; 
 
   // Helper to render markdown as HTML
   const renderMarkdown = (text) => {
@@ -186,7 +187,7 @@ const Chatpanel = ({ onClose }) => {
             title="Send"
             disabled={loading || input.trim() === ''}
           >
-            <i className="fa-solid fa-right-to-bracket gradient-icon"></i>
+       <i className="fa-solid fa-paper-plane gradient-icon"></i>
           </button>
         </div>
       </div>

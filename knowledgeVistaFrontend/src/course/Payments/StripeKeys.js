@@ -7,6 +7,7 @@ import axios from "axios";
 const StripeKeys = () => {
     const MySwal = withReactContent(Swal);
     const token = sessionStorage.getItem("token");
+    const[loading,setloading]=useState(false)
     const [isnotFound, setisnotFound] = useState();
     const navigate = useNavigate();
     const [defaultstripe,setdefaultstripe]=useState({
@@ -21,10 +22,10 @@ const StripeKeys = () => {
        stripe_publish_key:"",
         stripe_secret_key:""
       });
-      useEffect(()=>{
         const getstripeDetails=async()=>{
          try{
             if(token){
+              setloading(true)
          const response=await axios.get(`${baseUrl}/api/get/stripekeys`,{
            headers:{
              Authorization:token
@@ -44,9 +45,12 @@ const StripeKeys = () => {
         }
          console.log(error)
          throw error
+       }finally{
+        setloading(false)
        }
       
         }
+      useEffect(()=>{
         getstripeDetails();
      },[]
     
@@ -105,7 +109,7 @@ const StripeKeys = () => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+         getstripeDetails();
           }   });
         setisnotFound(false)
       } 
@@ -119,6 +123,37 @@ const StripeKeys = () => {
 }
 
       }
+
+        const Skeleton = (
+  <div className="col-12 skeleton-wrapper">
+  <h4>Stripe Settings</h4>
+    {/* Razorpay Key */}
+    <div className="form-group row">
+       <label htmlFor="stripe_publish_key" className="col-sm-3 col-form-label">
+         Publishable key<span className="text-danger">*</span>
+         </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+    <br />
+
+    {/* Razorpay Secret Key */}
+    <div className="form-group row">
+   <label htmlFor="stripe_secret_key" className="col-sm-3 col-form-label">
+         Secret key
+         </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    {/* Buttons */}
+    <div className="btngrp" >
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
     const OldStripe=(  <div className="col-12">
        
        <h4>Stripe Settings</h4>
@@ -218,7 +253,9 @@ const StripeKeys = () => {
   return (
     <div className="card">
       <div className=" card-body">
-        <div className="row">{isnotFound ?editStripe  :OldStripe }</div>
+        <div className="row">
+          {loading? Skeleton:
+          isnotFound ?editStripe  :OldStripe }</div>
       </div>
     </div>
   )

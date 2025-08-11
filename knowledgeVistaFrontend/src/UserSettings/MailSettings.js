@@ -10,6 +10,7 @@ const MailSettings = () => {
   const [initialsave, setinitialsave] = useState(false);
   const MySwal = withReactContent(Swal);
   const token = sessionStorage.getItem("token");
+  const[loading,setLoading]=useState(false)
   const [isnotFound, setisnotFound] = useState(false);
   const [settings, setsettings] = useState({
     hostname: "",
@@ -28,10 +29,9 @@ const MailSettings = () => {
     emailid: "",
     password: "",
   });
-  useEffect(() => {
-    if (token) {
-      const fetchMailAccountSettings = async () => {
+    const fetchMailAccountSettings = async () => {
         try {
+          setLoading(true)
           const response = await axios.get(`${baseUrl}/get/mailkeys`, {
             headers: {
               Authorization: token,
@@ -55,9 +55,12 @@ const MailSettings = () => {
               throw error;
             }
           }
+        }finally{
+         setLoading(false)
         }
       };
-
+  useEffect(() => {
+    if (token) {
       fetchMailAccountSettings();
     }
   }, []);
@@ -83,7 +86,7 @@ const MailSettings = () => {
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              window.location.reload();
+               fetchMailAccountSettings();
             }
           });
           setisnotFound(false);
@@ -114,7 +117,7 @@ const MailSettings = () => {
                 confirmButtonText: "OK",
               }).then((result) => {
                 if (result.isConfirmed) {
-                  window.location.reload();
+                  fetchMailAccountSettings();
                 }
               });
               setisnotFound(false);
@@ -223,6 +226,50 @@ const MailSettings = () => {
       </div>
     </div>
   );
+  const Skeleton = (
+  <div>
+    <div className="form-group row">
+      <label htmlFor="hostname" className="col-sm-3 col-form-label">
+        Mail Host Name <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="port" className="col-sm-3 col-form-label">
+        Mail port Name <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="emailid" className="col-sm-3 col-form-label">
+        Email Id <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="password" className="col-sm-3 col-form-label">
+        Password <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
+
   const defaultinputs = (
     <div>
       <div className="form-group row">
@@ -346,7 +393,7 @@ const MailSettings = () => {
                 </div>
               </div>
               <h4>Mail Settings</h4>
-              {isnotFound ? getinputs : defaultinputs}
+              {loading? Skeleton: isnotFound ? getinputs : defaultinputs}
             </div>
           </div>
         </div>

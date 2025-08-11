@@ -9,6 +9,7 @@ const Razorpay_Settings = () => {
   const MySwal = withReactContent(Swal);
   const [valid, setValid] = useState(true);
   const data = sessionStorage.getItem("type");
+  const[loading,setLoading]=useState(false)
   const token = sessionStorage.getItem("token");
   const [isnotFound, setisnotFound] = useState();
   const [initialsave, setinitialsave] = useState(false);
@@ -18,11 +19,9 @@ const Razorpay_Settings = () => {
     razorpay_secret_key: "",
   });
   const navigate = useNavigate();
-  useEffect(() => {
-    // data === "false" ? setValid(true) : setValid(false);
-
     const fetchpaymentsettings = async () => {
       try {
+        setLoading(true)
         const response = await axios.get(`${baseUrl}/api/getPaymentDetails`, {
           headers: {
             Authorization: token,
@@ -49,9 +48,12 @@ const Razorpay_Settings = () => {
             throw error
           }
         }
+      }finally{
+        setLoading(false)
       }
      
     };
+  useEffect(() => {
 
     fetchpaymentsettings();
   }, []);
@@ -128,7 +130,7 @@ const Razorpay_Settings = () => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+           fetchpaymentsettings();
           }   });
         setisnotFound(false)
       } 
@@ -162,7 +164,7 @@ const Razorpay_Settings = () => {
         confirmButtonText: "OK",
       }).then((result) => {
         if (result.isConfirmed) {
-          window.location.reload();
+          fetchpaymentsettings();
         }   });
       setisnotFound(false)
     }
@@ -254,10 +256,7 @@ const Razorpay_Settings = () => {
 
   const oldSettings = (
     <div className="col-12">
-    
-
       <h4>Razorpay Settings</h4>
-
       <div className="form-group row">
         <label htmlFor="Razorpay_Key" className="col-sm-3 col-form-label">
           Razorpay Key{" "}
@@ -299,10 +298,46 @@ const Razorpay_Settings = () => {
       )}
     </div>
   );
+
+  const Skeleton = (
+  <div className="col-12 skeleton-wrapper">
+    <h4>Razorpay Settings</h4>
+    {/* Razorpay Key */}
+    <div className="form-group row">
+      <label htmlFor="Razorpay_Key" className="col-sm-3 col-form-label">
+          Razorpay Key{" "}
+        </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+    <br />
+
+    {/* Razorpay Secret Key */}
+    <div className="form-group row">
+   <label
+          htmlFor="Razorpay_Secret_Key"
+          className="col-sm-3 col-form-label"
+        >
+          Razorpay Secret Key
+        </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    {/* Buttons */}
+    <div className="btngrp" >
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
+
   return (
       <div className="card">
         <div className=" card-body">
-          <div className="row">{isnotFound ? getsettings : oldSettings}</div>
+          <div className="row">
+            { loading ? Skeleton :isnotFound ? getsettings : oldSettings}</div>
         </div>
       </div>
   );

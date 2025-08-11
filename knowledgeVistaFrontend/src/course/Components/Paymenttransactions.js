@@ -8,6 +8,7 @@ const Paymenttransactions = () => {
     const token=sessionStorage.getItem("token")
     const navigate=useNavigate();
     const MySwal = withReactContent(Swal);
+    const[loading,setloading]=useState(false)
     const[paymenthistory,setpaymenthistory]=useState([{
        id:"",
        orderId:"",
@@ -46,6 +47,7 @@ const Paymenttransactions = () => {
         // Simulating fetching data from the server
         const fetchData = async () => {
           try {
+            setloading(true)
             // Fetch data from server
             const response = await axios.get(`${baseUrl}/viewAllTransactionHistory`,{
               headers:{
@@ -56,11 +58,7 @@ const Paymenttransactions = () => {
             const payhistory =data.reverse();
             setpaymenthistory(payhistory);
           } catch (error) {
-            // if(error.response && error.response.status===401){
-            //   window.location.href="/unauthorized"
-            // }else{
-            //   throw error
-            // }
+           
             if (error.response) {
               if (error.response.status === 404) {
                 console.log("notfound")
@@ -71,6 +69,8 @@ const Paymenttransactions = () => {
               }
             }
             console.error('Error fetching data:', error);
+          }finally{
+            setloading(false)
           }
         };
     
@@ -134,6 +134,9 @@ const Paymenttransactions = () => {
               <th scope="col">Status</th>
             </tr>
           </thead>
+          {loading? (  <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>):
           <tbody>
           {filterData().map((payment) => (
              <tr key={payment.id}>
@@ -150,7 +153,7 @@ const Paymenttransactions = () => {
                
               </tr>
             ))}
-          </tbody>
+          </tbody>}
         </table>
       </div>
       </div>

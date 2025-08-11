@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import baseUrl from "../../api/utils";
 import axios from "axios";
-const EditCourse = ({ filteredCourses }) => {
+const EditCourse = ({ filteredCourses ,loading}) => {
   const navigate=useNavigate();
   const MySwal = withReactContent(Swal);
   const token = sessionStorage.getItem("token");
@@ -64,7 +64,42 @@ const EditCourse = ({ filteredCourses }) => {
   return (
     <>
       <div className="page-header"></div>
-      {filteredCourses.length > 0 ? (
+      {loading ? (
+  <div className="row">
+    {[...Array(12)].map((_, index) => (
+      <div className=" course" key={index}>
+        <div className="card mb-3">
+          {/* Image skeleton */}
+          <div
+            className="skeleton skeleton-input"
+            style={{ height: "140px", width: "100%" }}
+          ></div>
+
+          <div className="card-body">
+            {/* Title skeleton */}
+            <div
+              className="skeleton skeleton-title"
+              style={{ marginBottom: "10px" }}
+            ></div>
+
+            {/* Description skeleton */}
+            <div
+              className="skeleton skeleton-input"
+              style={{ height: "1rem", marginBottom: "15px" }}
+            ></div>
+
+            {/* Button skeleton */}
+            <div
+              className="skeleton skeleton-button"
+              style={{ marginTop: "10px" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (  
+  filteredCourses.length > 0 ? (
         <div className="row">
           {filteredCourses
             .slice()
@@ -190,7 +225,8 @@ const EditCourse = ({ filteredCourses }) => {
         >
           <h1>No Course Found</h1>
         </div>
-      )}
+      )
+    )}
     </>
   );
 };

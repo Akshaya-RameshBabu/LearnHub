@@ -13,8 +13,7 @@ const MyAssignedcourses = () => {
   const [courses, setCourses] = useState([]);
   const Currency=sessionStorage.getItem("Currency")
   const navigate=useNavigate()
-  useEffect(() => {
-    const fetchItems = async () => {
+     const fetchItems = async () => {
       try {
         const response = await axios.get(
           `${baseUrl}/AssignCourse/Trainer/courselist`,
@@ -30,6 +29,7 @@ const MyAssignedcourses = () => {
         console.error("Error fetching courses:", error);
       }
     };
+  useEffect(() => {
     fetchItems();
   }, []);
   const handleDelete = (e, courseId) => {
@@ -60,7 +60,7 @@ const MyAssignedcourses = () => {
                 icon: "success",
               }).then((result) => {
                 if (result.isConfirmed) {
-                  window.location.reload();
+                fetchItems();
                 }
               });
             }

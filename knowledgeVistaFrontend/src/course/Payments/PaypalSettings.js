@@ -8,6 +8,7 @@ const PaypalSettings = () => {
     const MySwal = withReactContent(Swal);
     const token = sessionStorage.getItem("token");
     const [isnotFound, setisnotFound] = useState();
+    const[loading,setloading]=useState(false)
     const navigate = useNavigate();
     const [defaultpaypal,setdefaultpaypal]=useState({
         paypal_client_id:"",
@@ -21,10 +22,10 @@ const PaypalSettings = () => {
        paypal_client_id:"",
         paypal_secret_key:""
       });
-      useEffect(()=>{
-        const getpaypalDetils=async()=>{
+         const getpaypalDetils=async()=>{
          try{
             if(token){
+              setloading(true)
          const response=await axios.get(`${baseUrl}/api/get/PaypalKeys`,{
            headers:{
              Authorization:token
@@ -53,9 +54,13 @@ const PaypalSettings = () => {
             
         }
          throw error
+       }finally{
+        setloading(false)
        }
       
         }
+      useEffect(()=>{
+     
         getpaypalDetils();
      },[]
     
@@ -114,7 +119,7 @@ const PaypalSettings = () => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+         getpaypalDetils();
           }   });
         setisnotFound(false)
       } 
@@ -136,6 +141,37 @@ const PaypalSettings = () => {
 }
 
       }
+
+              const Skeleton = (
+  <div className="col-12 skeleton-wrapper">
+   <h4>Paypal Settings</h4>
+    {/* Razorpay Key */}
+    <div className="form-group row">
+        <label htmlFor="paypal_client_id" className="col-sm-3 col-form-label">
+         Client key<span className="text-danger">*</span>
+         </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+    <br />
+
+    {/* Razorpay Secret Key */}
+    <div className="form-group row">
+   <label htmlFor="paypal_secret_key" className="col-sm-3 col-form-label">
+         Secret key
+         </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    {/* Buttons */}
+    <div className="btngrp" >
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
     const Oldpaypal=(  <div className="col-12">
        
        <h4>Paypal Settings</h4>
@@ -235,7 +271,9 @@ const PaypalSettings = () => {
   return (
     <div className="card">
       <div className=" card-body">
-        <div className="row">{isnotFound ?editpaypal  :Oldpaypal }</div>
+        <div className="row">
+          {loading? Skeleton:
+          isnotFound ?editpaypal  :Oldpaypal }</div>
       </div>
     </div>
   )

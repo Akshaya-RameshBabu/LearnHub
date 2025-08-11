@@ -1308,6 +1308,13 @@ public class FrontController {
 		return zoomMeetingService.getMetting(token);
 	}
 
+	@GetMapping("/api/zoom/getMyMeetingswithdate")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> GetMyMeetingswithdate(@RequestHeader("Authorization") String token,
+			@RequestParam("date") String date) {
+		return zoomMeetingService.getMettingwithdate(token, date);
+	}
+
 	@GetMapping("/api/zoom/get/meet/{meetingId}")
 	@CheckAccessAnnotation
 	public ResponseEntity<?> GetmeetbyMeetingId(@PathVariable Long meetingId,

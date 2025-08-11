@@ -37,7 +37,7 @@ const ProfileView = () => {
     fileInput:''
     
   });
- 
+ const[loading,setloading]=useState(false)
   useEffect(() => {
     const hasErrors = Object.values(errors).some(error => !!error) ;
     const submitBtn = document.querySelector('#submitbtn');
@@ -45,9 +45,9 @@ const ProfileView = () => {
         submitBtn.disabled = hasErrors;
     }
 }, [errors, userData]);
-  useEffect(() => {
-    const fetchData = async () => {
+   const fetchData = async () => {
       try {
+        setloading(true)
         const response = await axios.get(`${baseUrl}/student/users/${email}`, {
           headers: {
             Authorization: token,
@@ -78,9 +78,13 @@ const ProfileView = () => {
           // });
           throw error
         }
-      }
+      }finally{
+          setloading(false)
+        }
     };
 
+  useEffect(() => {
+ 
     fetchData();
   }, [email,isEditing]);
 
@@ -253,8 +257,8 @@ const ProfileView = () => {
           }).then((result) => {
               if (result.isConfirmed) {
                 setIsEditing(false)
-                sessionStorage.removeItem("profileData")
-                window.location.reload()
+                sessionStorage.removeItem("profileData")  
+                fetchData();
               }    
               
             });
@@ -287,6 +291,73 @@ const ProfileView = () => {
       }
   };
  
+const profileSkeleton = (
+  <div className='innerFrame'>
+    <h4>Profile</h4>
+    <div className='mainform'>
+
+      {/* Profile picture skeleton */}
+      <div className='profile-picture'>
+        <div className='image-group'>
+            <div className="skeleton-circle mt-3 ml-3"></div>
+        </div>
+      </div>
+
+      <div className='formgroup'>
+
+        {/* Name */}
+        <div className='form-group row'>
+          <label className="col-sm-3 col-form-label">Name</label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        {/* Email */}
+        <div className='form-group row'>
+          <label className="col-sm-3 col-form-label">Email</label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        {/* Date of Birth */}
+        <div className='form-group row'>
+          <label className="col-sm-3 col-form-label">Date of Birth</label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        {/* Skills */}
+        <div className='form-group row'>
+          <label className="col-sm-3 col-form-label">Skills</label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        {/* Phone */}
+        <div className="form-group row">
+          <label htmlFor="Phone" className="col-sm-3 col-form-label">
+            Phone <span className="text-danger">*</span>
+          </label>
+          <div className="col-sm-9">
+            <div className="Readonlyinp">
+              <div className="skeleton skeleton-input"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {/* Button */}
+    <div className='btngrp'>
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
 
 
 
@@ -531,7 +602,7 @@ const ProfileView = () => {
       <div onClick={()=>{setIsEditing(false)}}>{isEditing ?<i className="fa-solid fa-xmark"></i>:""}</div>
       </div>
         {/* Render either profile view or edit profile view based on the state */}
-        {isEditing ? editProfileView : profileView}
+        {loading? profileSkeleton: isEditing ? editProfileView : profileView}
       </div>
     </div>
     </div>

@@ -88,12 +88,21 @@ public class GoogleDriveOAuthService {
 				clientSecrets, SCOPES).setAccessType("offline").build();
 
 		// Construct the redirect URI dynamically
-		// Ensure this URI is an exact match for one of the authorized redirect URIs
-		// configured in your Google Cloud Console for the OAuth 2.0 client.
-		String domain = request.getScheme() + "://" + request.getServerName();
+		String scheme = request.getHeader("X-Forwarded-Proto");
+
+		if (scheme == null || scheme.isBlank()) {
+			scheme = request.getScheme();
+		}
+
+		if (scheme == null || scheme.isBlank()) {
+			scheme = "https"; // Final fallback
+		}
+
+		String domain = scheme + "://" + request.getServerName();
 		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
 			domain += ":" + request.getServerPort();
 		}
+
 		String redirectUri = domain + "/driveoauth/callback";
 
 		try {
@@ -144,10 +153,21 @@ public class GoogleDriveOAuthService {
 		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
 		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
 				clientSecrets, SCOPES).setAccessType("offline").setApprovalPrompt("force").build();
-		String domain = request.getScheme() + "://" + request.getServerName();
+		String scheme = request.getHeader("X-Forwarded-Proto");
+
+		if (scheme == null || scheme.isBlank()) {
+			scheme = request.getScheme();
+		}
+
+		if (scheme == null || scheme.isBlank()) {
+			scheme = "https"; // Final fallback
+		}
+
+		String domain = scheme + "://" + request.getServerName();
 		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
 			domain += ":" + request.getServerPort();
 		}
+
 		String redirectUri = domain + "/driveoauth/callback";
 		AuthorizationCodeRequestUrl url = flow.newAuthorizationUrl().setRedirectUri(redirectUri)
 				.setState(credential.getInstitutionName());

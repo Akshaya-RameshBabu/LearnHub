@@ -655,6 +655,34 @@ public class ZoomMeetingService {
 		}
 	}
 
+	public ResponseEntity<?> getMettingwithdate(String token, String date) {
+		try {
+			String email = jwtUtil.getEmailFromToken(token);
+			Optional<Muser> opuser = muserRepository.findByEmail(email);
+			if (opuser.isPresent()) {
+				opuser.get();
+				List<calenderDto> meetingDetailsList = new ArrayList<>();
+				List<ZoomMeetingInvitee> invitees = inviteerepo.findByEmail(email);
+				for (ZoomMeetingInvitee invitee : invitees) {
+					ZoomSettings settings = invitee.getZoomSettings();
+					List<calenderDto> items = meetrepo.findMeetingsForRecursiveWithDate(settings, date);
+					if (items != null && !items.isEmpty()) {
+						meetingDetailsList.addAll(items);
+					}
+				}
+				return ResponseEntity.ok(meetingDetailsList);
+			} else {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			}
+		} catch (Exception e) {
+
+			e.printStackTrace();
+			logger.error("", e);
+			;
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
 	@Transactional
 	public ResponseEntity<?> DeleteMeet(Long MeetingId, String token) {
 		try {

@@ -28,9 +28,7 @@ const SocialLoginKeysAdmin = () => {
     redirectUrl:"",
     provider:"GOOGLE",
   })
-  useEffect(() => {
-    if(token){
-      const fetchSocialLoginKeys = async () => {
+     const fetchSocialLoginKeys = async () => {
         try {
           const response = await axios.get(`${baseUrl}/sysadmin/get/socialLoginKeys`, {
             headers:{
@@ -60,7 +58,8 @@ const SocialLoginKeysAdmin = () => {
           }
         }
       };
-    
+  useEffect(() => {
+    if(token){
       fetchSocialLoginKeys();
     }
     }, []);
@@ -125,7 +124,7 @@ const SocialLoginKeysAdmin = () => {
               confirmButtonText: "OK",
             }).then((result) => {
               if (result.isConfirmed) {
-                window.location.reload();
+                  fetchSocialLoginKeys();
               }   });
             setisnotFound(false)
           } 

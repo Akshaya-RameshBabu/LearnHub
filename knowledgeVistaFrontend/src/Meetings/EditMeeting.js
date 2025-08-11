@@ -240,9 +240,7 @@ const EditMeeting = () => {
     });
     setReccuranceDescription("")
   };
-  
-  useEffect(() => {
-    const fetchItems = async () => {
+      const fetchItems = async () => {
       try {
         const response = await axios.get(
           `${baseUrl}/api/zoom/get/meet/${meetingId}`,
@@ -311,7 +309,7 @@ const formattedDate = localStartTime.toLocaleDateString('en-CA'); // 'en-CA' giv
         }
       }
     };
-
+  useEffect(() => {
     fetchItems()
   }, []);
 
@@ -539,13 +537,9 @@ const formattedDate = localStartTime.toLocaleDateString('en-CA'); // 'en-CA' giv
         icon: "success",
         confirmButtonText: "OK",
       }).then(() => {
-      window.location.reload();
+    fetchItems();
       });
-      // 
-      //   const sentence = "Meeting Updated:"
-      //   navigate('/mailSending', { state: { meetingData: response.data ,sentence} });
-      //  // window.location.reload();
-      // });
+    
     } catch (error) {
       setissubmitting(false);
       if (error.response && error.response.status === 400) {

@@ -11,6 +11,7 @@ const CertificateInputs = () => {
 
   const token=sessionStorage.getItem("token");
   const MySwal = withReactContent(Swal);
+  const[loading,setLoading]=useState(false)
   const [defaultcerti,setdefaultcerti]=useState({
     institutionName: '',
     ownerName: '',
@@ -41,10 +42,9 @@ const [isnotFound,setisnotFound]=useState();
 const[sign,setsign]=useState();
 const [getSign,setgetSign]=useState();
 const[isinitial,setisinitial]=useState(true);
-
-useEffect(() => {
   const fetchCertificate = async () => {
     try {
+      setLoading(true)
       const certificatedata = await axios.get(`${baseUrl}/certificate/viewAll`,{
         headers: {
           Authorization: token,
@@ -68,8 +68,12 @@ useEffect(() => {
       else{
         throw error
       }
+    }finally{
+      setLoading(false)
     }
   };
+useEffect(() => {
+
   fetchCertificate();
 }, []);
 
@@ -196,7 +200,7 @@ setisnotFound(true);
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              window.location.reload();
+            fetchCertificate()
             }
           });
         }
@@ -213,15 +217,66 @@ setisnotFound(true);
     
          
 };
+const Skeleton = (
+  <div >
+    <div className="mainform">
+      <div className="profile-picture">
+        <div className="image-group">
+         <div className="skeleton-circle mt-3 ml-3"></div>
+        </div>
+       
+      </div>
+
+      <div>
+        <div className="form-group row">
+          <label
+            htmlFor="institutionName"
+            className="col-sm-3 col-form-label"
+          >
+            Institution Name
+          </label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        <div className="form-group row">
+          <label htmlFor="ownerName" className="col-sm-3 col-form-label">
+            Owner Name
+          </label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        <div className="form-group row">
+          <label htmlFor="qualification" className="col-sm-3 col-form-label">
+            Qualification
+          </label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+
+        <div className="form-group row">
+          <label htmlFor="address" className="col-sm-3 col-form-label">
+            Address
+          </label>
+          <div className="col-sm-9">
+            <div className="skeleton skeleton-input"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
 
 const certificateInputs=(
-  <div className="col-12">
-     <div className='navigateheaders'>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
-      <div></div>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-      </div>
-<h1>Certificate Form</h1>
+ <div>
 <div className='mainform'>
   <div className='profile-picture'>
   <div className='image-group'>
@@ -334,13 +389,7 @@ const certificateInputs=(
 );
 
 const certificateView=(
-  <div className="col-12">
-     <div className='navigateheaders'>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
-      <div></div>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-      </div>
-        <h4>Certificate Template</h4>
+ <div>
         <div className='mainform'>
           <div className='profile-picture'>
           <div className='image-group'>
@@ -441,9 +490,16 @@ const certificateView=(
     <div className="card">
       <div className=" card-body">
         <div className="row">
+         <div className="col-12">
+     <div className='navigateheaders'>
+      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
+      <div></div>
+      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
+      </div>
+<h1>Certificate Form</h1>
          
-      {isnotFound ? certificateInputs : certificateView}
-   
+      {loading? Skeleton: isnotFound ? certificateInputs : certificateView}
+   </div>
     </div>
     </div>
     </div>

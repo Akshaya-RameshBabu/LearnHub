@@ -139,6 +139,7 @@ function App() {
   const isAuthenticated = sessionStorage.getItem("token") !== null;
   const MySwal = withReactContent(Swal);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading,setloading]=useState(false)
   const [course, setCourse] = useState([
     {
       courseId: "",
@@ -192,10 +193,7 @@ function App() {
     return matchesSearchQuery && matchesPaidCondition && matchesUnpaidCondition;
   });
 
-  // const filteredCourses = course.filter((item) => {
-  //   const name = item.courseName ? item.courseName.toLowerCase() : "";
-  //   return name.includes(searchQuery.toLowerCase());
-  // });
+  
   useEffect(() => {
     const fetchItems = async () => {
       try {
@@ -203,6 +201,7 @@ function App() {
         const role = sessionStorage.getItem("role");
         if (token) {
           if (role !== "SYSADMIN") {
+            setloading(true)
             const response = await axios.get(`${baseUrl}/course/viewAll`, {
               headers: {
                 Authorization: token,
@@ -215,6 +214,8 @@ function App() {
       } catch (error) {
         console.error(error);
         throw error;
+      }finally{
+        setloading(false)
       }
     };
     if (isAuthenticated) {
@@ -483,7 +484,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <PrivateRoute authenticationRequired={true}>
-                    <CourseView filteredCourses={filteredCourses} />
+                    <CourseView filteredCourses={filteredCourses} loading={loading} />
                   </PrivateRoute>
                 </ErrorBoundary>
               }
@@ -497,7 +498,7 @@ function App() {
                     authenticationRequired={true}
                     authorizationRequired={true}
                   >
-                    <EditCourse filteredCourses={filteredCourses} />
+                    <EditCourse filteredCourses={filteredCourses} loading={loading} />
                   </PrivateRoute>
                 </ErrorBoundary>
               }

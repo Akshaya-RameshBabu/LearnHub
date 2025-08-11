@@ -126,7 +126,7 @@ if(response?.status===200){
                 });
                 
                 if (response.status===200) {
-                  window.location.reload();
+                    fetchmoduleTesById();
                 }
               }
             } catch (error) {
@@ -165,7 +165,7 @@ if(response?.status===200){
                 });
                 
                 if (response.status === 200) {
-                  window.location.reload();
+                  fetchmoduleTesById();
                 }
               }
             } catch (error) {

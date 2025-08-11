@@ -9,12 +9,14 @@ const OpenRouterKeys = () => {
     const MySwal = withReactContent(Swal); 
     const token=sessionStorage.getItem("token")
     const navigate=useNavigate();
+    const[loading,setloading]=useState(false)
     const [savedKey, setSavedKey] = useState({ openRouterKey: "" });
     const [editKey, setEditKey] = useState({ openRouterKey: "" });
     const [formErrors, setFormErrors] = useState({ openRouterKey: "" });
     const [isEditMode, setIsEditMode] = useState(false);
     const fetchOpenRouterKey = async () => {
         try {
+            setloading(true)
             const response = await axios.get(`${baseUrl}/openRouter/getkeys`, {
                 headers:{
                     "Authorization":token
@@ -37,6 +39,8 @@ const OpenRouterKeys = () => {
                     throw error
                 }
             }
+        }finally{
+            setloading(false)
         }
     };
     useEffect(() => {
@@ -93,7 +97,19 @@ const OpenRouterKeys = () => {
             throw error
         }
     };
-
+   const loadingmode = (
+        <div>
+            <div className='form-group row' >
+                <label htmlFor='openRouterKey'  className="col-sm-3 col-form-label">Open Router Key<span className="text-danger">*</span></label>
+               <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+        </div>
+    );
     const viewMode = (
         <div>
             <div className='form-group row' >
@@ -139,7 +155,7 @@ const OpenRouterKeys = () => {
     return (
        <div>
                             <h4> Open Router Settings</h4>
-                            {isEditMode ? editMode : viewMode}
+                           {loading? loadingmode :isEditMode ? editMode : viewMode}
                         </div>
                   
     )

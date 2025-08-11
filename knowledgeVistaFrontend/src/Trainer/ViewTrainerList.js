@@ -19,6 +19,7 @@ const ViewTrainerList = () => {
   const [filterOption, setFilterOption] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const itemsperpage = 10;
+  const[loading,setloading]=useState(false);
   const [datacounts, setdatacounts] = useState({
     start: "",
     end: "",
@@ -108,6 +109,7 @@ const ViewTrainerList = () => {
     // Simulating fetching data from the server
     const fetchData = async () => {
       try {
+        setloading(true);
         // Fetch data from server
         const response = await axios.get(`${baseUrl}/view/Trainer`, {
           headers: {
@@ -134,13 +136,16 @@ const ViewTrainerList = () => {
           console.error("Error fetching data:", error);
           throw error;
         }
+      }finally{
+        setloading(false)
       }
     };
-
+    
     fetchData();
   }, []);
   const fetchData = async (page = 0) => {
     try {
+      setloading(true)
       const response = await axios.get(`${baseUrl}/view/Trainer`, {
         headers: { Authorization: token },
         params: { pageNumber: page, pageSize: itemsperpage },
@@ -166,6 +171,8 @@ const ViewTrainerList = () => {
         console.error("Error fetching data:", error);
         throw error;
       }
+    }finally{
+      setloading(false)
     }
   };
 
@@ -255,7 +262,7 @@ const ViewTrainerList = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonButtonText: "OK",
               }).then(() => {
-                window.location.reload();
+               fetchData();
               });
             } else {
               // Handle other backend errors (e.g., 400 Bad Request)
@@ -339,7 +346,7 @@ const ViewTrainerList = () => {
                 icon: "success",
                 confirmButtonText: "OK",
               }).then(() => {
-                window.location.reload();
+              fetchData();
               });
             }
           }
@@ -545,7 +552,12 @@ const ViewTrainerList = () => {
                       <></>
                     )}
                   </thead>
-                  <tbody>
+                    {loading?(  
+                      
+                       <div className="outerspinner active"><div className="spinner"></div></div>
+         ):(
+                  <tbody >
+                  
                     {filterData().map((user, index) => (
                       <tr key={user.userId}>
                         <th scope="row">
@@ -626,7 +638,7 @@ const ViewTrainerList = () => {
                         </td>
                       </tr>
                     ))}
-                  </tbody>
+                  </tbody>)}
                 </table>
               </div>
               <div className="cornerbtn">

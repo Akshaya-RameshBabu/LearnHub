@@ -96,7 +96,7 @@ const role=sessionStorage.getItem("role")
       });
       if (response.status === 200) {
         sessionStorage.removeItem("notifications");
-        window.location.reload();
+       fetchItems();
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -133,9 +133,7 @@ const role=sessionStorage.getItem("role")
       observer.disconnect();
     };
   }, [notifications]);
-
-  useEffect(() => {
-    const fetchItems = async () => {
+const fetchItems = async () => {
       try {
         if(role==="SYSADMIN"){
           return
@@ -181,7 +179,7 @@ const role=sessionStorage.getItem("role")
         throw error
       }
     };
-
+  useEffect(() => {
       fetchItems();
     
   }, []);

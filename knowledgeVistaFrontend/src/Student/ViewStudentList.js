@@ -25,6 +25,7 @@ const ViewStudentList = () => {
     end: "",
     total: "",
   });
+  const[loading,setloading]=useState(false)
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -102,39 +103,17 @@ const ViewStudentList = () => {
       return users.filter((user) => user.isActive === false);
     }
   };
+  
   useEffect(() => {
     // Simulating fetching data from the server
-    const fetchData = async () => {
-      try {
-        // Fetch data from server
-        const response = await axios.get(`${baseUrl}/view/users`, {
-          headers: {
-            Authorization: token,
-          },
-        });
-        const data = response.data;
-        setUsers(data.content);
-        setTotalPages(data.totalPages);
-        setdatacounts((prev) => ({
-          start: currentPage * itemsperpage + 1,
-          end: currentPage * itemsperpage + itemsperpage,
-          total: data.totalElements,
-        })); // Update total pages
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          navigate("/unauthorized");
-        } else {
-          console.error("Error fetching data:", error);
-          throw error;
-        }
-      }
-    };
+
 
     fetchData();
   }, []);
 
   const fetchData = async (page = 0) => {
     try {
+      setloading(true)
       const response = await axios.get(`${baseUrl}/view/users`, {
         headers: { Authorization: token },
         params: { pageNumber: page, pageSize: itemsperpage },
@@ -155,6 +134,8 @@ const ViewStudentList = () => {
         console.error("Error fetching data:", error);
         throw error;
       }
+    }finally{
+      setloading(false)
     }
   };
 
@@ -243,7 +224,7 @@ const ViewStudentList = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonButtonText: "OK",
               }).then(() => {
-                window.location.reload();
+                fetchData();
               });
             } else {
               // Handle other backend errors (e.g., 400 Bad Request)
@@ -328,7 +309,7 @@ const ViewStudentList = () => {
                 icon: "success",
                 confirmButtonText: "OK",
               }).then(() => {
-                window.location.reload();
+                fetchData();
               });
             }
           }
@@ -534,6 +515,10 @@ const ViewStudentList = () => {
                       <></>
                     )}
                   </thead>
+                  {loading?(  
+                      
+                       <div className="outerspinner active"><div className="spinner"></div></div>
+         ):(
                   <tbody>
                     {filterData().map((user, index) => (
                       <tr key={user.userId}>
@@ -623,7 +608,7 @@ const ViewStudentList = () => {
                         </td>
                       </tr>
                     ))}
-                  </tbody>
+                  </tbody>)}
                 </table>
               </div>
               <div className="cornerbtn">

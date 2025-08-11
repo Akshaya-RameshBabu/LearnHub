@@ -13,8 +13,7 @@ const LessonList = () => {
   const [lessons, setlessons] = useState([]);
   const [submitting, setsubmitting] = useState();
   const token = sessionStorage.getItem("token");
-  useEffect(() => {
-    const fetchData = async () => {
+   const fetchData = async () => {
       try {
         setsubmitting(true);
         const response = await axios.get(
@@ -45,6 +44,8 @@ const LessonList = () => {
         }
       }
     };
+  useEffect(() => {
+   
 
     fetchData();
   }, [courseId]);
@@ -82,8 +83,7 @@ const LessonList = () => {
                 icon: "success",
                 confirmButtonText: "OK",
               }).then(() => {
-                // After the modal is closed, reload the page
-                window.location.reload();
+                fetchData();
               });
             }
           } catch (error) {

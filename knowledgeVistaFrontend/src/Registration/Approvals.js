@@ -11,11 +11,11 @@ const Approvals = () => {
   const MySwal = withReactContent(Swal);
   const [users, setUsers] = useState([]);
   const token = sessionStorage.getItem("token");
-  const userRole = sessionStorage.getItem("role");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
   const [filterOption, setFilterOption] = useState("All");
+  const[loading,setloading]=useState(false)
   const [searchQuery, setSearchQuery] = useState("");
   const itemsperpage = 10;
   const [datacounts, setdatacounts] = useState({
@@ -96,10 +96,10 @@ const Approvals = () => {
     searchUsers();
   }, [username, email, phone, dob, skills,role, currentPage]);
   useEffect(() => {
-    // Simulating fetching data from the server
     const fetchData = async () => {
       try {
         // Fetch data from server
+        setloading(true)
         const response = await axios.get(`${baseUrl}/view/Approvals`, {
           headers: {
             Authorization: token,
@@ -123,6 +123,8 @@ const Approvals = () => {
           navigate("/unauthorized")
         }
         console.error("Error fetching data:", error);
+      }finally{
+        setloading(false)
       }
     };
 
@@ -150,7 +152,7 @@ MySwal.fire({
   icon:"success",
   text:"user Rejected Successfully"
 }).then(()=>{
-  window.location.reload();
+  fetchData();
 })
       }else{
         return
@@ -182,7 +184,7 @@ MySwal.fire({
   icon:"success",
   text:"user Approved Successfully"
 }).then(()=>{
-  window.location.reload();
+  fetchData();
 })
     })
     }catch(error){
@@ -191,6 +193,7 @@ console.log(error)
   }
   const fetchData = async (page = 0) => {
     try {
+      setloading(true)
       const response = await axios.get(`${baseUrl}/view/Approvals`, {
         headers: { Authorization: token },
         params: { pageNumber: page, pageSize: itemsperpage },
@@ -214,6 +217,8 @@ console.log(error)
         navigate("/unauthorized")
       }
       console.error("Error fetching data:", error);
+    }finally{
+      setloading(false)
     }
   };
 
@@ -383,6 +388,10 @@ console.log(error)
                         <></>
                       )}
                     </thead>
+                      {loading?(  
+                      
+                       <div className="outerspinner active"><div className="spinner"></div></div>
+         ):(
                     <tbody>
                       {filterData().map((user, index) => (
                         <tr key={user.userId}>
@@ -429,6 +438,7 @@ console.log(error)
                         </tr>
                       ))}
                     </tbody>
+         )}
                   </table>
                 </div>
                 <div className="cornerbtn">

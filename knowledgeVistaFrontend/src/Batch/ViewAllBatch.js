@@ -13,6 +13,7 @@ const ViewAllBatch = () => {
   const [batch, setbatch] = useState([]);
   const Currency = sessionStorage.getItem("Currency");
   const navigate = useNavigate();
+  const[loading,setloading]=useState(false)
   const handleDelete = (e, batchId) => {
     if(role=="USER"){
       return;
@@ -43,7 +44,7 @@ const ViewAllBatch = () => {
                 icon: "success",
               }).then((result) => {
                 if (result.isConfirmed) {
-                  window.location.reload();
+               fetchBatch()
                 }
               });
             }
@@ -58,9 +59,9 @@ const ViewAllBatch = () => {
       }
     });
   };
-  useEffect(() => {
-    const fetchBatch = async () => {
+     const fetchBatch = async () => {
       try {
+        setloading(true)
         const response = await axios.get(`${baseUrl}/Batch/getAll`, {
           headers: {
             Authorization: token,
@@ -71,14 +72,52 @@ const ViewAllBatch = () => {
         setbatch(data);
       } catch (err) {
         console.log(err);
+      }finally{
+        setloading(false)
       }
     };
+  useEffect(() => {
+ 
     fetchBatch();
   }, []);
   return (
     <div>
       <div className="page-header"></div>
-      {batch.length > 0 ? (
+       {loading ? (
+  <div className="row">
+    {[...Array(12)].map((_, index) => (
+      <div className=" course" key={index}>
+        <div className="card mb-3">
+          {/* Image skeleton */}
+          <div
+            className="skeleton skeleton-input"
+            style={{ height: "140px", width: "100%" }}
+          ></div>
+
+          <div className="card-body">
+            {/* Title skeleton */}
+            <div
+              className="skeleton skeleton-title"
+              style={{ marginBottom: "10px" }}
+            ></div>
+
+            {/* Description skeleton */}
+            <div
+              className="skeleton skeleton-input"
+              style={{ height: "1rem", marginBottom: "15px" }}
+            ></div>
+
+            {/* Button skeleton */}
+            <div
+              className="skeleton skeleton-button"
+              style={{ marginTop: "10px" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : ( batch.length > 0 ? (
         <div className="batch-container">
           {batch
             .slice()
@@ -206,7 +245,8 @@ const ViewAllBatch = () => {
         <div>
           <h1 className="text-primary ">No Batch Found </h1>
         </div>
-      )}
+      )
+    )}
     </div>
   );
 };

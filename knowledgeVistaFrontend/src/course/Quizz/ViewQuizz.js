@@ -132,7 +132,7 @@ const ViewQuizz = () => {
             );
 
             if (response.status === 200) {
-              window.location.reload();
+            fetchQuizzQuestions();
             }
           }
         } catch (error) {
@@ -174,7 +174,7 @@ arr.push(questid);
             );
 
             if (response.status === 200) {
-              window.location.reload();
+             fetchQuizzQuestions();
             }
           }
         } catch (error) {

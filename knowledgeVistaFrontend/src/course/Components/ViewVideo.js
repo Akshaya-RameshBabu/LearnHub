@@ -18,6 +18,7 @@ const ViewVideo = () => {
   const [videoType, setVideoType] = useState();
   const [videoSource, setVideoSource] = useState();
   const [currentLesson, setCurrentLesson] = useState();
+  const[loading,setloading]=useState(false)
   const role = sessionStorage.getItem("role");
   const token = sessionStorage.getItem("token");
   const [currentDocs, setcurrentDocs] = useState([]);
@@ -25,6 +26,7 @@ const ViewVideo = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setloading(true)
         const response = await axios.get(
           `${baseUrl}/course/getLessondetail/${courseId}`,
           {
@@ -56,6 +58,8 @@ const ViewVideo = () => {
             }
           });
         }
+      }finally{
+          setloading(false)
       }
     };
 
@@ -223,9 +227,9 @@ const ViewVideo = () => {
     <div>
   <div className="page-header"></div>
   <div className="card">
-    <div className="card-body">
+    <div className="card-body vh-80  position-relative">
     <div className="row">
-          <div className="col-12">
+          <div className="col-12 ">
         <div className="navigateheaders">
           <div
             onClick={() => {
@@ -243,7 +247,9 @@ const ViewVideo = () => {
             <i className="fa-solid fa-xmark"></i>
           </div>
         </div>
-        {AllLessons.length > 0 ? (
+        {loading ? ( <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>): AllLessons.length > 0 ? (
           <div>
             <div className=" headingbtn">
               <h4 >{courseName}</h4>

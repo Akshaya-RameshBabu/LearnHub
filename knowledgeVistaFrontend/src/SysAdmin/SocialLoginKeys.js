@@ -30,9 +30,7 @@ const SocialLoginKeys = () => {
     redirectUrl:"",
     provider:"GOOGLE"
   })
-  useEffect(() => {
-    if(token){
-      const fetchSocialLoginKeys = async () => {
+       const fetchSocialLoginKeys = async () => {
         try {
           const response = await axios.get(`${baseUrl}/sysadmin/get/socialLoginKeys`, {
             headers:{
@@ -62,7 +60,8 @@ const SocialLoginKeys = () => {
           }
         }
       };
-    
+  useEffect(() => {
+    if(token){
       fetchSocialLoginKeys();
     }
     }, []);
@@ -127,16 +126,11 @@ const SocialLoginKeys = () => {
               confirmButtonText: "OK",
             }).then((result) => {
               if (result.isConfirmed) {
-                window.location.reload();
+               fetchSocialLoginKeys();
               }   });
             setisnotFound(false)
           } 
     }catch(error){
-      // MySwal.fire({
-      //   icon: 'error',
-      //   title: 'Some Error Occurred',
-      //   text: "error occured"
-      // });
       throw error
     }
        

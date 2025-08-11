@@ -29,10 +29,7 @@ const ZoomKeys = () => {
       account_id:""
     })
     const navigate=useNavigate();
-  
-    useEffect(() => {
-    if(token){
-      const fetchzoomAccountSettings = async () => {
+       const fetchzoomAccountSettings = async () => {
         try {
           const response = await axios.get(`${baseUrl}/SysAdmin/zoom/get/Accountdetails`, {
             headers: {
@@ -61,7 +58,8 @@ const ZoomKeys = () => {
           }
         }
       };
-    
+    useEffect(() => {
+    if(token){
       fetchzoomAccountSettings();
     }
     }, []); 
@@ -121,7 +119,7 @@ const ZoomKeys = () => {
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              window.location.reload();
+              fetchzoomAccountSettings();
             }   });
           setisnotFound(false)
         } 
@@ -152,7 +150,7 @@ const ZoomKeys = () => {
           confirmButtonText: "OK",
         }).then((result) => {
           if (result.isConfirmed) {
-            window.location.reload();
+           fetchzoomAccountSettings();
           }   });
         setisnotFound(false)
       }

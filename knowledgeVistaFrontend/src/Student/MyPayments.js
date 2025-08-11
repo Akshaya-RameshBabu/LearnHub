@@ -22,7 +22,7 @@ const MyPayments = () => {
 	    date:"",   
       paymentType:""
     }]);
-
+const[loading,setloading]=useState(false)
     const filterData = () => {
       if (filterOption === "All") {
         return paymenthistory;
@@ -43,6 +43,7 @@ const MyPayments = () => {
     const fetchData = async () => {
           try {
             // Fetch data from server
+            setloading(true)
             const response = await axios.get(`${baseUrl}/myPaymentHistory`,{
               headers:{
                 Authorization:token
@@ -63,6 +64,8 @@ const MyPayments = () => {
            else{
             throw error
             }
+          }finally{
+            setloading(false)
           }
         };
     useEffect(() => {
@@ -123,6 +126,9 @@ const MyPayments = () => {
               <th scope="col">Status</th>
             </tr>
           </thead>
+            {loading? (  <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>):
           <tbody>
           {filterData().map((payment) => (
              <tr key={payment.id}>
@@ -137,7 +143,7 @@ const MyPayments = () => {
                
               </tr>
             ))}
-          </tbody>
+          </tbody>}
         </table>
       </div>
       </div>

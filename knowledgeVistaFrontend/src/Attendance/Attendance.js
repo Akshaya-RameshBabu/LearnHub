@@ -130,7 +130,7 @@ const Attendance = () => {
           },
         }
       );
- window.location.reload();
+ fetchAttendanceForUser();
     } catch (error) {
       console.error("Error updating attendance:", error);
     }

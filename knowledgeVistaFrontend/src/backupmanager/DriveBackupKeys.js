@@ -22,10 +22,11 @@ const DriveBackupKeys = () => {
     clientId: "",
     clientSecret: "",
   });
-
+const[loading,setloading]=useState(false)
   const [isNotFound, setIsNotFound] = useState(false);
    const fetchDriveCredentials = async () => {
         try {
+          setloading(true)
           const response = await axios.get(`${baseUrl}/get/DriveCredentials`, {
             headers: {
               "Authorization": token
@@ -43,6 +44,8 @@ const DriveBackupKeys = () => {
           } else {
             setIsNotFound(true);
           }
+        }finally{
+          setloading(false)
         }
       };
   useEffect(() => {
@@ -117,10 +120,42 @@ const url = response.data.replace("🔐 Please authorize access: ", "").trim();
   }
 };
 
+const Skeleton = (
+  <div>
+    <h4>Google Drive Backup Settings</h4>
+
+    {/* Google Client ID */}
+    <div className="form-group row">
+      <label className="col-sm-3 col-form-label">
+        Google Client ID <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9 input-group">
+        <div className="skeleton skeleton-input"></div>
+      
+      </div>
+    </div>
+
+    {/* Google Client Secret */}
+    <div className="form-group row">
+      <label className="col-sm-3 col-form-label">
+        Google Client Secret <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9 input-group">
+        <div className="skeleton skeleton-input"></div>
+       
+      </div>
+    </div>
+
+    {/* Edit button */}
+    <div className="btngrp">
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
 
   const editableInputs = (
     <form onSubmit={handleSave}>
-      <h4>Edit Google Drive Backup Settings</h4>
+      <h4> Google Drive Backup Settings</h4>
 
       <div className='form-group row'>
         <label htmlFor='clientId' className='col-sm-3 col-form-label'>
@@ -246,7 +281,7 @@ const url = response.data.replace("🔐 Please authorize access: ", "").trim();
                   <i className="fa-solid fa-xmark"></i>
                 </div>
               </div>
-              {isNotFound ? editableInputs : readOnlyInputs}
+              {loading? Skeleton: isNotFound ? editableInputs : readOnlyInputs}
             </div>
           </div>
         </div>

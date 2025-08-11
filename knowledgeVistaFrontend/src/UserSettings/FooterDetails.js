@@ -10,6 +10,7 @@ const FooterDetails = () => {
   const token = sessionStorage.getItem("token");
   const [isnotFound, setisnotFound] = useState();
   const navigate = useNavigate();
+  const[loading,setLoading]=useState(false)
   const [FooterDetails, setFooterDetails] = useState({
     copyright: "",
     contact: "",
@@ -28,9 +29,9 @@ const FooterDetails = () => {
     supportmail: "",
     institutionmail: "",
   });
-  useEffect(()=>{
-    const getFooterdetails=async()=>{
+      const getFooterdetails=async()=>{
      try{
+      setLoading(true)
      const response=await axios.get(`${baseUrl}/Get/FooterDetails`,{
        headers:{
          Authorization:token
@@ -45,9 +46,12 @@ const FooterDetails = () => {
      }
    }catch(error){
      console.log(error)
+   }finally{
+   setLoading(false)
    }
   
     }
+  useEffect(()=>{
     getFooterdetails();
  },[]
 
@@ -81,7 +85,7 @@ setFooterDetails((prev)=>({
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              window.location.reload();
+           getFooterdetails();
             }   });
           setisnotFound(false)
         } 
@@ -90,26 +94,54 @@ setFooterDetails((prev)=>({
         console.log(error)
       }
   }
-  const editFooter = (
-    <div className="col-12">
-      <div className="navigateheaders">
-        <div
-          onClick={() => {
-            navigate(-1);
-          }}
-        >
-          <i className="fa-solid fa-arrow-left"></i>
-        </div>
-        <div></div>
-        <div
-          onClick={() => {
-            navigate(-1);
-          }}
-        >
-          <i className="fa-solid fa-xmark"></i>
-        </div>
+
+  const Skeleton = (
+  <div className="skeleton-wrapper">
+    <div className="form-group row">
+      <label htmlFor="copyright" className="col-sm-3 col-form-label">
+        Copy Right Content <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
       </div>
-      <h4>Footer Settings</h4>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="contact" className="col-sm-3 col-form-label">
+        Contact Mobile <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="supportmail" className="col-sm-3 col-form-label">
+        Support mail <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="form-group row">
+      <label htmlFor="institutionmail" className="col-sm-3 col-form-label">
+        Institution mail <span className="text-danger">*</span>
+      </label>
+      <div className="col-sm-9">
+        <div className="skeleton skeleton-input"></div>
+      </div>
+    </div>
+
+    <div className="cornerbtn" style={{ display: "flex", gap: "10px" }}>
+      <div className="skeleton skeleton-button"></div>
+      <div className="skeleton skeleton-button"></div>
+    </div>
+  </div>
+);
+
+  const editFooter = (
+    <div>
       <div className="form-group row" >
         <label htmlFor="copyright" className="col-sm-3 col-form-label">
           Copy Right Content<span className="text-danger">*</span>
@@ -189,25 +221,7 @@ setFooterDetails((prev)=>({
     </div>
   );
   const oldfooter = (
-    <div className="col-12">
-       <div className="navigateheaders">
-        <div
-          onClick={() => {
-            navigate(-1);
-          }}
-        >
-          <i className="fa-solid fa-arrow-left"></i>
-        </div>
-        <div></div>
-        <div
-          onClick={() => {
-            navigate(-1);
-          }}
-        >
-          <i className="fa-solid fa-xmark"></i>
-        </div>
-      </div>
-      <h4>Footer Settings</h4>
+   <div>
       <div className="form-group row">
         <label htmlFor="copyright" className="col-sm-3 col-form-label">
           Copy Right Content<span className="text-danger">*</span>
@@ -304,7 +318,28 @@ setFooterDetails((prev)=>({
       </div>
       <div className="card">
         <div className=" card-body">
-          <div className="row">{isnotFound ?editFooter  :oldfooter }</div>
+          <div className="row">
+             <div className="col-12">
+       <div className="navigateheaders">
+        <div
+          onClick={() => {
+            navigate(-1);
+          }}
+        >
+          <i className="fa-solid fa-arrow-left"></i>
+        </div>
+        <div></div>
+        <div
+          onClick={() => {
+            navigate(-1);
+          }}
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </div>
+      </div>
+      <h4>Footer Settings</h4>
+      {loading?Skeleton: isnotFound ?editFooter  :oldfooter }</div>
+      </div>
         </div>
       </div>
     </div>

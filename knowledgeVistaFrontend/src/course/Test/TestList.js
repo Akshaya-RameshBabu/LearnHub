@@ -20,11 +20,9 @@ const TestList = () => {
   const token = sessionStorage.getItem("token");
   const [editingField, setEditingField] = useState(null); // State to track which field is being edited
 const [selectedIds,setselectedIds]=useState([]);
-
-  useEffect(() => {
-    setloading(true)
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
+           setloading(true)
         const response = await axios.get(`${baseUrl}/test/getall/${courseId}`, {
           headers: {
             Authorization: token,
@@ -54,7 +52,7 @@ const [selectedIds,setselectedIds]=useState([]);
        setloading(false)
       }
     };
-
+  useEffect(() => {
     fetchData();
   }, [courseId]);
 
@@ -81,7 +79,7 @@ const [selectedIds,setselectedIds]=useState([]);
           }
         });
         if (response.status===200) {
-          window.location.reload();
+            fetchData();
         }
       }
     } catch (error) {
@@ -124,7 +122,7 @@ const [selectedIds,setselectedIds]=useState([]);
             });
             
             if (response.status===200) {
-              window.location.reload();
+            fetchData();
             }
           }
         } catch (error) {
@@ -217,7 +215,7 @@ const handleDelete = async (questID) => {
           });
           
           if (response.status === 200) {
-            window.location.reload();
+             fetchData();
           }
         }
       } catch (error) {
