@@ -5,7 +5,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import FileViewer from './FileViewer';
-import SubmitAssignmentQuizz from './SubmitAssignmentQuizz';
 import ValidateQuizz from './ValidateQuizz';
 
 const ValidateAssignment = () => {
@@ -67,7 +66,6 @@ const ValidateAssignment = () => {
                     navigate(-1);
                 });
           }else{
-          console.log(err)
           throw err
           }
           }finally{
@@ -160,68 +158,7 @@ const ValidateAssignment = () => {
   return (
     <div>
     <div className="page-header">
-    {/* <div className="page-block">
-          <div className="row align-items-center">
-            <div className="col-md-12">
-              <div className="page-header-title">
-                <h5 className="m-b-10">Assignments</h5>
-              </div>
-              <ul className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <a
-                    href="#"
-                    onClick={()=>{navigate("/batch/viewall")}}
-                    title="dashboard"
-                  >
-                    <i className="fa-solid fa-object-group"></i>
-                  </a>
-                </li>
-                <li className="breadcrumb-item">
-                  <a
-                    href="#"
-                    onClick={() => {
-                      navigate(`/batch/viewcourse/${batchName}/${batchId}`);
-                    }}
-                  >
-                    {batchName}
-                  </a>
-                </li>
-                <li className="breadcrumb-item">
-                  <a href="#"
-                    onClick={() => {
-                      navigate(`/batch/ViewStudents/${batchName}/${batchId}`);
-                    }}>
-                   {displayname && displayname.student_name
-                      ? displayname.student_name
-                      : "Student"}
-                    Details
-                  </a>
-                </li>
-                <li className="breadcrumb-item">
-                  <a href="#"
-                  onClick={()=>{navigate(`/view/Student/Dashboard/${responsedata?.email}/${responsedata?.userId}/${responsedata?.batchId}/${responsedata?.batchName}`)}}
-                   >
-                 {responsedata.userName}
-                  </a>
-                </li>
-                <li className="breadcrumb-item">
-                  <a href="#"
-                  onClick={()=>{navigate(`/view/Assignments/${batchName}/${batchId}/${userId}`)}}
-                   >
-                  Assigmnents
-                  </a>
-                </li>
-                <li className="breadcrumb-item">
-                  <a href="#"
-                   >
-                  Validate
-                  </a>
-                </li>
-              
-              </ul>
-            </div>
-          </div>
-        </div> */}
+   
     </div>
     <div className="row">
       <div className="col-sm-12">

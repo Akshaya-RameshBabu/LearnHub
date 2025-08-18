@@ -42,43 +42,25 @@ public class VideoFileService {
 	private static final Pattern VIDEO_EXTENSION_PATTERN = Pattern
 			.compile(".*\\.(" + String.join("|", ALLOWED_VIDEO_EXTENSIONS) + ")$", Pattern.CASE_INSENSITIVE);
 
-	private static final Set<String> ALLOWED_FILE_TYPES = new HashSet<>(
-			Arrays.asList("application/pdf", "application/vnd.ms-powerpoint",
-					"application/vnd.openxmlformats-officedocument.presentationml.presentation"));
+	private static final Set<String> ALLOWED_FILE_TYPES = new HashSet<>(Arrays.asList("application/pdf",
+			"application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			"text/plain", "application/vnd.ms-powerpoint",
+			"application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.ms-excel",
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv", "image/jpeg", "image/png",
+			"image/gif", "image/bmp", "image/tiff", "application/zip", "application/x-zip-compressed",
+			"multipart/x-zip", // Some upload clients
+			"application/octet-stream"));
 
 	// Maximum file size (100MB)
 	private static final long MAX_FILE_SIZE = 100 * 1024 * 1024;
+	private static final Pattern EXTENSION_PATTERN = Pattern.compile(
+			".*\\.(pdf|doc|docx|txt|ppt|pptx|xls|xlsx|csv|jpg|jpeg|png|gif|bmp|tiff|mp4|mov|avi|webm|zip)$",
+			Pattern.CASE_INSENSITIVE);
 
 	public byte[] getFileAsBytes(String filename) throws IOException {
 		Path path = Paths.get(videoUploadDirectory, filename);
 		return Files.readAllBytes(path);
 	}
-
-//	public String saveVideoFile(MultipartFile videoFile) throws IOException, SecurityException {
-//		// Validate file
-//		validateVideoFile(videoFile);
-//
-//		// Ensure the upload directory exists
-//		Path uploadPath = Paths.get(videoUploadDirectory);
-//		if (!Files.exists(uploadPath)) {
-//			Files.createDirectories(uploadPath);
-//		}
-//
-//		// Generate a unique file name with timestamp and hash
-//		String uniqueFileName = generateSecureFileName(videoFile);
-//
-//		// Define the file path where the video file will be stored
-//		String filePath = uploadPath.resolve(uniqueFileName).toString();
-//
-//		// Save the file to the server
-//		Files.copy(videoFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-//
-//		// Calculate and store file hash for integrity checks
-//		String fileHash = calculateFileHash(videoFile);
-//		storeFileHash(uniqueFileName, fileHash);
-//
-//		return uniqueFileName;
-//	}
 
 	public String saveVideoFile(MultipartFile videoFile, String institutionName) throws IOException {
 		// Validate file
@@ -107,30 +89,6 @@ public class VideoFileService {
 
 	}
 
-//	public String saveDocumentFile(MultipartFile documentFile) throws IOException, SecurityException {
-//		// Validate the document file
-//		validateDocumentFile(documentFile);
-//
-//		// Ensure upload directory exists
-//		Path uploadPath = Paths.get(videoUploadDirectory); // You can separate doc dir if needed
-//		if (!Files.exists(uploadPath)) {
-//			Files.createDirectories(uploadPath);
-//		}
-//
-//		// Generate a secure file name
-//		String uniqueFileName = generateSecureFileName(documentFile);
-//		String filePath = uploadPath.resolve(uniqueFileName).toString();
-//
-//		// Save the file
-//		Files.copy(documentFile.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-//
-//		// Hash and log
-//		String fileHash = calculateFileHash(documentFile);
-//		storeFileHash(uniqueFileName, fileHash);
-//
-//		return uniqueFileName;
-//	}
-
 	public String saveDocumentFile(MultipartFile documentFile, String institutionName) throws IOException {
 		// Validate file
 		validateDocumentFile(documentFile);
@@ -157,6 +115,31 @@ public class VideoFileService {
 
 		// Return relative path
 		return Paths.get(sanitizedInstitution, "documents", uniqueFileName).toString().replace("\\", "/");
+	}
+
+	private void validateAssignmentFile(MultipartFile file) throws SecurityException {
+		if (file == null || file.isEmpty()) {
+			throw new SecurityException("File is empty");
+		}
+
+		// Check file size
+		if (file.getSize() > MAX_FILE_SIZE) {
+			throw new SecurityException("File size exceeds limit: " + MAX_FILE_SIZE);
+		}
+
+		// Check MIME type
+		String contentType = file.getContentType();
+		if (contentType == null || !(ALLOWED_FILE_TYPES.contains(contentType.toLowerCase())
+				|| ALLOWED_VIDEO_TYPES.contains(contentType.toLowerCase()))) {
+			throw new SecurityException("Invalid file type. Allowed types: documents, images, videos, zip");
+		}
+
+		// Check extension
+		String filename = file.getOriginalFilename();
+		if (filename == null || !EXTENSION_PATTERN.matcher(filename).matches()) {
+			throw new SecurityException(
+					"Invalid file extension. Allowed: pdf, doc, docx, txt, ppt, pptx, xls, xlsx, csv, jpg, jpeg, png, gif, bmp, tiff, mp4, mov, avi, webm, zip");
+		}
 	}
 
 	private void validateDocumentFile(MultipartFile file) throws SecurityException {
@@ -278,25 +261,6 @@ public class VideoFileService {
 		// In production, store this in a database
 		logger.info("File hash for {}: {}", fileName, hash);
 	}
-//
-//	public boolean deleteVideoFile(String fileName) {
-//		Path filePath = Paths.get(videoUploadDirectory, fileName);
-//
-//		try {
-//			boolean deleted = Files.deleteIfExists(filePath);
-//
-//			if (deleted) {
-//				logger.info("File deleted successfully: {}", fileName);
-//			} else {
-//				logger.warn("File does not exist or deletion failed: {}", fileName);
-//			}
-//
-//			return deleted; // Return the result to the caller
-//		} catch (IOException e) {
-//			logger.error("Error occurred while deleting file: " + fileName, e);
-//			return false; // Return false in case of an exception
-//		}
-//	}
 
 	public long getFileSize(String fileName, String path) {
 		Path filePath;
@@ -389,7 +353,7 @@ public class VideoFileService {
 	public String saveAssignmentFile(MultipartFile videoFile, String institutionName, Long batchId, Long courseId,
 			Long userId) throws IOException {
 		// Validate file
-		validateDocumentFile(videoFile);
+		validateAssignmentFile(videoFile);
 
 		// Build the relative path structure
 		String relativePath = Paths

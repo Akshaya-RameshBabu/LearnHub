@@ -2,6 +2,7 @@ package com.knowledgeVista.Batch.Assignment.Service;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -65,6 +67,8 @@ public class AssignmentService2 {
 	private NotificationService notiservice;
 	@Autowired
 	private ServletContext servletContext;
+	@Value("${upload.video.directory}")
+	private String BASE_UPLOAD_DIR;
 
 	private static final Logger logger = LoggerFactory.getLogger(AssignmentService2.class);
 
@@ -148,7 +152,8 @@ public class AssignmentService2 {
 				submission.setUser(null);
 				responseMap.put("existingSubmission", submission);
 				if (assignment.getType().equals(AssignmentType.FILE_UPLOAD)) {
-					File file = new File(submission.getUploadedFileUrl());
+					Path filePath = Paths.get(BASE_UPLOAD_DIR, submission.getUploadedFileUrl());
+					File file = filePath.toFile();
 					if (file.exists()) {
 						byte[] fileContent = Files.readAllBytes(file.toPath());
 						String base64File = Base64.getEncoder().encodeToString(fileContent);
@@ -430,12 +435,15 @@ public class AssignmentService2 {
 					submission.setUser(null);
 					responseMap.put("existingSubmission", submission);
 					if (assignment.getType().equals(AssignmentType.FILE_UPLOAD)) {
-						File file = new File(submission.getUploadedFileUrl());
+						Path filePath = Paths.get(BASE_UPLOAD_DIR, submission.getUploadedFileUrl());
+						File file = filePath.toFile();
 						if (file.exists()) {
 							byte[] fileContent = Files.readAllBytes(file.toPath());
 							String base64File = Base64.getEncoder().encodeToString(fileContent);
 							responseMap.put("fileBase64", base64File);
 							responseMap.put("fileMimeType", servletContext.getMimeType(file.getName()));
+						} else {
+							System.out.println("file not exists");
 						}
 					}
 				} else {

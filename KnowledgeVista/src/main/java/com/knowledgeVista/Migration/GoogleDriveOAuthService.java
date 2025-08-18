@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
 import com.google.api.client.auth.oauth2.Credential;
@@ -87,23 +88,9 @@ public class GoogleDriveOAuthService {
 		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
 				clientSecrets, SCOPES).setAccessType("offline").build();
 
-		// Construct the redirect URI dynamically
-		String scheme = request.getHeader("X-Forwarded-Proto");
+		String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
 
-		if (scheme == null || scheme.isBlank()) {
-			scheme = request.getScheme();
-		}
-
-		if (scheme == null || scheme.isBlank()) {
-			scheme = "https"; // Final fallback
-		}
-
-		String domain = scheme + "://" + request.getServerName();
-		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
-			domain += ":" + request.getServerPort();
-		}
-
-		String redirectUri = domain + "/driveoauth/callback";
+		String redirectUri = baseUrl + "/driveoauth/callback";
 
 		try {
 			// --- This is the critical network call that is likely timing out ---
@@ -153,22 +140,9 @@ public class GoogleDriveOAuthService {
 		GoogleClientSecrets clientSecrets = new GoogleClientSecrets().setInstalled(details);
 		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY,
 				clientSecrets, SCOPES).setAccessType("offline").setApprovalPrompt("force").build();
-		String scheme = request.getHeader("X-Forwarded-Proto");
+		String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
 
-		if (scheme == null || scheme.isBlank()) {
-			scheme = request.getScheme();
-		}
-
-		if (scheme == null || scheme.isBlank()) {
-			scheme = "https"; // Final fallback
-		}
-
-		String domain = scheme + "://" + request.getServerName();
-		if (request.getServerPort() != 80 && request.getServerPort() != 443) {
-			domain += ":" + request.getServerPort();
-		}
-
-		String redirectUri = domain + "/driveoauth/callback";
+		String redirectUri = baseUrl + "/driveoauth/callback";
 		AuthorizationCodeRequestUrl url = flow.newAuthorizationUrl().setRedirectUri(redirectUri)
 				.setState(credential.getInstitutionName());
 		return url.build();
