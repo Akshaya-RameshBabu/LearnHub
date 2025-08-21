@@ -17,7 +17,7 @@ window.addEventListener("DOMContentLoaded", () => {
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
         img-src 'self' data: https:;
-        media-src 'self' ${baseUrl};
+       media-src 'self' ${new URL(baseUrl).origin};
         connect-src 'self' ${new URL(baseUrl).origin} https://www.googletagmanager.com https://googleads.g.doubleclick.net https://api.country.is https://restcountries.com https://ipapi.co https://js.stripe.com;
         frame-src https://www.googletagmanager.com https://www.youtube.com https://js.stripe.com;
         child-src https://www.googletagmanager.com https://www.youtube.com https://js.stripe.com;

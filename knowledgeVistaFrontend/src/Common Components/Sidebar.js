@@ -500,7 +500,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         className="nav-link "
                       >
                         <span className="pcoded-micon">
-                        <i class="fa-solid fa-video"></i>
+                        <i className="fa-solid fa-video"></i>
                         </span>
                         <span className="pcoded-mtext">Manage</span>
                       </a>
@@ -899,7 +899,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         className="nav-link "
                       >
                         <span className="pcoded-micon">
-                        <i class="fa-solid fa-video"></i>
+                        <i className="fa-solid fa-video"></i>
                         </span>
                         <span className="pcoded-mtext">Manage</span>
                       </a>

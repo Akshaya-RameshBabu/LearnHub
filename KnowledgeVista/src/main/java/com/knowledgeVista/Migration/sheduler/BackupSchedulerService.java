@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
@@ -23,7 +25,6 @@ import com.knowledgeVista.Migration.BackupService;
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.repo.BackupSheduleConfigRepo;
 import com.knowledgeVista.User.Repository.MuserRepositories;
-import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 
 import jakarta.annotation.PostConstruct;
 
@@ -45,20 +46,19 @@ public class BackupSchedulerService {
 	@Autowired
 	private TaskScheduler taskScheduler;
 
-	@Autowired
-	private JwtUtil jwtUtil;
-
 	@Value("${backend.domain}")
 	private String backendDomain;
 
 	@Value("${developer.mail}")
 	private String devmail;
 
+	private static final Logger logger = LoggerFactory.getLogger(BackupSchedulerService.class);
+
 	private final Map<String, ScheduledFuture<?>> scheduledTasks = new HashMap<>();
 
 	@PostConstruct
 	public void scheduleAllBackups() {
-		System.out.println("🟢 Loading backup configurations from database...");
+		logger.info("🟢 Loading backup configurations from database...");
 		List<BackupScheduleConfig> configs = configRepo.findAll();
 		for (BackupScheduleConfig config : configs) {
 			scheduleBackup(config);
@@ -69,13 +69,12 @@ public class BackupSchedulerService {
 	private void scheduleBackup(BackupScheduleConfig config) {
 		LocalTime time = config.getBackupTime();
 		if (time == null) {
-			System.out.println("⚠️ Skipping scheduling due to null time for: " + config.getInstitutionName());
+			logger.info("⚠️ Skipping scheduling due to null time for: " + config.getInstitutionName());
 			return;
 		}
 
 		Runnable task = () -> {
-			System.out.println(
-					"📦 Running scheduled backup for: " + config.getInstitutionName() + " at " + LocalTime.now());
+			logger.info("📦 Running scheduled backup for: " + config.getInstitutionName() + " at " + LocalTime.now());
 			LocalDate today = LocalDate.now();
 			if (shouldBackupToday(config, today)) {
 				try {
@@ -93,7 +92,7 @@ public class BackupSchedulerService {
 	private void scheduleDailyBackupTask() {
 		LocalTime time = LocalTime.of(15, 43); // 2 AM
 		Runnable dailyTask = () -> {
-			System.out.println("🛡️ Running generic daily 2AM backup at " + LocalTime.now());
+			logger.info("🛡️ Running generic daily 2AM backup at " + LocalTime.now());
 			try {
 				backupService.backupDatabaseToFolder();
 			} catch (Exception e) {
@@ -114,7 +113,7 @@ public class BackupSchedulerService {
 		long initialDelay = Duration.between(now, firstRun).toMillis();
 		long period = Duration.ofDays(1).toMillis();
 
-		System.out.println("⏰ Scheduling task '" + taskKey + "' for " + firstRun);
+		logger.info("⏰ Scheduling task '" + taskKey + "' for " + firstRun);
 
 		ScheduledFuture<?> future = taskScheduler.scheduleAtFixedRate(task,
 				new Date(System.currentTimeMillis() + initialDelay), period);
@@ -159,7 +158,7 @@ public class BackupSchedulerService {
 			}
 
 		} catch (Exception emailEx) {
-			System.err.println("❌ Failed to send backup failure email: " + emailEx.getMessage());
+			logger.info("❌ Failed to send backup failure email: " + emailEx.getMessage());
 		}
 	}
 
@@ -170,10 +169,12 @@ public class BackupSchedulerService {
 	}
 
 	public void rescheduleBackupForInstitution(String institutionName) {
+		logger.info("at rescheduleBackupForInstitution to shedule for institution=" + institutionName);
 		Optional<BackupScheduleConfig> configOpt = configRepo.findByInstitutionName(institutionName);
 		if (configOpt.isPresent()) {
 			BackupScheduleConfig config = configOpt.get();
 
+			logger.info("got to shedule for institution=" + institutionName);
 			// Cancel existing task
 			ScheduledFuture<?> existingTask = scheduledTasks.get(institutionName);
 			if (existingTask != null) {
@@ -183,7 +184,7 @@ public class BackupSchedulerService {
 			// Re-schedule with updated time
 			scheduleBackup(config);
 		} else {
-			System.out.println("⚠️ No schedule found to re-schedule for: " + institutionName);
+			logger.info("⚠️ No schedule found to re-schedule for: " + institutionName);
 		}
 	}
 

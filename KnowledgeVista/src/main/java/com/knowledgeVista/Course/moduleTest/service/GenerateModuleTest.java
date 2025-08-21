@@ -3,7 +3,6 @@ package com.knowledgeVista.Course.moduleTest.service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Optional;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 
 import com.knowledgeVista.AiIntegration.GwenAiService;
-import com.knowledgeVista.Course.DocsDetails;
 import com.knowledgeVista.Course.videoLessons;
 import com.knowledgeVista.Course.Repository.videoLessonRepo;
 import com.knowledgeVista.FileService.VideoFileService;
@@ -48,6 +46,79 @@ public class GenerateModuleTest {
 	@Autowired
 	private GwenAiService gwenService;
 
+//	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter, String token) {
+//		Optional<videoLessons> lessonOpt = lessonRepository.findById(lessonId);
+//		if (!lessonOpt.isPresent()) {
+//			emitter.completeWithError(new Exception("Lesson not found"));
+//			return;
+//		}
+//
+//		String email = jwtUtil.getEmailFromToken(token);
+//		videoLessons lesson = lessonOpt.get();
+//		List<DocsDetails> docs = lesson.getDocuments();
+//		if (docs.isEmpty()) {
+//			emitter.completeWithError(new Exception("No documents available for this lesson"));
+//			return;
+//		}
+//
+//		StringBuilder contentBuilder = new StringBuilder();
+//		for (DocsDetails doc : docs) {
+//			String filePath = doc.getDocumentPath();
+//			try {
+//				String ext = filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
+//				byte[] fileBytes = fileService.getFileAsBytes(filePath);
+//				if (ext.equals("pdf")) {
+//					contentBuilder.append(extractPdfText(fileBytes));
+//				} else if (ext.equals("ppt") || ext.equals("pptx")) {
+//					contentBuilder.append(extractPptText(fileBytes));
+//				}
+//			} catch (Exception e) {
+//				emitter.completeWithError(e);
+//				return;
+//			}
+//		}
+//
+//		String prompt = buildQuestionPrompt(contentBuilder.toString(), count);
+//		logger.info(prompt);
+//
+//		// 🔁 Use plugin instead of aiservice
+//		gwenService.callaiPlugin(email, emitter, prompt);
+//
+//	}
+
+	// private String buildQuestionPrompt(String textContent, Long count) {
+	// return String.format("""
+	// You are not a chatbot. You are an AI that strictly generates multiple-choice
+	// questions.
+
+	// Your task:
+	// - Generate exactly %d multiple-choice type question based ONLY on the lesson
+	// content below.
+	// -no need to give any explanation just give the questions with options
+	// Output must be:
+	// - Plain text only.
+	// - Enclosed entirely in a <question>...</question> tag.
+	// - please Dont make any mistakes in tags opening and closing always open and
+	// close the tag correctly.
+	// - If the question or options contain <, >, or &, escape them as &lt;, &gt;,
+	// and &amp;.
+	// - Formatted exactly like this:
+	// <question>
+	// <questiontext>
+	// [Question text]
+	// </questiontext>
+	// <opt1>Option A</opt1>
+	// <opt2>Option B</opt2>
+	// <opt3>Option C</opt3>
+	// <opt4>Option D</opt4>
+	// <answer>[answer text]</answer>
+	// </question>
+
+	// Lesson Content:
+	// %s
+	// """, count, textContent);
+	// }
+
 	public void streamQuestionsFromLessonQwen(Long lessonId, Long count, ResponseBodyEmitter emitter, String token) {
 		Optional<videoLessons> lessonOpt = lessonRepository.findById(lessonId);
 		if (!lessonOpt.isPresent()) {
@@ -57,30 +128,12 @@ public class GenerateModuleTest {
 
 		String email = jwtUtil.getEmailFromToken(token);
 		videoLessons lesson = lessonOpt.get();
-		List<DocsDetails> docs = lesson.getDocuments();
-		if (docs.isEmpty()) {
-			emitter.completeWithError(new Exception("No documents available for this lesson"));
-			return;
-		}
+		String topics = String.format(
+				"courseName: %s%n" + "courseDescription: %s%n" + "lessonName: %s%n" + "lessonDescription: %s",
+				lesson.getCourseDetail().getCourseName(), lesson.getCourseDetail().getCourseDescription(),
+				lesson.getLessontitle(), lesson.getLessonDescription());
 
-		StringBuilder contentBuilder = new StringBuilder();
-		for (DocsDetails doc : docs) {
-			String filePath = doc.getDocumentPath();
-			try {
-				String ext = filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
-				byte[] fileBytes = fileService.getFileAsBytes(filePath);
-				if (ext.equals("pdf")) {
-					contentBuilder.append(extractPdfText(fileBytes));
-				} else if (ext.equals("ppt") || ext.equals("pptx")) {
-					contentBuilder.append(extractPptText(fileBytes));
-				}
-			} catch (Exception e) {
-				emitter.completeWithError(e);
-				return;
-			}
-		}
-
-		String prompt = buildQuestionPrompt(contentBuilder.toString(), count);
+		String prompt = buildQuestionPromptwithoutdocs(topics, count);
 		logger.info(prompt);
 
 		// 🔁 Use plugin instead of aiservice
@@ -88,41 +141,36 @@ public class GenerateModuleTest {
 
 	}
 
-	/**
-	 * Extracts only the 'content' field from a JSON line (for streaming
-	 * Qwen/OpenRouter).
-	 */
+	private String buildQuestionPromptwithoutdocs(String topics, Long count) {
+		return String.format(
+				"""
+							You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
 
-	/**
-	 * Build the prompt for the LLM.
-	 */
-	private String buildQuestionPrompt(String textContent, Long count) {
-		return String.format("""
-				You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
+						Your task:
+						      - Generate exactly %d multiple-choice type question based ONLY on the lesson
+						      - content below.
+						      -no need to give any explanation just give the questions with options
 
-				Your task:
-				- Generate exactly %d multiple-choice type question based ONLY on the lesson content below.
-				-no need to give any explanation just give the questions with options
-				Output must be:
-				- Plain text only.
-				- Enclosed entirely in a <question>...</question> tag.
-				   - please Dont make any mistakes in tags opening and closing always open and close the tag correctly.
-				- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
-				- Formatted exactly like this:
-				<question>
-				<questiontext>
-				 [Question text]
-				</questiontext>
-				<opt1>Option A</opt1>
-				<opt2>Option B</opt2>
-				<opt3>Option C</opt3>
-				<opt4>Option D</opt4>
-				<answer>[answer text]</answer>
-				</question>
+						Output rules:
+							- Plain text only.
+							- Each question must be fully enclosed in <question>...</question>.
+							- please Dont make any mistakes in tags opening and closing always open and  close the tag correctly.
+							- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
+							- Format must be exactly:
 
-				Lesson Content:
-				%s
-				""", count, textContent);
+							<question>
+							<questiontext>[Question text]</questiontext>
+							<opt1>Option A</opt1>
+							<opt2>Option B</opt2>
+							<opt3>Option C</opt3>
+							<opt4>Option D</opt4>
+							<answer>[Correct option text, must match exactly one option]</answer>
+							</question>
+
+							topics:
+							%s
+							""",
+				count, topics);
 	}
 
 	/**

@@ -66,6 +66,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         configuration.setAllowCredentials(false); // Must be false when allowedOrigins = "*"
         configuration.setMaxAge(3600L);
+        configuration.setExposedHeaders(Arrays.asList("X-Filename", "Content-Disposition"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

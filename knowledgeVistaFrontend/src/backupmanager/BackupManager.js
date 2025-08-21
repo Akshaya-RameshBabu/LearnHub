@@ -116,61 +116,59 @@ export default function BackupManager() {
     setLoading((prev) => ({ ...prev, [key]: value }));
   };
 
-  const downloadBackup = async () => {
-    try {
-      setLoadingFor("downloadBackup", true);
-      const response = await axios.get(`${baseUrl}/backup/download`, {
-        headers: {
-          Authorization: token,
-        },
-        responseType: "blob",
-      });
+const downloadBackup = async () => {
+  try {
+    setLoadingFor("downloadBackup", true);
 
-      if (response.status === 200) {
-        const blob = new Blob([response.data], { type: "application/sql" });
-        const timestamp = new Date()
-          .toISOString()
-          .slice(0, 19)
-          .replace(/[:T]/g, "-");
-        const filename = `backup_${timestamp}.sql`;
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
+    const response = await axios.get(`${baseUrl}/backup/download`, {
+      headers: { Authorization: token },
+      responseType: "blob", // ensures we get binary data
+    });
+
+    if (response.status === 200) {
+      const contentType = response.headers["content-type"];
+      const contentDisposition = response.headers["content-disposition"];
+
+      let filename = "backup.zip"; // fallback filename
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="([^"]+)"/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
       }
-    } catch (err) {
-      if (err?.response?.status === 401) {
-        navigate("/unauthorized");
-      } else if (err?.response?.status === 500) {
-        const blob = err?.response?.data;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const errorMessage = reader.result || "Unknown server error";
-          MySwal.fire({
-            icon: "error",
-            title: "Some Error Occurred",
-            text: errorMessage,
-            confirmButtonText: "OK",
-          });
-        };
-        reader.onerror = () => {
-          MySwal.fire({
-            icon: "error",
-            title: "Some Error Occurred",
-            text: "Unable to read server error message.",
-            confirmButtonText: "OK",
-          });
-        };
-        reader.readAsText(blob);
-      }
-    } finally {
-      setLoadingFor("downloadBackup", false);
+
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
     }
-  };
+  } catch (err) {
+    if (err?.response?.status === 401) {
+      navigate("/unauthorized");
+    } else if (err?.response?.status === 500) {
+      const blob = err?.response?.data;
+      const reader = new FileReader();
+      reader.onload = () => {
+        MySwal.fire({
+          icon: "error",
+          title: "Some Error Occurred",
+          text: reader.result || "Unknown server error",
+          confirmButtonText: "OK",
+        });
+      };
+      reader.readAsText(blob);
+    }
+  } finally {
+    setLoadingFor("downloadBackup", false);
+  }
+};
 
   const saveBackuptoDrive = async () => {
     try {

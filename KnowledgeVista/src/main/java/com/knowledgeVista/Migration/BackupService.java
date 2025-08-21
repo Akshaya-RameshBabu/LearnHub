@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -68,8 +69,15 @@ public class BackupService {
 	}
 
 	private byte[] createDatabaseBackup() throws Exception {
-		ProcessBuilder pb = new ProcessBuilder("pg_dump", "-U", dbUsername, "-F", "p", "--inserts", dbName);
+		String url = dbUrl.replace("jdbc:postgresql://", "postgresql://");
+		URI uri = new URI(url);
+		String dbHost = uri.getHost(); // "localhost"
+		int dbPort = (uri.getPort() == -1) ? 5432 : uri.getPort(); // 5432 if not specified
+		String dbName = uri.getPath().substring(1); // remove leading "/"
+		ProcessBuilder pb = new ProcessBuilder("pg_dump", "-h", dbHost, "-p", String.valueOf(dbPort), "-U", dbUsername,
+				"-F", "p", "--inserts", dbName);
 		pb.environment().put("PGPASSWORD", dbPassword);
+
 		pb.redirectErrorStream(true);
 
 		Process process = pb.start();
@@ -93,15 +101,35 @@ public class BackupService {
 
 	public ResponseEntity<byte[]> streamDatabaseBackup() {
 		try {
+			// 1. Get the database backup data as a byte array
 			byte[] sqlData = createDatabaseBackup();
-			String fileName = "backup_" + timestamp() + ".sql";
+			String timestamp = timestamp();
+			String zipFileName = "full_backup_" + timestamp + ".zip";
 
+			// 2. Create an in-memory ZIP file
+			ByteArrayOutputStream zipBaos = new ByteArrayOutputStream();
+			try (ZipOutputStream zos = new ZipOutputStream(zipBaos)) {
+				// Add the SQL data to the ZIP file
+				zos.putNextEntry(new ZipEntry("backup_" + timestamp + ".sql"));
+				zos.write(sqlData);
+				zos.closeEntry();
+
+				// Add the assets directory to the ZIP file
+				zipDirectory(new File(assetsDirPath), "assets", zos);
+			}
+
+			// 3. Get the final byte array of the zipped data
+			byte[] zipData = zipBaos.toByteArray();
+
+			// 4. Create and return the downloadable ResponseEntity
+			// This sets the headers to tell the browser to download the file
 			return ResponseEntity.ok()
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-					.contentType(MediaType.APPLICATION_OCTET_STREAM).contentLength(sqlData.length).body(sqlData);
+					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+					.contentType(MediaType.APPLICATION_OCTET_STREAM).contentLength(zipData.length).body(zipData);
 
 		} catch (Exception e) {
-			logger.error("❌ Backup failed", e);
+			logger.error("❌ Zipped backup failed", e);
+			// For an error, return a 500 status with no body, as the body type is byte[]
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 		}
 	}
@@ -139,6 +167,7 @@ public class BackupService {
 	}
 
 	public void performBackupAndUpload(String institutionName, int maxFilesToKeep) throws Exception {
+		logger.info("Dumping Databse");
 		byte[] sqlData = createDatabaseBackup();
 		String timestamp = timestamp();
 		String zipFileName = "full_backup_" + timestamp + ".zip";
@@ -153,10 +182,11 @@ public class BackupService {
 		}
 
 		try (InputStream zipInputStream = new ByteArrayInputStream(zipBaos.toByteArray())) {
+			logger.info("sending zip to drive");
 			googleDriveOAuthService.uploadFileToDrivesheduled(zipInputStream, zipFileName, FOLDER_NAME,
 					institutionName);
 		}
-
+		logger.info("deleting old files");
 		googleDriveOAuthService.deleteOldFilesInDriveFolder(FOLDER_NAME, maxFilesToKeep, institutionName);
 	}
 
