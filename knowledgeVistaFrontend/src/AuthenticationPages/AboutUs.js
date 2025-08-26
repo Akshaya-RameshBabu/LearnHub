@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import baseUrl from '../api/utils';
 import axios from 'axios';
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { useNavigate } from 'react-router-dom';
 
-const About_Us = () => {
+const AboutUs = () => {
   
   const [isDataList, setIsDataList] = useState(null);
   const navigate=useNavigate();
@@ -194,4 +192,4 @@ const skleton=(
   )
 }
 
-export default About_Us
+export default AboutUs

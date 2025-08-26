@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -55,8 +56,7 @@ public class BackupService {
 	@Value("${database.name}")
 	private String dbName;
 
-	private static final int MAX_DB_BACKUPS = 5;
-	private static final int MAX_MEDIA_BACKUPS = 2;
+	private static final int MAX_BACKUPS = 7;
 	private static final String FOLDER_NAME = "Learnhub_Backup";
 
 	private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
@@ -74,8 +74,11 @@ public class BackupService {
 		String dbHost = uri.getHost(); // "localhost"
 		int dbPort = (uri.getPort() == -1) ? 5432 : uri.getPort(); // 5432 if not specified
 		String dbName = uri.getPath().substring(1); // remove leading "/"
+
 		ProcessBuilder pb = new ProcessBuilder("pg_dump", "-h", dbHost, "-p", String.valueOf(dbPort), "-U", dbUsername,
-				"-F", "p", "--inserts", dbName);
+				"-F", "c", // custom format
+				"--no-owner", "--no-acl", dbName);
+
 		pb.environment().put("PGPASSWORD", dbPassword);
 
 		pb.redirectErrorStream(true);
@@ -193,17 +196,39 @@ public class BackupService {
 	public void backupDatabaseToFolder() throws Exception {
 		ensureBackupDirectoryExists();
 
+		// 1️⃣ Create the database backup as byte[]
 		byte[] sqlData = createDatabaseBackup();
 		String timestamp = timestamp();
 
-		Path sqlFilePath = Paths.get(backupPath, "backup_" + timestamp + ".sql");
-		Files.write(sqlFilePath, sqlData);
+		// 2️⃣ Prepare the zip file
+		Path zipFilePath = Paths.get(backupPath, "backup_" + timestamp + ".zip");
 
-		Path zipFilePath = Paths.get(backupPath, "assets_backup_" + timestamp + ".zip");
-		zipDirectory(Paths.get(assetsDirPath), zipFilePath);
+		try (FileOutputStream fos = new FileOutputStream(zipFilePath.toFile());
+				ZipOutputStream zos = new ZipOutputStream(fos)) {
 
-		cleanupOldBackups(backupPath, ".sql", MAX_DB_BACKUPS);
-		cleanupOldBackups(backupPath, ".zip", MAX_MEDIA_BACKUPS);
+			// 3️⃣ Add the .sql file to the ZIP
+			ZipEntry sqlEntry = new ZipEntry("backup_" + timestamp + ".sql");
+			zos.putNextEntry(sqlEntry);
+			zos.write(sqlData);
+			zos.closeEntry();
+
+			// 4️⃣ Add the assets folder to the ZIP
+			Path assetsPath = Paths.get(assetsDirPath);
+			Files.walk(assetsPath).filter(Files::isRegularFile).forEach(path -> {
+				try {
+					String entryName = assetsPath.relativize(path).toString();
+					ZipEntry assetEntry = new ZipEntry("assets/" + entryName);
+					zos.putNextEntry(assetEntry);
+					Files.copy(path, zos);
+					zos.closeEntry();
+				} catch (IOException e) {
+					throw new RuntimeException("Error adding file to zip: " + path, e);
+				}
+			});
+		}
+
+		// 5️⃣ Clean up old backups if needed
+		cleanupOldBackups(backupPath, ".zip", MAX_BACKUPS); // now zip contains both SQL + assets
 	}
 
 	private void zipDirectory(File folder, String parentFolder, ZipOutputStream zos) throws IOException {

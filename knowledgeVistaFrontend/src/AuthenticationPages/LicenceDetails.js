@@ -135,9 +135,7 @@ const LicenceDetails = () => {
           icon: "success",
           confirmButtonText: "Go to Login",
         }).then((result) => {
-          if (result.isConfirmed) {
             navigate("/login");
-          }
         });
       }
     } catch (error) {

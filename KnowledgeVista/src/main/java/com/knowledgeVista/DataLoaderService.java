@@ -10,7 +10,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
@@ -34,9 +33,6 @@ public class DataLoaderService {
 	private MuserRepositories muserrepositories;
 	@Autowired
 	private SocialKeyRepo SocialKeysRepo;
-
-	@Autowired
-	private BCryptPasswordEncoder passwordEncoder;
 
 	@PostConstruct
 	@Transactional
@@ -116,7 +112,7 @@ public class DataLoaderService {
 					// Create new user instance
 					Muser newUser = new Muser();
 					newUser.setUsername(username);
-					newUser.setPassword(password, passwordEncoder);
+					newUser.setPsw(password);
 					newUser.setEmail(email);
 					newUser.setDob(dob);
 					newUser.setPhone(phone);
@@ -124,8 +120,7 @@ public class DataLoaderService {
 					newUser.setCountryCode(countryCode);
 					newUser.setInstitutionName(institutionName);
 					newUser.setRole(role); // Set the role instance
-					newUser.setIsActive(true); // Assuming default active status
-
+					newUser.setIsActive(true);
 					muserrepositories.save(newUser);
 				}
 			}

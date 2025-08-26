@@ -2,10 +2,10 @@
 <users>
     <user>
         <username>SYSADMIN</username>
-        <psw>12345678</psw>
+        <psw>$2a$10$yZhfHPJjnekxJMmvjasO2uuwY8NJr1MYBU3onERJCs.s/ojsamxA6</psw>
         <email>sysadmin@gmail.com</email>
         <dob>1990-01-01</dob>
-        <phone>1234567890</phone>
+        <phone>9566191759</phone>
         <skills>Java,Spring</skills>
         <countryCode>+91</countryCode>
         <role>SYSADMIN</role>

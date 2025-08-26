@@ -1,6 +1,7 @@
 package com.knowledgeVista;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,7 @@ import com.knowledgeVista.Meeting.ZoomMeetingService;
 import com.knowledgeVista.Meeting.zoomclass.MeetingRequest;
 import com.knowledgeVista.Migration.Backupcomponent;
 import com.knowledgeVista.Migration.OAuthCredentialService;
+import com.knowledgeVista.Migration.Restoreservice;
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.model.OAuthCredential;
 import com.knowledgeVista.Notification.Controller.NotificationController;
@@ -255,6 +257,9 @@ public class FrontController {
 
 	@Autowired
 	private OAuthCredentialService drivecredentialsservice;
+
+	@Autowired
+	private Restoreservice restoreservice;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -2453,5 +2458,57 @@ public class FrontController {
 	public ResponseEntity<String> oauthCallback(HttpServletRequest request, @RequestParam("code") String code,
 			@RequestParam("state") String institutionName) {
 		return drivecredentialsservice.oauthCallback(code, institutionName, request);
+	}
+
+	// ----------------------Restore
+	// Service-------------------------------------------
+	@PostMapping("/zip/restore-database")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> restoreDatabase(@RequestParam("backupZipFile") MultipartFile backupZipFile,
+			@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return restoreservice.restoreDatabase(backupZipFile, token);
+			} else {
+				// need to implement the backup for sas model specific to institution and add
+				// that method here.
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Oops...! This Feature is not Available for This Environment");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@GetMapping("/listbackups")
+	@CheckAccessAnnotation
+	public ResponseEntity<List<String>> listBackupFiles(@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return restoreservice.listBackupFiles(token);
+			} else {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@PostMapping("/backups/restore/server")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> restorebyfilename(@RequestParam("fileName") String filename,
+			@RequestHeader("Authorization") String token) {
+		try {
+			if (environment.equals("VPS")) {
+				return restoreservice.restoreDatabase(filename, token);
+			} else {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

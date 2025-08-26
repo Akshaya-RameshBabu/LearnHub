@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ForgetPassword from "./AuthenticationPages/forgetpassword";
 import Login from "./AuthenticationPages/login";
-import React from "react";
 import PrivateRoute from "./AuthenticationPages/PrivateRoute";
 import Missing from "./AuthenticationPages/Missing";
 import Unauthorized from "./AuthenticationPages/Unauthorized";
@@ -11,8 +10,6 @@ import CertificateInputs from "./certificate/CertificateInputs";
 import Template from "./certificate/Template";
 import EditCourse from "./course/Update/EditCourse";
 import CourseView from "./course/Components/CourseView";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import EditCourseForm from "./course/Update/EditCourseForm.js";
 import Layout from "./Common Components/Layout.js";
 import CreateTest from "./course/Test/CreateTest";
@@ -40,7 +37,7 @@ import CustomViewvideo from "./course/Components/CustomViewvideo.js";
 import EditQuestion from "./course/Test/EditQuestion.js";
 import AddMoreQuestion from "./course/Test/AddMoreQuestion.js";
 import Dashboard from "./AuthenticationPages/Dashboard.js";
-import About_Us from "./AuthenticationPages/About_Us";
+import AboutUs from "./AuthenticationPages/AboutUs.js";
 import baseUrl from "./api/utils.js";
 import axios from "axios";
 import RefreshToken from "./AuthenticationPages/RefreshToken.js";
@@ -63,7 +60,6 @@ import StudentCalenderView from "./Meetings/StudentCalenderView.js";
 import EditMeeting from "./Meetings/EditMeeting.js";
 import Footer from "./Common Components/Footer.js";
 import Affiliates from "./SysAdmin/Affiliates.js";
-//import MailSending from "./Meetings/MailSending.js";
 import SlideViewer from "./course/Components/SlideViewer.js";
 import AdminProfileView from "./SysAdmin/AdminProfileView.js";
 import StudentRegister from "./Registration/StudentRegister.js";
@@ -126,20 +122,19 @@ import BatchAssignments from "./Assignment/BatchAssignments.js";
 import ValidateAssignment from "./Assignment/ValidateAssignment.js";
 import LicenceFileCreation from "./AuthenticationPages/LicenceFileCreation.js";
 import GenerateQuestions from "./course/ModuleTest.js/GenerateQuestions.js";
-import OpenRouterKeys from "./UserSettings/OpenRouterKeys.js";
 import UserCommonSetting from "./UserSettings/UserCommonSetting.js";
 import BackupManager from "./backupmanager/BackupManager.js";
 import DriveBackupKeys from "./backupmanager/DriveBackupKeys.js";
 import ListMeeting from "./Meetings/ListMeeting.js";
+import RestorePage from "./backupmanager/RestorePage.js";
 
 function App() {
   useEffect(() => {
     pcoded();
   }, []);
   const isAuthenticated = sessionStorage.getItem("token") !== null;
-  const MySwal = withReactContent(Swal);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading,setloading]=useState(false)
+  const [loading, setloading] = useState(false);
   const [course, setCourse] = useState([
     {
       courseId: "",
@@ -157,8 +152,9 @@ function App() {
   const [aiAvailable, setAiAvailable] = useState(false);
 
   useEffect(() => {
-    axios.get(`${baseUrl}/ai/available`)
-      .then(res => setAiAvailable(res.data.available))
+    axios
+      .get(`${baseUrl}/ai/available`)
+      .then((res) => setAiAvailable(res.data.available))
       .catch(() => setAiAvailable(false));
   }, []);
   const handleSearchChange = (e) => {
@@ -187,13 +183,12 @@ function App() {
     const matchesPaidCondition = filter.paid ? item.amount > 0 : true;
 
     // Condition for Unpaid courses (if filter.unpaid is selected)
-    const matchesUnpaidCondition = filter.unpaid ? item.amount == 0 : true;
+    const matchesUnpaidCondition = filter.unpaid ? item.amount === 0 : true;
 
     // Return courses that match the search query and the appropriate paid/unpaid condition
     return matchesSearchQuery && matchesPaidCondition && matchesUnpaidCondition;
   });
 
-  
   useEffect(() => {
     const fetchItems = async () => {
       try {
@@ -201,7 +196,7 @@ function App() {
         const role = sessionStorage.getItem("role");
         if (token) {
           if (role !== "SYSADMIN") {
-            setloading(true)
+            setloading(true);
             const response = await axios.get(`${baseUrl}/course/viewAll`, {
               headers: {
                 Authorization: token,
@@ -214,14 +209,14 @@ function App() {
       } catch (error) {
         console.error(error);
         throw error;
-      }finally{
-        setloading(false)
+      } finally {
+        setloading(false);
       }
     };
     if (isAuthenticated) {
       fetchItems();
     }
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <Router>
@@ -231,7 +226,7 @@ function App() {
           <Route
             element={
               <Layout
-              aiAvailable={aiAvailable}
+                aiAvailable={aiAvailable}
                 searchQuery={searchQuery}
                 handleSearchChange={handleSearchChange}
                 setSearchQuery={setSearchQuery}
@@ -452,7 +447,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-  <Route
+            <Route
               path="/view/Assignments/:batchTitle/:batchId/:userId"
               element={
                 <ErrorBoundary>
@@ -484,7 +479,10 @@ function App() {
               element={
                 <ErrorBoundary>
                   <PrivateRoute authenticationRequired={true}>
-                    <CourseView filteredCourses={filteredCourses} loading={loading} />
+                    <CourseView
+                      filteredCourses={filteredCourses}
+                      loading={loading}
+                    />
                   </PrivateRoute>
                 </ErrorBoundary>
               }
@@ -498,21 +496,27 @@ function App() {
                     authenticationRequired={true}
                     authorizationRequired={true}
                   >
-                    <EditCourse filteredCourses={filteredCourses} loading={loading} />
+                    <EditCourse
+                      filteredCourses={filteredCourses}
+                      loading={loading}
+                    />
                   </PrivateRoute>
                 </ErrorBoundary>
               }
             />
             <Route
-  path="/course/AddTest/:courseName/:courseId"
-  element={
-    <ErrorBoundary>
-      <PrivateRoute authenticationRequired={true} authorizationRequired={true}>
-        {aiAvailable ? <GenerateQuestions /> : <CreateTest />}
-      </PrivateRoute>
-    </ErrorBoundary>
-  }
-/>
+              path="/course/AddTest/:courseName/:courseId"
+              element={
+                <ErrorBoundary>
+                  <PrivateRoute
+                    authenticationRequired={true}
+                    authorizationRequired={true}
+                  >
+                    {aiAvailable ? <GenerateQuestions /> : <CreateTest />}
+                  </PrivateRoute>
+                </ErrorBoundary>
+              }
+            />
             <Route
               path="/test/start/:courseName/:courseId"
               element={
@@ -549,7 +553,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-             
+
             <Route
               path="/course/edit/:courseId"
               element={
@@ -684,10 +688,7 @@ function App() {
               path="/view/MyAssignments"
               element={
                 <ErrorBoundary>
-                  <PrivateRoute
-                    authenticationRequired={true}
-                    onlyuser={true}
-                  >
+                  <PrivateRoute authenticationRequired={true} onlyuser={true}>
                     <ViewMyAssignment />
                   </PrivateRoute>
                 </ErrorBoundary>
@@ -697,10 +698,7 @@ function App() {
               path="/submitAssignment/:batchId/:AssignmentId"
               element={
                 <ErrorBoundary>
-                  <PrivateRoute
-                    authenticationRequired={true}
-                    onlyuser={true}
-                  >
+                  <PrivateRoute authenticationRequired={true} onlyuser={true}>
                     <SubmitAssignment />
                   </PrivateRoute>
                 </ErrorBoundary>
@@ -947,7 +945,7 @@ function App() {
                     authorizationRequired={true}
                     licence={true}
                   >
-                    <About_Us />
+                    <AboutUs/>
                   </PrivateRoute>
                 </ErrorBoundary>
               }
@@ -1032,7 +1030,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-             <Route
+            <Route
               path="/meeting/manage"
               element={
                 <ErrorBoundary>
@@ -1068,7 +1066,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-            
+
             <Route
               path="/user/ProgramCalender"
               element={
@@ -1327,7 +1325,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-              <Route
+            <Route
               path="/Assignment/Validate/:batchName/:batchId/:userId/:assignmentId"
               element={
                 <ErrorBoundary>
@@ -1380,7 +1378,6 @@ function App() {
               }
             />
 
-
             {/* SysAdminRoutes */}
             <Route
               path="/viewAll/Admins"
@@ -1417,7 +1414,7 @@ function App() {
               path="/settings"
               element={
                 <ErrorBoundary>
-                  <PrivateRoute authenticationRequired={true} onlyuser={true} >
+                  <PrivateRoute authenticationRequired={true} onlyuser={true}>
                     <UserCommonSetting />
                   </PrivateRoute>
                 </ErrorBoundary>
@@ -1443,7 +1440,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-            
+
             <Route
               path="/Zoomkeyupload"
               element={
@@ -1484,31 +1481,46 @@ function App() {
                 </ErrorBoundary>
               }
             />
-             <Route
+            <Route
               path="/admin/backup-shedule"
               element={
                 <PrivateRoute
                   authenticationRequired={true}
                   authorizationRequired={true}
-                   vpsonly={true} 
+                  vpsonly={true}
                 >
                   <BackupManager />
                 </PrivateRoute>
               }
             />
-             <Route
+            <Route
               path="/admin/driveCredentials"
               element={
                 <PrivateRoute
                   authenticationRequired={true}
                   authorizationRequired={true}
-                   vpsonly={true} 
+                  vpsonly={true}
                 >
                   <DriveBackupKeys />
                 </PrivateRoute>
               }
             />
-            
+            <Route
+              path="/restore"
+              element={
+                <ErrorBoundary>
+                  <PrivateRoute
+                    authenticationRequired={true}
+                    vpsonly={true}
+                     licence={true}
+                    sysandadmin={true}
+                  >
+                  <RestorePage />
+                  </PrivateRoute>
+                </ErrorBoundary>
+              }
+            />
+
             {/* SysAdminRoutes */}
           </Route>
           <Route
@@ -1519,6 +1531,7 @@ function App() {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/updatePaypalPayment"
             element={
@@ -1595,7 +1608,7 @@ function App() {
               </ErrorBoundary>
             }
           />
-       
+
           <Route
             path="/TrainerRegistration"
             element={

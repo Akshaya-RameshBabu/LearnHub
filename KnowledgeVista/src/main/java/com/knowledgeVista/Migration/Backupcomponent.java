@@ -1,7 +1,5 @@
 package com.knowledgeVista.Migration;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -11,8 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.repo.BackupSheduleConfigRepo;
@@ -137,54 +134,6 @@ public class Backupcomponent {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("❌ Internal server error occurred while saving/updating the schedule.");
 		}
-	}
-
-	@PostMapping("/restore-database")
-	public String restoreDatabase(@RequestParam String backupFilePath) {
-		try {
-			File file = new File(backupFilePath);
-			if (!file.exists() || !file.isFile()) {
-				return "❌ Restore failed: Backup file not found at " + backupFilePath;
-			}
-
-			// Prepare psql restore command
-			ProcessBuilder pb = new ProcessBuilder("psql", "-U", dbUsername, "-d", extractDbName(dbUrl), "-f",
-					backupFilePath);
-
-			pb.environment().put("PGPASSWORD", dbPassword);
-			pb.redirectErrorStream(true);
-			pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-
-			Process process = pb.start();
-			int exitCode = process.waitFor();
-
-			if (exitCode == 0) {
-				return "✅ Restore completed successfully from: " + backupFilePath;
-			} else {
-				return "❌ Restore failed. Exit code: " + exitCode
-						+ ". Please ensure the file is valid and psql is installed.";
-			}
-
-		} catch (IOException e) {
-			return "❌ I/O Error during restore: " + e.getMessage();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			return "❌ Restore interrupted: " + e.getMessage();
-		} catch (Exception e) {
-			return "❌ Unexpected error during restore: " + e.getMessage();
-		}
-	}
-
-	private String extractDbName(String url) {
-		// Example: jdbc:postgresql://localhost:5432/yourdbname
-		int lastSlash = url.lastIndexOf("/");
-		if (lastSlash == -1)
-			return url;
-		String dbName = url.substring(lastSlash + 1);
-		int paramIdx = dbName.indexOf("?");
-		if (paramIdx != -1)
-			dbName = dbName.substring(0, paramIdx);
-		return dbName;
 	}
 
 }

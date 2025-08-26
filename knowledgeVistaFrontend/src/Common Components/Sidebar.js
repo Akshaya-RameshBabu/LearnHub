@@ -14,7 +14,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
   const navigate = useNavigate();
   const { displayname, Activeprofile } = useContext(GlobalStateContext);
   const [joinUrl, setjoinUrl] = useState();
-  const profile = sessionStorage.getItem("Activeprofile")
+  const profile = sessionStorage.getItem("Activeprofile");
   const result = profile === "SAS" ? true : false;
 
   useEffect(() => {
@@ -45,24 +45,27 @@ const Sidebar = ({ filter, handleFilterChange }) => {
     const fetchVirtualMeet = async () => {
       try {
         if (userRole !== "SYSADMIN" && token) {
-          const response = await axios.get(`${baseUrl}/api/zoom/getVirtualMeet`, {
-            headers: {
-              Authorization: token,
-            },
-          });
+          const response = await axios.get(
+            `${baseUrl}/api/zoom/getVirtualMeet`,
+            {
+              headers: {
+                Authorization: token,
+              },
+            }
+          );
           if (response.status === 200) {
             if (
               typeof response.data === "string" &&
               response.data.startsWith("http")
             ) {
-              setjoinUrl(response.data)
+              setjoinUrl(response.data);
             }
           }
         }
       } catch (error) {
         console.error("Error fetching virual class:", error);
       }
-    }
+    };
     fetchData();
     fetchVirtualMeet();
   }, []);
@@ -87,13 +90,12 @@ const Sidebar = ({ filter, handleFilterChange }) => {
     });
   }
 
-
   const handleClick = (e, link) => {
     e.preventDefault();
-    if (userRole === "ADMIN" || userRole === "TRAINER") {
+    if (userRole === "ADMIN" ) {
       if (
         (link === "/about" ||
-          link === "/admin/dashboard" ||
+          link === "/admin/dashboard" || link==="/restore"||
           link === "/licenceDetails") &&
         isEmpty
       ) {
@@ -102,7 +104,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
         navigate(link);
       } else if (
         (link === "/about" ||
-          link === "/admin/dashboard" ||
+          link === "/admin/dashboard" ||link==="/restore" ||
           link === "/licenceDetails") &&
         !isEmpty &&
         !isvalid
@@ -123,8 +125,9 @@ const Sidebar = ({ filter, handleFilterChange }) => {
   };
 
   return (
-    <nav className="pcoded-navbar menu-light  "
-    //  style={{position:"fixed"}}
+    <nav
+      className="pcoded-navbar menu-light  "
+      //  style={{position:"fixed"}}
     >
       <div className="navbar-wrapper">
         <div className="navbar-content scroll-div ">
@@ -154,8 +157,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     <span className="pcoded-mtext">Courses</span>
                   </a>
                   <ul className="pcoded-submenu">
-
-
                     <li>
                       <a
                         href="#"
@@ -268,8 +269,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     <span className="pcoded-mtext">Batch</span>
                   </a>
                   <ul className="pcoded-submenu">
-
-
                     <li>
                       <a
                         href="#"
@@ -294,7 +293,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         View batch
                       </a>
                     </li>
-
                   </ul>
                 </li>
                 <li className="nav-item pcoded-hasmenu">
@@ -400,7 +398,8 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                           handleClick(e, "/settings/Weightage");
                         }}
                       >
-                        <i className="fa-solid fa-sliders mr-2"></i>Grade Weightage
+                        <i className="fa-solid fa-sliders mr-2"></i>Grade
+                        Weightage
                       </a>
                     </li>
                     <li>
@@ -466,7 +465,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   </ul>
                 </li>
 
-
                 <li className="nav-item pcoded-hasmenu">
                   <a href="#!" className="nav-link ">
                     <span className="pcoded-micon">
@@ -485,12 +483,12 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         className="nav-link "
                       >
                         <span className="pcoded-micon">
-                         <i className="fa-solid fa-calendar-days"></i>
+                          <i className="fa-solid fa-calendar-days"></i>
                         </span>
-                        <span className="pcoded-mtext">  Calender</span>
+                        <span className="pcoded-mtext"> Calender</span>
                       </a>
                     </li>
-                     <li>
+                    <li>
                       <a
                         href="#"
                         data-path="/meeting/manage"
@@ -500,7 +498,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                         className="nav-link "
                       >
                         <span className="pcoded-micon">
-                        <i className="fa-solid fa-video"></i>
+                          <i className="fa-solid fa-video"></i>
                         </span>
                         <span className="pcoded-mtext">Manage</span>
                       </a>
@@ -522,18 +520,22 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     </li>
                   </ul>
                 </li>
-                {joinUrl && <li className="nav-item no-hasmenu">
-                  <a
-                    href="#"
-                    onClick={(e) => { window.open(joinUrl, "_blank"); }}
-                    className="nav-link "
-                  >
-                    <span className="pcoded-micon">
-                      <i className="fa-solid fa-display text-primary mr-2"></i>
-                    </span>
-                    <span className="pcoded-mtext">Virual ClassRoom</span>
-                  </a>
-                </li>}
+                {joinUrl && (
+                  <li className="nav-item no-hasmenu">
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        window.open(joinUrl, "_blank");
+                      }}
+                      className="nav-link "
+                    >
+                      <span className="pcoded-micon">
+                        <i className="fa-solid fa-display text-primary mr-2"></i>
+                      </span>
+                      <span className="pcoded-mtext">Virual ClassRoom</span>
+                    </a>
+                  </li>
+                )}
                 <li className="nav-item pcoded-hasmenu">
                   <a href="#!" className="nav-link ">
                     <span className="pcoded-micon">
@@ -574,42 +576,68 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     </li>
                   </ul>
                 </li>
-     <li className={`nav-item pcoded-hasmenu ${Activeprofile !== "VPS" ? "d-none" : ""}`}>
-  <a href="#!" className="nav-link">
-    <span className="pcoded-micon">
-      <i className="fa-solid fa-arrows-rotate"></i>
-    </span>
-    <span className="pcoded-mtext">Manage Backups</span>
-  </a>
-  <ul className="pcoded-submenu">
-    <li>
-      <a
-        href="#"
-        data-path="/admin/driveCredentials"
-        onClick={(e) => handleClick(e, "/admin/driveCredentials")}
-        className="nav-link"
-      >
-        <span className="pcoded-micon"><i className="fa-solid fa-key"></i></span>
-        <span className="pcoded-mtext">Drive keys</span>
-      </a>
-    </li>
-    <li>
-      <a
-        href="#"
-        data-path="/admin/backup-shedule"
-        onClick={(e) => handleClick(e, "/admin/backup-shedule")}
-        className="nav-link"
-      >
-        <span className="pcoded-micon"><i className="fa-solid fa-calendar-days"></i></span>
-        <span className="pcoded-mtext">Shedule backup</span>
-      </a>
-    </li>
-  </ul>
-</li>
 
+                <li
+                  className={`nav-item pcoded-hasmenu ${
+                    Activeprofile !== "VPS" ? "d-none" : ""
+                  }`}
+                >
+                  <a href="#!" className="nav-link">
+                    <span className="pcoded-micon">
+                      <i className="fa-solid fa-arrows-rotate"></i>
+                    </span>
+                    <span className="pcoded-mtext">Manage Backups</span>
+                  </a>
+                  <ul className="pcoded-submenu">
+                    <li>
+                      <a
+                        href="#"
+                        data-path="/admin/driveCredentials"
+                        onClick={(e) =>
+                          handleClick(e, "/admin/driveCredentials")
+                        }
+                        className="nav-link"
+                      >
+                        <span className="pcoded-micon">
+                          <i className="fa-solid fa-key"></i>
+                        </span>
+                        <span className="pcoded-mtext">Drive keys</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="#"
+                        data-path="/admin/backup-shedule"
+                        onClick={(e) => handleClick(e, "/admin/backup-shedule")}
+                        className="nav-link"
+                      >
+                        <span className="pcoded-micon">
+                          <i className="fa-solid fa-calendar-days"></i>
+                        </span>
+                        <span className="pcoded-mtext">Shedule backup</span>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
 
-              
-              
+                <li
+                  className={`nav-item no-hasmenu ${
+                    Activeprofile !== "VPS" ? "d-none" : ""
+                  }`}
+                >
+                  <a
+                    href="#"
+                    data-path="/restore"
+                    onClick={(e) => handleClick(e, "/restore")}
+                    className="nav-link "
+                  >
+                    <span className="pcoded-micon">
+                      <i className="fa-solid fa-window-restore"></i>
+                    </span>
+                    <span className="pcoded-mtext">Restore data</span>
+                  </a>
+                </li>
+
                 <li className="nav-item no-hasmenu">
                   <a
                     href="#"
@@ -634,8 +662,7 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                     <span className="pcoded-mtext">About us</span>
                   </a>
                 </li>
-    </ul>
-
+              </ul>
             </>
           )}
           {/* Admin Sidebar */}
@@ -749,7 +776,19 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   <span className="pcoded-mtext">Licence</span>
                 </a>
               </li>
-
+              <li className="nav-item no-hasmenu">
+                <a
+                  href="#"
+                  data-path="/restore"
+                  onClick={(e) => handleClick(e, "/restore")}
+                  className="nav-link "
+                >
+                  <span className="pcoded-micon">
+                    <i className="fa-solid fa-window-restore"></i>
+                  </span>
+                  <span className="pcoded-mtext">Restore data</span>
+                </a>
+              </li>
               {result && (
                 <li className="nav-item no-hasmenu">
                   <a
@@ -824,8 +863,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   <span className="pcoded-mtext">Batch</span>
                 </a>
                 <ul className="pcoded-submenu">
-
-
                   <li>
                     <a
                       href="#"
@@ -850,7 +887,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                       View batch
                     </a>
                   </li>
-
                 </ul>
               </li>
               <li className="nav-item no-hasmenu">
@@ -874,36 +910,36 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   <span className="pcoded-mtext">Meeting</span>
                 </a>
                 <ul className="pcoded-submenu">
-                <li>
-                      <a
-                        href="#"
-                        data-path="/meeting/calender"
-                        onClick={(e) => {
-                          handleClick(e, "/meeting/calender");
-                        }}
-                        className="nav-link "
-                      >
-                        <span className="pcoded-micon">
-                         <i className="fa-solid fa-calendar-days"></i>
-                        </span>
-                        <span className="pcoded-mtext">  Calender</span>
-                      </a>
-                    </li>
-                         <li>
-                      <a
-                        href="#"
-                        data-path="/meeting/manage"
-                        onClick={(e) => {
-                          handleClick(e, "/meeting/manage");
-                        }}
-                        className="nav-link "
-                      >
-                        <span className="pcoded-micon">
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/meeting/calender"
+                      onClick={(e) => {
+                        handleClick(e, "/meeting/calender");
+                      }}
+                      className="nav-link "
+                    >
+                      <span className="pcoded-micon">
+                        <i className="fa-solid fa-calendar-days"></i>
+                      </span>
+                      <span className="pcoded-mtext"> Calender</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      data-path="/meeting/manage"
+                      onClick={(e) => {
+                        handleClick(e, "/meeting/manage");
+                      }}
+                      className="nav-link "
+                    >
+                      <span className="pcoded-micon">
                         <i className="fa-solid fa-video"></i>
-                        </span>
-                        <span className="pcoded-mtext">Manage</span>
-                      </a>
-                    </li>
+                      </span>
+                      <span className="pcoded-mtext">Manage</span>
+                    </a>
+                  </li>
                   <li>
                     <a
                       href="#"
@@ -954,18 +990,22 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   </span>
                 </a>
               </li>
-              {joinUrl && <li className="nav-item no-hasmenu">
-                <a
-                  href="#"
-                  onClick={(e) => { window.open(joinUrl, "_blank"); }}
-                  className="nav-link "
-                >
-                  <span className="pcoded-micon">
-                    <i className="fa-solid fa-display text-primary mr-2"></i>
-                  </span>
-                  <span className="pcoded-mtext">Virual ClassRoom</span>
-                </a>
-              </li>}
+              {joinUrl && (
+                <li className="nav-item no-hasmenu">
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      window.open(joinUrl, "_blank");
+                    }}
+                    className="nav-link "
+                  >
+                    <span className="pcoded-micon">
+                      <i className="fa-solid fa-display text-primary mr-2"></i>
+                    </span>
+                    <span className="pcoded-mtext">Virual ClassRoom</span>
+                  </a>
+                </li>
+              )}
             </ul>
           )}
           {/* Trainer Sidebar */}
@@ -1032,8 +1072,6 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                 </a>
               </li>
 
-
-
               <li className="nav-item no-hasmenu">
                 <a
                   href="#"
@@ -1068,7 +1106,8 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                   className="nav-link "
                 >
                   <span className="pcoded-micon">
-                    <i className="fa-solid fa-vial-circle-check"></i></span>
+                    <i className="fa-solid fa-vial-circle-check"></i>
+                  </span>
                   <span className="pcoded-mtext"> Test </span>
                 </a>
               </li>
@@ -1160,27 +1199,30 @@ const Sidebar = ({ filter, handleFilterChange }) => {
                       className="nav-link "
                     >
                       <span className="pcoded-micon">
-                        <i className="fa-solid fa-list"></i> </span>
+                        <i className="fa-solid fa-list"></i>{" "}
+                      </span>
                       <span className="pcoded-mtext">Pendings</span>
                     </a>
                   </li>
-
                 </ul>
               </li>
 
-
-              {joinUrl && <li className="nav-item no-hasmenu">
-                <a
-                  href="#"
-                  onClick={(e) => { window.open(joinUrl, "_blank"); }}
-                  className="nav-link "
-                >
-                  <span className="pcoded-micon">
-                    <i className="fa-solid fa-display text-primary mr-2"></i>
-                  </span>
-                  <span className="pcoded-mtext">Virual ClassRoom</span>
-                </a>
-              </li>}
+              {joinUrl && (
+                <li className="nav-item no-hasmenu">
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      window.open(joinUrl, "_blank");
+                    }}
+                    className="nav-link "
+                  >
+                    <span className="pcoded-micon">
+                      <i className="fa-solid fa-display text-primary mr-2"></i>
+                    </span>
+                    <span className="pcoded-mtext">Virual ClassRoom</span>
+                  </a>
+                </li>
+              )}
 
               <li className="nav-item no-hasmenu">
                 <a
