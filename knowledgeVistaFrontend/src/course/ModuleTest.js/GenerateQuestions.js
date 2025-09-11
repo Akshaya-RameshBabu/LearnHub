@@ -3,41 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import baseUrl from "../../api/utils";
 import axios from "axios";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import useGlobalNavigation from "../../AuthenticationPages/useGlobalNavigation";
-
-function sanitizeAIOutput(text) {
-  // Replace encoded tags with real tags
-  text = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-
-  // Fix common mismatched tags (e.g., <opt1>...</opt2> becomes <opt1>...</opt1>)
-  text = text.replace(/(<opt1>.*?)(<\/opt[2-4]>)/gs, '$1</opt1>');
-  text = text.replace(/(<opt2>.*?)(<\/opt[13-4]>)/gs, '$1</opt2>');
-  text = text.replace(/(<opt3>.*?)(<\/opt[124]>)/gs, '$1</opt3>');
-  text = text.replace(/(<opt4>.*?)(<\/opt[123]>)/gs, '$1</opt4>');
-
-  // Optionally, remove any question blocks that are still malformed
-  // (You can use a DOMParser or regex to only keep well-formed <question>...</question> blocks)
-
-  return text;
-}
 
 const GenerateQuestions = () => {
   const navigate = useNavigate();
-  const { courseName,courseId} = useParams();
+  const { courseName, courseId } = useParams();
   const [testName, setTestName] = useState(`${courseName} Test`);
   const [loading, setLoading] = useState(false);
-  const [res, setRes] = useState("");
   const [questions, setQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [selectedQuestion, setSelectedQuestion] = useState(null);
-  const [lessonsList,setLessonsList]=useState([]);
-  const[lessonId,setLessonId]=useState(null);
-  const[QuestionCount,setQuestionCount]=useState(2);
-  const[showPreview,setshowPreview]=useState(false);
+  const [lessonsList, setLessonsList] = useState([]);
+  const [lessonId, setLessonId] = useState(null);
+  const [QuestionCount, setQuestionCount] = useState(2);
+  const [showPreview, setshowPreview] = useState(false);
   const [noofattempt, setNoOfAttempt] = useState(1);
   const [passPercentage, setPassPercentage] = useState(40);
-  const MySwal = withReactContent(Swal);
   const [questionText, setQuestionText] = useState("");
   const [options, setOptions] = useState({
     option1: "",
@@ -49,7 +29,7 @@ const GenerateQuestions = () => {
   const [errors, setErrors] = useState({
     noofattempt: "",
     passPercentage: "",
-    testName:'',
+    testName: '',
     questionText: '',
     options: {
       option1: '',
@@ -59,42 +39,39 @@ const GenerateQuestions = () => {
     },
     answer: ''
   });
-const token=sessionStorage.getItem('token')
+  const token = sessionStorage.getItem('token');
   const [isManualMode, setIsManualMode] = useState(true);
-
   const [selectedIndex, setSelectedIndex] = useState(null);
 
-  // Instead of removing questions, track their status by index
-  const [approvedIndexes, setApprovedIndexes] = useState([]);
-  const fetchLessonId=async()=>{
-    try{
-    const response=await axios.get(`${baseUrl}/get/lessonIdBycourseID/${courseId}`,{
-      headers:{
-        Authorization:token,
+  const fetchLessonId = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/get/lessonIdBycourseID/${courseId}`, {
+        headers: {
+          Authorization: token,
+        }
+      });
+      if (response?.status === 200) {
+        const lessons = response?.data;
+        setLessonsList(lessons);
+        if (lessons?.length > 0) {
+          setLessonId(lessons[0].lessonId);
+        }
       }
-    });
-    if(response?.status===200){
-      const lessons = response?.data;
-     setLessonsList(lessons);
-      if (lessons?.length > 0) {
-      setLessonId(lessons[0].lessonId); 
+    } catch (error) {
+      console.error(error);
     }
-    
-    }
-  }catch(error){
-    console.error(error);
-  }
-}
-useEffect(()=>{
-fetchLessonId();
-},[])
+  };
+  useEffect(() => {
+    fetchLessonId();
+  }, []);
 
   const generateQuestions = async () => {
     setLoading(true);
+    setIsManualMode(false);
     try {
-      const response = await fetch(`${baseUrl}/generate/stream/${lessonId}/${QuestionCount}`,{
-        headers:{
-          Authorization:token
+      const response = await fetch(`${baseUrl}/generate/stream/${lessonId}/${QuestionCount}`, {
+        headers: {
+          Authorization: token
         }
       });
       const reader = response.body.getReader();
@@ -105,17 +82,12 @@ fetchLessonId();
         if (done) break;
         result += decoder.decode(value);
       }
-      // Sanitize the AI output before parsing
-      const sanitized = sanitizeAIOutput(result);
-      const newQuestions = parseQuestions(sanitized);
-     setQuestions(prev => {
-  const updated = [...prev, ...newQuestions];
-  setSelectedIndex(prev.length); // first index of the newly added questions
-  setSelectedQuestion(updated[prev.length]); // pick that question
-  return updated;
-});
-setIsManualMode(false);
-
+      const newQuestions = parseQuestions(result);
+      // Add isSelected property to each question
+      setQuestions(prev => [
+        ...prev,
+        ...newQuestions.map(q => ({ ...q, isSelected: false }))
+      ]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -123,38 +95,32 @@ setIsManualMode(false);
     }
   };
 
-const parseQuestions = (text) => {
-  try {
-    const parsed = JSON.parse(text);
-
-    return parsed.map((q) => {
-      const optionsObj = {};
-      if (Array.isArray(q.options)) {
-        q.options.forEach((opt, idx) => {
-          optionsObj[`option${idx + 1}`] = opt.trim();
-        });
-      }
-
-      return {
-        questionText: q.questionText?.trim() ?? "",
-        options: optionsObj,  // ✅ shape matches your state
-        answer: q.answer?.trim() ?? "",
-      };
-    });
-  } catch (e) {
-    console.error("❌ Failed to parse questions JSON:", e);
-    return [];
-  }
-};
-
-
+  const parseQuestions = (text) => {
+    try {
+      const parsed = JSON.parse(text);
+      return parsed.map((q) => {
+        const optionsObj = {};
+        if (Array.isArray(q.options)) {
+          q.options.forEach((opt, idx) => {
+            optionsObj[`option${idx + 1}`] = opt.trim();
+          });
+        }
+        return {
+          questionText: q.questionText?.trim() ?? "",
+          options: optionsObj,
+          answer: q.answer?.trim() ?? "",
+        };
+      });
+    } catch (e) {
+      console.error("❌ Failed to parse questions JSON:", e);
+      return [];
+    }
+  };
 
   const handleSelect = (index) => {
     setSelectedIndex(index);
-    setSelectedQuestion(questions[index]);
   };
 
-  // When a question is selected, load its data into the controlled state
   useEffect(() => {
     if (selectedIndex !== null && questions[selectedIndex]) {
       setQuestionText(questions[selectedIndex].questionText || "");
@@ -169,7 +135,6 @@ const parseQuestions = (text) => {
     }
   }, [selectedIndex]);
 
-  // Handlers for controlled fields
   const handleQuestionTextChange = (e) => {
     setQuestionText(e.target.value);
     setErrors((prev) => ({ ...prev, questionText: e.target.value.trim() === '' ? 'This field is required' : '' }));
@@ -182,111 +147,94 @@ const parseQuestions = (text) => {
       options: { ...prev.options, [key]: e.target.value.trim() === '' ? 'Option cannot be empty' : '' }
     }));
   };
- 
 
- const handleApprove = () => {
-  let hasError = false;
-  const newErrors = {
-    questionText: '',
-    options: { option1: '', option2: '', option3: '', option4: '' },
-    answer: ''
-  };
+  const handleApprove = () => {
+    let hasError = false;
+    const newErrors = {
+      questionText: '',
+      options: { option1: '', option2: '', option3: '', option4: '' },
+      answer: ''
+    };
 
-  if (!questionText.trim()) {
-    newErrors.questionText = 'This field is required.';
-    hasError = true;
-  }
-  Object.keys(options).forEach((key) => {
-    if (!options[key].trim()) {
-      newErrors.options[key] = 'Option cannot be empty.';
+    if (!questionText.trim()) {
+      newErrors.questionText = 'This field is required.';
       hasError = true;
     }
-  });
-  if (!answer.trim()) {
-    newErrors.answer = 'Please select the correct answer.';
-    hasError = true;
-  }
-  setErrors(newErrors);
-  if (hasError) return;
-
-  const approved = {
-    questionText,
-    options: { ...options },
-    answer
-  };
-
-  if (!isManualMode && selectedIndex !== null) {
-    // ✅ AI-generated question approve flow
-    setApprovedIndexes((prev) =>
-      prev.includes(selectedIndex) ? prev : [...prev, selectedIndex]
-    );
-
-    setSelectedQuestions((prev) => {
-      const updated = [...prev];
-      updated[selectedIndex] = approved;
-      return updated;
-    });
-
-    // ✅ Move to next unapproved, or manual if none left
-    setQuestions((prevQuestions) => {
-      const total = prevQuestions.length;
-      let nextIndex = null;
-
-      for (let i = (selectedIndex + 1) % total, count = 0; count < total; i = (i + 1) % total, count++) {
-        if (!approvedIndexes.includes(i) && i !== selectedIndex) {
-          nextIndex = i;
-          break;
-        }
+    Object.keys(options).forEach((key) => {
+      if (!options[key].trim()) {
+        newErrors.options[key] = 'Option cannot be empty.';
+        hasError = true;
       }
-
-      if (nextIndex !== null) {
-        setSelectedIndex(nextIndex);
-        setSelectedQuestion(prevQuestions[nextIndex]);
-      } else {
-        setSelectedIndex(null);
-        setSelectedQuestion(null);
-        setIsManualMode(true); // no unapproved left, go manual
-      }
-
-      return prevQuestions; // no change
     });
-  } else {
-    // ✅ Manual mode approve flow
-    setQuestions((prev) => {
-      const updated = [...prev, approved];
-      return updated;
-    });
-
-    setSelectedQuestions((prev) => [...prev, approved]);
-    setApprovedIndexes((prev) => [...prev, questions.length]);
-
-    // ✅ After manual add, check if any unapproved exist
-    if (questions.some((_, i) => !approvedIndexes.includes(i))) {
-      const nextIndex = questions.findIndex((_, i) => !approvedIndexes.includes(i));
-      if (nextIndex !== -1) {
-        setSelectedIndex(nextIndex);
-        setSelectedQuestion(questions[nextIndex]);
-        setIsManualMode(false);
-        return;
-      }
+    if (!answer.trim()) {
+      newErrors.answer = 'Please select the correct answer.';
+      hasError = true;
     }
+    setErrors(newErrors);
+    if (hasError) return;
 
-    // ✅ Otherwise stay in manual mode (reset form)
-    setSelectedIndex(null);
-    setSelectedQuestion(null);
-    setIsManualMode(true);
-    setQuestionText('');
-    setOptions({ option1: '', option2: '', option3: '', option4: '' });
-    setAnswer('');
-  }
-};
+    const approved = {
+      questionText,
+      options: { ...options },
+      answer,
+      isSelected: true
+    };
 
+    if (!isManualMode && selectedIndex !== null) {
+      // Approve current question
+      setQuestions((prev) => {
+        const updated = [...prev];
+        updated[selectedIndex] = { ...approved };
+        return updated;
+      });
+
+      setSelectedQuestions((prev) => {
+        // If already present, update; else add
+        const existsIdx = prev.findIndex(q => q.questionText === questionText);
+        if (existsIdx !== -1) {
+          const updated = [...prev];
+          updated[existsIdx] = approved;
+          return updated;
+        }
+        return [...prev, approved];
+      });
+
+      // Find next unapproved question
+      const total = questions.length;
+      const nextUnapprovedIdx = questions.findIndex((q, i) =>
+        i !== selectedIndex && !q.isSelected
+      );
+
+      if (nextUnapprovedIdx !== -1) {
+        setSelectedIndex(nextUnapprovedIdx);
+      } else {
+        // No more AI questions left, switch to manual mode
+        setSelectedIndex(null);
+        setIsManualMode(true);
+        setQuestionText('');
+        setOptions({ option1: '', option2: '', option3: '', option4: '' });
+        setAnswer('');
+      }
+    } else {
+      // Manual mode approve flow
+      setQuestions((prev) => [
+        ...prev,
+        approved
+      ]);
+      setSelectedQuestions((prev) => [...prev, approved]);
+      setSelectedIndex(null);
+      setIsManualMode(true);
+      setQuestionText('');
+      setOptions({ option1: '', option2: '', option3: '', option4: '' });
+      setAnswer('');
+    }
+  };
 
   const handleReject = () => {
     if (selectedIndex !== null) {
       setQuestions((prevQuestions) => prevQuestions.filter((_, idx) => idx !== selectedIndex));
+      setSelectedQuestions((prevQuestions) => prevQuestions.filter((_, idx) => idx !== selectedIndex));
       setSelectedIndex(null);
-      setSelectedQuestion(null);
       setQuestionText("");
       setOptions({
         option1: "",
@@ -297,43 +245,48 @@ const parseQuestions = (text) => {
       setAnswer("");
     }
   };
-  const handleTestNameChange =(e)=>{
+
+  const handleTestNameChange = (e) => {
     const { value } = e.target;
-    setTestName(value)
+    setTestName(value);
     if (value.trim() === '') {
       setErrors(prevErrors => ({
-          ...prevErrors,
-          testName  : 'This field is required'
+        ...prevErrors,
+        testName: 'This field is required'
       }));
-  }if (testName.length > 50) {
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      testName: 'Test name cannot be more than 50 characters.',
-    }));
-    return;
-  } else {
+    }
+    if (testName.length > 50) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        testName: 'Test name cannot be more than 50 characters.',
+      }));
+      return;
+    } else {
       setErrors(prevErrors => ({
-          ...prevErrors,
-          testName: ''
+        ...prevErrors,
+        testName: ''
       }));
-  }
-  }
+    }
+  };
+
   const handleUnselect = (index) => {
-    // Remove from selectedQuestions
     setSelectedQuestions((prev) => {
       const updated = prev.filter((_, i) => i !== index);
-      // If no more selected questions, close preview
       if (updated.length === 0) setshowPreview(false);
       return updated;
     });
-    // Remove from approvedIndexes
-    setApprovedIndexes((prev) => prev.filter((i) => i !== index));
+    setQuestions((prev) => {
+      
+      const updated = prev.filter((_, i) => i !== index);
+      return updated;
+     
+    });
   };
+
   const handleCriteriaChange = (e) => {
     const { name, value } = e.target;
     let error = "";
 
-    // Convert value to a number if it is an attempt count or percentage
     const numericValue = name === "noofattempt" || name === "passPercentage" ? parseFloat(value) : value;
 
     switch (name) {
@@ -349,18 +302,14 @@ const parseQuestions = (text) => {
         break;
     }
 
-    // Update error state
     setErrors((prevErrors) => ({
       ...prevErrors,
       [name]: error
     }));
   };
 
-  
-
   const handleSave = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
-
+    e.preventDefault();
     try {
       const questionsToSend = selectedQuestions.map(q => ({
         questionText: q.questionText,
@@ -370,9 +319,8 @@ const parseQuestions = (text) => {
         option4: q.options.option4,
         answer: q.answer
       }));
-  
-   
-      const noOfQuestions = questionsToSend.length; // Count the number of questions
+
+      const noOfQuestions = questionsToSend.length;
       const requestBody = {
         testName,
         questions: questionsToSend,
@@ -380,17 +328,15 @@ const parseQuestions = (text) => {
         noofattempt,
         passPercentage
       };
-  const res=JSON.stringify(requestBody)
+      const res = JSON.stringify(requestBody);
 
-      const response = await axios.post(`${baseUrl}/test/create/${courseId}`,res, {
+      const response = await axios.post(`${baseUrl}/test/create/${courseId}`, res, {
         headers: {
           "Content-Type": "application/json",
           Authorization: token,
         }
       });
 
-     
-      // Reset state after successful submission
       setSelectedQuestions([]);
       setTestName("");
 
@@ -401,42 +347,30 @@ const parseQuestions = (text) => {
         confirmButtonText: "OK"
       }).then((result) => {
         if (result.isConfirmed) {
-           navigate(`/course/testlist/${courseName}/${courseId}`);
+          navigate(`/course/testlist/${courseName}/${courseId}`);
         }
       });
 
     } catch (error) {
-       if(error.response && error.response.status===401)
-          {
-            navigate("/unauthorized")
-          }else{
-            // MySwal.fire({
-            //   title: "Error!",
-            //   text: error.response,
-            //   icon: "error",
-            //   confirmButtonText: "OK",
-            // });
-            throw error
-          }
+      if (error.response && error.response.status === 401) {
+        navigate("/unauthorized");
+      } else {
+        throw error;
+      }
     }
   };
 
-  // Whenever questions, selectedQuestions, or rejectedQuestions change, set the first available question as selected
-  // useEffect(() => {
-  //   if (questions.length > 0) {
-  //     setSelectedIndex(0);
-  //     setSelectedQuestion(questions[0]);
-  //     //setIsManualMode(false);
-  //   } else {
-  //     setSelectedIndex(null);
-  //     setSelectedQuestion(null);
-  //   }
-  // }, [questions, selectedQuestions]);
+  useEffect(() => {
+    if (!isManualMode && questions.length > 0) {
+      const firstUnapprovedIdx = questions.findIndex((q) => !q.isSelected);
+      if (firstUnapprovedIdx !== -1) {
+        setSelectedIndex(firstUnapprovedIdx);
+      }
+    }
+  }, [questions, isManualMode]);
 
-  // Handler for manual mode
   const handleManualMode = () => {
     setIsManualMode(true);
-    setSelectedQuestion(null);
     setQuestionText("");
     setOptions({
       option1: "",
@@ -448,13 +382,12 @@ const parseQuestions = (text) => {
     setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
   };
 
-  // For rendering: sort questions by status: pending, approved
   const getSortedQuestionIndexes = () => {
     const total = questions.length;
     const pending = [];
     const approved = [];
     for (let i = 0; i < total; i++) {
-      if (approvedIndexes.includes(i)) {
+      if (questions[i].isSelected) {
         approved.push(i);
       } else {
         pending.push(i);
@@ -462,335 +395,317 @@ const parseQuestions = (text) => {
     }
     return [...pending, ...approved];
   };
+
   const handleNavigation = useGlobalNavigation();
 
   return (
     <div>
-      <div className="page-header">
-      </div>
-<div className="card">
- 
-  <div className="card-body">
-  <div className='navigateheaders'>
-      <div onClick={handleNavigation}><i className="fa-solid fa-arrow-left"></i></div>
-     <div></div>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-      </div>
-      {showPreview ?
-      <>
-       {selectedQuestions.length > 0 && (
-          <>
-          <h4>Test Name : {testName}</h4>
-            <h6 className=" text-primary">Approved Questions</h6>
-            <div className="space-y-4">
-              {selectedQuestions.map((q, idx) => (
-                <div key={idx} className="rounded-xl p-4 border  relative">
-                 <div className="alignright">
-                   <button className="hidebtn " onClick={() => handleUnselect(idx)}>
-                    <i className="fa-solid fa-trash text-danger"  ></i>
-                  </button>
-                  </div>
-                  
-                  <h4 className="font-bold text-dark mb-2">{q.questionText}</h4>
-                  <ol className="list-decimal pl-4 text-dark text-sm space-y-1">
-                    {["option1", "option2", "option3", "option4"].map((key, i) => (
-                      <li key={i}>{q.options[key]}</li>
-                    ))}
-                  </ol>
-                  <div className="text-success text-sm mt-2">Answer: {q.answer}</div>
-                </div>
-              ))}
-            </div>
-
-       
-          </>
-        )}
-         <div className="form-group row">
-               <label className="col-sm-3 col-form-label">Number of Attempt</label>
-               <div className="col-sm-9">
-            <input
-              type="number"
-              value={noofattempt}
-              name="noofattempt"
-              className={`form-control ${errors.noofattempt && "is-invalid"}`}
-              onChange={handleCriteriaChange}
-            />
-            {errors.noofattempt && (
-              <div className="invalid-feedback">{errors.noofattempt}</div>
-            )}</div>
+      <div className="page-header"></div>
+      <div className="card">
+        <div className="card-body">
+          <div className='navigateheaders'>
+            <div onClick={handleNavigation}><i className="fa-solid fa-arrow-left"></i></div>
+            <div></div>
+            <div onClick={() => { navigate(-1) }}><i className="fa-solid fa-xmark"></i></div>
           </div>
-          
-          <div className="form-group row">
-               <label className="col-sm-3 col-form-label">Pass Percentage</label>
-               <div className="col-sm-9">
-            <input
-              type="number"
-              value={passPercentage}
-              name="passPercentage"
-              className={`form-control ${errors.passPercentage && "is-invalid"}`}
-              onChange={handleCriteriaChange}
-            />
-            {errors.passPercentage && (
-              <div className="invalid-feedback">{errors.passPercentage}</div>
-            )}
-            </div>
-          </div>
-             <div className="cornerbtn">
-              <button className="btn btn-secondary" onClick={()=>{setshowPreview(false)}}>
-                back
-              </button>
-              <button onClick={handleSave} className="btn btn-primary" disabled={selectedQuestions.length <= 0 || !!errors.noofattempt ||
-                !!errors.passPercentage || !noofattempt ||
-                !passPercentage}>
-                <i className="fa-solid fa-floppy-disk mr-2"></i>Save Test
-              </button>
-            </div>
-        </>: 
-      <div>
-    <div className="splitpart">
-        <div className="splitpart1">
-        {(selectedQuestion || isManualMode || questions.length === 0) ? (
-          <div>
-         <h4>{isManualMode ? 'Add Question Manually' : 'Review AI-Generated Question'}</h4>
-            <div className="formgroup row p-2" > 
-              <input
-                className={`form-control    ${errors.testName && 'is-invalid'}`}
-                value={testName}
-                placeholder="Test Name"
-                onChange={handleTestNameChange}
-              />
-              {errors.testName && <div className="invalid-feedback">{errors.testName}</div>}
-              
-  </div>
-            <div className="formgroup row p-2">
-              <textarea
-              rows={3}
-                className={`form-control ${errors.questionText && 'is-invalid'}`}
-                type="text"
-                value={questionText}
-                placeholder="Add Question here"
-                onChange={handleQuestionTextChange}
-                required
-              />
-              {errors.questionText && <div className="invalid-feedback">{errors.questionText}</div>}
-            </div>
-            {/* Options with radio for answer selection */}
-            <ul className='listgroup'>
-              {["option1", "option2", "option3", "option4"].map((key, index) => (
-                <li className='choice' key={key}>
-                  <input
-                    className='mt-2'
-                    type="radio"
-                    name="answer"
-                    value={options[key]}
-                    checked={options[key] !== "" && answer === options[key]}
-                    onChange={() => {
-                      setAnswer(options[key]);
-                      setErrors((err) => ({
-                        ...err,
-                        answer: "",
-                      }));
-                    }}
-                    required
-                  />
-                  <div>
-                    <input
-                      className={`form-control   ${errors.options[key] && 'is-invalid'}`}
-                      type="text"
-                      value={options[key]}
-                      placeholder={`Option ${index + 1}`}
-                      onChange={(e) => handleOptionChange(e, key)}
-                      required
-                    />
-                    {errors.options[key] && (
-                      <div className="invalid-feedback">{errors.options[key]}</div>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {errors.answer && <div className="text-danger mt-2">{errors.answer}</div>}
-            <div className="atbtndiv">
-              <div>
-              <button onClick={handleApprove} className="btn btn-primary" style={{width:"150px"}}>
-                <i className="fa-solid fa-check mr-2 "></i>Approve
-              </button>
-              </div>
-              <div></div>
-              {!isManualMode && (
-                <button onClick={handleReject} className="btn btn-danger" style={{width:"150px"}}>
-                  <i className="fa-solid fa-trash mr-2 "></i>Reject
-                </button>
-              )}
-              {isManualMode && (
-                <button onClick={() => {
-                  setSelectedQuestion(null);
-                  setQuestionText("");
-                  setOptions({
-                    option1: "",
-                    option2: "",
-                    option3: "",
-                    option4: ""
-                  });
-                  setAnswer("");
-                  setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
-                }} className="btn btn-secondary" style={{width:"150px"}}>
-                  <i className="fa-solid fa-xmark mr-2 "></i>Cancel
-                </button>
-              )}
-            </div>
-          </div>
-        ) : null}
-
-       
-      </div>
-      <div className="splitpart2">
-      
-       
-<div className="Questlist">
-    <div
-      style={{
-        backgroundColor: "white",
-        display: "flex",
-        alignItems: "center",
-        padding: "12px 0px",
-        borderBottom: "1px solid #e0e0e0",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-       
-      }}
-    >
-      <select
-      title="select Lesson"
-        className="form-select me-3"
-        style={{
-          maxWidth: "250px",
-          borderRadius: "8px",
-          padding: "8px 12px",
-          border: "1px solid #ced4da",
-        }}
-        value={lessonId}
-        onChange={e => setLessonId(e.target.value)}
-      >
-        {lessonsList.map((les) => (
-          <option key={les.lessonId} value={les.lessonId}>
-            {les.lessonTitle}
-          </option>
-        ))}
-      </select>
-
-      <select
-      title="select number of Questions to Generate "
-        className="form-select me-3"
-        style={{
-          width: "120px",
-          borderRadius: "8px",
-          padding: "8px 12px",
-          border: "1px solid #ced4da",
-        }}
-        value={QuestionCount}
-        onChange={e => setQuestionCount(Number(e.target.value))}
-      >
-        {[1, 2, 3, 4, 5].map((num) => (
-          <option key={num} value={num}>
-            {num} 
-          </option>
-        ))}
-      </select>
- <button
-        className="btn btn-primary d-flex align-items-center"
-        style={{
-          borderRadius: "8px",
-          padding: "8px 16px",
-          display: "flex",
-          gap: "8px",
-          fontWeight: "500",
-        }}
-        title="Generate Questions"
-       onClick={generateQuestions} disabled={!lessonId || loading}
-      >
-       <i className="fa-solid fa-wand-magic-sparkles"></i> Generate
-      </button>
-  </div>
-        <div className="QuestContent" >
- {loading && (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "40px",
-      color: "var(-primary)", // Uses your Bootstrap primary color
-      textAlign: "center",
-      animation: "fadeIn 0.5s ease-in-out",
-    }}
-  >
-    {/* Robot-themed dual ring spinner */}
-    <div className="robot-spinner mb-4 mr-5"></div>
-
-    {/* AI generation text */}
-    <div style={{ fontSize: "1.25rem", fontWeight: 500 }} className="text-primary">
-      Generating questions with AI...
-    </div>
-
-    {/* Animated "Thinking..." dots */}
-    <div className="dots mt-2">
-      Thinking
-      <span className="dot">.</span>
-      <span className="dot">.</span>
-      <span className="dot">.</span>
-    </div>
-  </div>
-)}
-
-
-
-          {getSortedQuestionIndexes().map((idx) => {
-            const q = questions[idx];
-            const isApproved = approvedIndexes.includes(idx);
-            return (
-              <div
-                key={idx}
-                onClick={() => { setIsManualMode(false); handleSelect(idx); }}
-                className={`p-2 pointer quest ${selectedIndex === idx ? "current-Quest" : ""}`}
-                style={{ position: "relative", background: isApproved ? '#e6ffe6' : '#fff' }}
-              >
-                <p>{q.questionText}</p>
-                {isApproved && (
-                  <span style={{
-                    position: "absolute",
-                    top: 4,
-                    right: 8,
-                    color: "green",
-                    fontSize: "1.2em"
-                  }}>
-                    <i className="fa-solid fa-check-circle"></i>
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-         
-          <button className="btn btn-primary" onClick={handleManualMode}>
-            <i className="fa-solid fa-plus mr-2"></i>Add Manual Question
-          </button>
-      
-        </div>
-      
-      </div>
-    </div>
-     <div className="cornerbtn">
-                            <div></div>
-                            <button className="btn btn-primary" onClick={()=>{
-                              setshowPreview(true);
-                            }} disabled={selectedQuestions.length <= 0 || !testName ||errors.testName}>
-                                Preview
-                            </button>
+          {showPreview ? (
+            <>
+              {selectedQuestions.length > 0 && (
+                <>
+                  <h4>Test Name : {testName}</h4>
+                  <h6 className=" text-primary">Approved Questions</h6>
+                  <div className="space-y-4">
+                    {selectedQuestions.map((q, idx) => (
+                      <div key={idx} className="rounded-xl p-4 border  relative">
+                        <div className="alignright">
+                          <button className="hidebtn " onClick={() => handleUnselect(idx)}>
+                            <i className="fa-solid fa-trash text-danger"></i>
+                          </button>
                         </div>
-                        </div>}
-    </div>
-    </div>
+                        <h4 className="font-bold text-dark mb-2">{q.questionText}</h4>
+                        <ol className="list-decimal pl-4 text-dark text-sm space-y-1">
+                          {["option1", "option2", "option3", "option4"].map((key, i) => (
+                            <li key={i}>{q.options[key]}</li>
+                          ))}
+                        </ol>
+                        <div className="text-success text-sm mt-2">Answer: {q.answer}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="form-group row">
+                <label className="col-sm-3 col-form-label">Number of Attempt</label>
+                <div className="col-sm-9">
+                  <input
+                    type="number"
+                    value={noofattempt}
+                    name="noofattempt"
+                    className={`form-control ${errors.noofattempt && "is-invalid"}`}
+                    onChange={handleCriteriaChange}
+                  />
+                  {errors.noofattempt && (
+                    <div className="invalid-feedback">{errors.noofattempt}</div>
+                  )}
+                </div>
+              </div>
+              <div className="form-group row">
+                <label className="col-sm-3 col-form-label">Pass Percentage</label>
+                <div className="col-sm-9">
+                  <input
+                    type="number"
+                    value={passPercentage}
+                    name="passPercentage"
+                    className={`form-control ${errors.passPercentage && "is-invalid"}`}
+                    onChange={handleCriteriaChange}
+                  />
+                  {errors.passPercentage && (
+                    <div className="invalid-feedback">{errors.passPercentage}</div>
+                  )}
+                </div>
+              </div>
+              <div className="cornerbtn">
+                <button className="btn btn-secondary" onClick={() => { setshowPreview(false); }}>
+                  back
+                </button>
+                <button onClick={handleSave} className="btn btn-primary" disabled={selectedQuestions.length <= 0 || !!errors.noofattempt ||
+                  !!errors.passPercentage || !noofattempt ||
+                  !passPercentage}>
+                  <i className="fa-solid fa-floppy-disk mr-2"></i>Save Test
+                </button>
+              </div>
+            </>
+          ) : (
+            <div>
+              <div className="splitpart">
+                <div className="splitpart1">
+                  <div>
+                    <h4>{isManualMode ? 'Add Question Manually' : 'Review AI-Generated Question'}</h4>
+                    <div className="formgroup row p-2" >
+                      <input
+                        className={`form-control    ${errors.testName && 'is-invalid'}`}
+                        value={testName}
+                        placeholder="Test Name"
+                        onChange={handleTestNameChange}
+                      />
+                      {errors.testName && <div className="invalid-feedback">{errors.testName}</div>}
+                    </div>
+                    <div className="formgroup row p-2 spanAndInputgrid" >
+                      <span className="numberspan">
+                        {isManualMode
+                          ? `${questions.length + 1}.`
+                          : `${selectedIndex !== null ? selectedIndex + 1 : questions.length + 1}.`}
+                      </span>
+                      <textarea
+                        rows={3}
+                        className={`form-control ${errors.questionText && 'is-invalid'}`}
+                        type="text"
+                        value={questionText}
+                        placeholder="Add Question here"
+                        onChange={handleQuestionTextChange}
+                        required
+                      />
+                      {errors.questionText && <div className="invalid-feedback">{errors.questionText}</div>}
+                    </div>
+                    {/* Options with radio for answer selection */}
+                    <ul className='listgroup'>
+                      {["option1", "option2", "option3", "option4"].map((key, index) => (
+                        <li className='choice' key={key}>
+                          <input
+                            className='mt-2'
+                            type="radio"
+                            name="answer"
+                            value={options[key]}
+                            checked={options[key] !== "" && answer === options[key]}
+                            onChange={() => {
+                              setAnswer(options[key]);
+                              setErrors((err) => ({
+                                ...err,
+                                answer: "",
+                              }));
+                            }}
+                            required
+                          />
+                          <div>
+                            <input
+                              className={`form-control   ${errors.options[key] && 'is-invalid'}`}
+                              type="text"
+                              value={options[key]}
+                              placeholder={`Option ${index + 1}`}
+                              onChange={(e) => handleOptionChange(e, key)}
+                              required
+                            />
+                            {errors.options[key] && (
+                              <div className="invalid-feedback">{errors.options[key]}</div>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {errors.answer && <div className="text-danger mt-2 mb-1">{errors.answer}</div>}
+                    <div className="atbtndiv">
+                      <div>
+                        <button onClick={handleApprove} className="btn btn-primary" style={{ width: "150px" }}>
+                          <i className="fa-solid fa-check mr-2 "></i>Add
+                        </button>
+                      </div>
+                      <div></div>
+                      {!isManualMode && (
+                        <button onClick={handleReject} className="btn btn-danger" style={{ width: "150px" }}>
+                          <i className="fa-solid fa-trash mr-2 "></i>Reject
+                        </button>
+                      )}
+                      {isManualMode && (
+                        <button onClick={() => {
+                          setQuestionText("");
+                          setOptions({
+                            option1: "",
+                            option2: "",
+                            option3: "",
+                            option4: ""
+                          });
+                          setAnswer("");
+                          setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
+                        }} className="btn btn-secondary" style={{ width: "150px" }}>
+                          <i className="fa-solid fa-xmark mr-2 "></i>Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="splitpart2">
+                  <div className="Questlist">
+                    <div
+                      style={{
+                        backgroundColor: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "12px 0px",
+                        borderBottom: "1px solid #e0e0e0",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <select
+                        title="select Lesson"
+                        className="form-select me-3"
+                        style={{
+                          maxWidth: "250px",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          border: "1px solid #ced4da",
+                        }}
+                        value={lessonId}
+                        onChange={e => setLessonId(e.target.value)}
+                      >
+                        {lessonsList.map((les) => (
+                          <option key={les.lessonId} value={les.lessonId}>
+                            {les.lessonTitle}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        title="select number of Questions to Generate "
+                        className="form-select me-3"
+                        style={{
+                          width: "120px",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          border: "1px solid #ced4da",
+                        }}
+                        value={QuestionCount}
+                        onChange={e => setQuestionCount(Number(e.target.value))}
+                      >
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-primary d-flex align-items-center"
+                        style={{
+                          borderRadius: "8px",
+                          padding: "8px 16px",
+                          display: "flex",
+                          gap: "8px",
+                          fontWeight: "500",
+                        }}
+                        title="Generate Questions"
+                        onClick={generateQuestions} disabled={!lessonId || loading}
+                      >
+                        <i className="fa-solid fa-wand-magic-sparkles"></i> Generate
+                      </button>
+                    </div>
+                    <div className="QuestContent" >
+                      {loading && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "40px",
+                            color: "var(-primary)",
+                            textAlign: "center",
+                            animation: "fadeIn 0.5s ease-in-out",
+                          }}
+                        >
+                          <div className="robot-spinner mb-4 mr-5"></div>
+                          <div style={{ fontSize: "1.25rem", fontWeight: 500 }} className="text-primary">
+                            Generating questions with AI...
+                          </div>
+                          <div className="dots mt-2">
+                            Thinking
+                            <span className="dot">.</span>
+                            <span className="dot">.</span>
+                            <span className="dot">.</span>
+                          </div>
+                        </div>
+                      )}
+                      {getSortedQuestionIndexes().map((idx) => {
+                        const q = questions[idx];
+                        const isApproved = q.isSelected;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => { setIsManualMode(false); handleSelect(idx); }}
+                            className={`p-2 pointer quest ${selectedIndex === idx ? "current-Quest" : ""}`}
+                            style={{ position: "relative", background: isApproved ? '#e6ffe6' : '#fff' }}
+                          >
+                            <p>{q.questionText}</p>
+                            {isApproved && (
+                              <span style={{
+                                position: "absolute",
+                                top: 4,
+                                right: 8,
+                                color: "green",
+                                fontSize: "1.2em"
+                              }}>
+                                <i className="fa-solid fa-check-circle"></i>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button className="btn btn-primary" onClick={handleManualMode}>
+                      <i className="fa-solid fa-plus mr-2"></i>Add Manual Question
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="cornerbtn">
+                <div></div>
+                <button className="btn btn-primary" onClick={() => {
+                  setshowPreview(true);
+                }} disabled={selectedQuestions.length <= 0 || !testName || errors.testName}>
+                  Preview
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import withReactContent from "sweetalert2-react-content";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import baseUrl from '../../api/utils';
 import axios from 'axios';
+import useGlobalNavigation from '../../AuthenticationPages/useGlobalNavigation';
 
 const TestList = () => {
   const {courseName, courseId } = useParams();
@@ -225,10 +226,25 @@ const handleDelete = async (questID) => {
     } 
   });
 };
-
+ const handleNavigation = useGlobalNavigation();
   return (
     <div>
-    <div className="page-header"></div>
+      <div className="page-header">
+    <div className="page-block">
+                <div className="row align-items-center">
+                    <div className="col-md-12">
+                        <div className="page-header-title">
+                            <h5 className="m-b-10"> Test</h5>
+                        </div>
+                        <ul className="breadcrumb">
+                            <li className="breadcrumb-item"><a href="#"onClick={handleNavigation} ><i className="feather icon-layout"></i></a></li>
+                            <li className="breadcrumb-item"><a href="#"> Test</a></li>
+                        </ul>
+                       
+                    </div>
+                </div>
+            </div>
+    </div>
     <div className='row'>
       <div className='col-sm-12'>
         <div className='card'>
@@ -380,9 +396,19 @@ const handleDelete = async (questID) => {
                           <td>{question.option4}</td>
                           <td>{question.answer}</td>
                           <td className='text-center'>
-                            <Link to={`/test/Edit/${question.questionId}`}>
-                              <i className='fa text-primary fa-edit'></i>
-                            </Link>
+                          <Link
+  to={{
+    pathname: `/test/Edit/${question.questionId}`,
+  }}
+  state={{
+    sno: index + 1,
+    courseName: courseName,
+    courseId: courseId,
+  }}
+>
+  <i className="fa text-primary fa-edit"></i>
+</Link>
+
                           </td>
                           <td className='text-center'>
                           <i className='fa fa-trash text-danger' onClick={() => handleDelete(question.questionId)}></i>

@@ -4,12 +4,15 @@ import withReactContent from "sweetalert2-react-content";
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import baseUrl from '../../api/utils';
 import axios from 'axios';
+import useGlobalNavigation from '../../AuthenticationPages/useGlobalNavigation';
 
 const EditQuestion = () => {
   const MySwal = withReactContent(Swal);
   const { questionId } = useParams();
+    const location = useLocation();
+  const { sno, courseName, courseId } = location.state || {};
   const token = sessionStorage.getItem("token");
- 
+  const[loading,setloading]=useState(false);
   const navigate =useNavigate();
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState({
@@ -28,10 +31,9 @@ const EditQuestion = () => {
     questionText: '',
     selectedOption: ''
   });
-
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
+        setloading(true)
         const response = await axios.get(`${baseUrl}/test/getQuestion/${questionId}`, {
        
           headers: {
@@ -51,20 +53,17 @@ const EditQuestion = () => {
           setSelectedOption(selectedOption); 
         
       } catch (error) {
-        // MySwal.fire({
-        //   title: "Error",
-        //   text: "Some error occurred. Please try again later.",
-        //   icon: "error",
-        //   confirmButtonText: "OK"
-        // })
+      
         throw error.then((result) => {
           if (result.isConfirmed) {
             navigate(-1);
           }
       })
+      }finally{
+        setloading(false)
       }
     };
-  
+  useEffect(() => {
     fetchData();
   }, [questionId, token]);
   
@@ -195,75 +194,118 @@ const EditQuestion = () => {
         throw error
       }}
   };
-  
+ const handleNavigation = useGlobalNavigation();
   return (
-    <div>
-    <div className="page-header"></div>
+  <div>
+    <div className="page-header">
+       <div className="page-block">
+                <div className="row align-items-center">
+                    <div className="col-md-12">
+                        <div className="page-header-title">
+                            <h5 className="m-b-10">Edit Question</h5>
+                        </div>
+                        <ul className="breadcrumb">
+                            <li className="breadcrumb-item"><a href="#"onClick={handleNavigation} ><i className="feather icon-layout"></i></a></li>
+                            <li className="breadcrumb-item"><a href="#" onClick={()=>{navigate(`/course/testlist/${courseName}/${courseId}`)}}>{courseName}Test</a></li>
+                            <li className="breadcrumb-item text-light">Edit</li>
+                        </ul>
+                       
+                    </div>
+                </div>
+            </div>
+    </div>
     <div className="card">
-    <div className="card-body">
+      <div className="card-body">
         <div className="row">
-        <div className="col-12">
-      <div className='navigateheaders'>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
-      <div></div>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
-      </div>
-     
-            <div>            
-              <input 
-              className={`form-control   ${errors.questionText && 'is-invalid'}`}
-              autoFocus
-              value={questionText}
-              onChange={handleQuestionTextChange}
-            />
-            {errors.questionText && <div className="invalid-feedback">{errors.questionText}</div>}
+          <div className="col-12">
+            <div className='navigateheaders'>
+              <div onClick={() => { navigate(-1) }}><i className="fa-solid fa-arrow-left"></i></div>
+              <div></div>
+              <div onClick={() => { navigate(-1) }}><i className="fa-solid fa-xmark"></i></div>
             </div>
 
-            <ul className='listgroup'>
-              {Object.keys(options).map((optionKey, index) => (
-                <li className='choice' key={index}>
-                  <input
-                    className={`mt-2 ${errors[optionKey] && 'is-invalid'}`}
-                    type="radio"
-                    value={optionKey} 
-                    checked={selectedOption === optionKey} 
-                    onChange={() => handleOptionChange(optionKey)} 
-                  />
+            {loading ? (
+              <div className="skeleton-wrapper" >
+               
+                <div className="skeleton skeleton-input"></div>
+                <ul className="listgroup">
+                  {[1, 2, 3, 4].map((_, idx) => (
+                    <li className="choice" key={idx} >
+                      <div className="skeleton skeleton-radio"></div>
+                      <div className="skeleton skeleton-input"></div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="atbtndiv" >
                   <div>
-                  <input
-                    type='text'
-                    value={options[optionKey]}
-                    name={optionKey}
-                    className={`form-control   ${errors[optionKey] && 'is-invalid'}`}
-                    onChange={handleInputChange}
-                  />
-                  {errors[optionKey] && <div className="invalid-feedback">{errors[optionKey]}</div>}
+                    <div className="skeleton skeleton-button"></div>
                   </div>
-                </li>
-              ))}
-            </ul>
-        
-          <div className='atbtndiv'>
-            <div>
-            <button className='btn btn-secondary' onClick={() => window.history.back()}>Cancel</button>
-            </div>
-            <div></div>
-            <div>
-            <button
-              className='btn btn-primary'
-              onClick={handleSave}
-              disabled={!saveEnabled}
-            >
-              Save
-            </button>
-            </div>
+                  <div></div>
+                  <div>
+                    <div className="skeleton skeleton-button"></div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className='spanAndInputgrid'>
+                  <span>{sno}.</span>
+                  <input
+                    className={`form-control   ${errors.questionText && 'is-invalid'}`}
+                    autoFocus
+                    value={questionText}
+                    onChange={handleQuestionTextChange}
+                  />
+                  {errors.questionText && <div className="invalid-feedback">{errors.questionText}</div>}
+                </div>
+
+                <ul className='listgroup'>
+                  {Object.keys(options).map((optionKey, index) => (
+                    <li className='choice' key={index}>
+                      <input
+                        className={`mt-2 ${errors[optionKey] && 'is-invalid'}`}
+                        type="radio"
+                        value={optionKey}
+                        checked={selectedOption === optionKey}
+                        onChange={() => handleOptionChange(optionKey)}
+                      />
+                      <div>
+                        <input
+                          type='text'
+                          value={options[optionKey]}
+                          name={optionKey}
+                          className={`form-control   ${errors[optionKey] && 'is-invalid'}`}
+                          onChange={handleInputChange}
+                        />
+                        {errors[optionKey] && <div className="invalid-feedback">{errors[optionKey]}</div>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className='atbtndiv'>
+                  <div>
+                    <button className='btn btn-secondary' onClick={() => window.history.back()}>Cancel</button>
+                  </div>
+                  <div></div>
+                  <div>
+                    <button
+                      className='btn btn-primary'
+                      onClick={handleSave}
+                      disabled={!saveEnabled}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-     
-        </div>
-        </div>
         </div>
       </div>
     </div>
+  </div>
+
   );
 }
 

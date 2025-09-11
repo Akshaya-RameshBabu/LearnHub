@@ -23351,13 +23351,11 @@ pre[class*="language-"]:before {
 
 @media only screen and (max-width: 991px) {
   .pcoded-header.header-blue .input-group .input-group-text,
-  .pcoded-header.header-blue a,
   .pcoded-header.header-blue dropdown-toggle {
     color: #535763;
   }
 
   .pcoded-header.header-blue .input-group .input-group-text:hover,
-  .pcoded-header.header-blue a:hover,
   .pcoded-header.header-blue dropdown-toggle:hover {
     color: #3c3f47;
   }
@@ -27444,3 +27442,21 @@ overflow: auto;
   display: flex;
   align-items: center;
 }
+.spanAndInputgrid{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px;
+}
+.numberspan{
+  font-weight: "bold";
+   margin-right: "8px";
+   min-width: "auto";
+    white-space: "nowrap"
+}
+@media (max-width: 992px) {
+  .user-name {
+    display: none !important;
+  }
+}
+

@@ -49,18 +49,23 @@ const CreateModuleTest = () => {
       setSelectedQuestionIndex(index)
       }
    }
-   const shownext=(e)=>{
-      const nextindex=selectedQuestionIndex+1;
-      
-      if(nextindex<savedQuestions.length){
-          const { questionText, option1, option2, option3, option4, answer } = savedQuestions[nextindex];
-      setQuestionText(questionText);
-      setOptions([option1, option2, option3, option4]);
-      setAnswer(answer);
-      setSelectedQuestionIndex(nextindex)
-  
-      }
-   }
+  const shownext = (e) => {
+  const nextindex = selectedQuestionIndex + 1;
+
+  if (nextindex < savedQuestions.length) {
+    const { questionText, option1, option2, option3, option4, answer } = savedQuestions[nextindex];
+    setQuestionText(questionText);
+    setOptions([option1, option2, option3, option4]);
+    setAnswer(answer);
+    setSelectedQuestionIndex(nextindex);
+  } else if (nextindex === savedQuestions.length) {
+    // Show empty page for adding a new question
+    setQuestionText("");
+    setOptions(["", "", "", ""]);
+    setAnswer("");
+    setSelectedQuestionIndex(nextindex);
+  }
+};
     // Function to handle changes in mnoofattempt and mpassPercentage fields
     const handleCriteriaChange = (e) => {
       const { name, value } = e.target;
@@ -91,22 +96,39 @@ const CreateModuleTest = () => {
   
     // Other functions such as handleDelete, handleEditQuestion, addQuestion, and submitTest remain unchanged
   
-    const handleDelete = (index) => {
+  const handleDelete = (index) => {
+  MySwal.fire({
+    title: "Are you sure?",
+    text: "Do you want to delete this question?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel"
+  }).then((result) => {
+    if (result.isConfirmed) {
       const newSavedQuestions = savedQuestions.filter((ques, i) => i !== index);
       setSavedQuestions(newSavedQuestions);
-      if(index!==0){
-      setSelectedQuestionIndex(index-1)
-      const { questionText, option1, option2, option3, option4, answer } = savedQuestions[index-1];
-      setQuestionText(questionText);
-      setOptions([option1, option2, option3, option4]);
-      setAnswer(answer);
-      }else{
-          setSelectedQuestionIndex(0)
-          setQuestionText("");
-      setOptions(["", "", "", ""]);
-      setAnswer("");
+
+      if (newSavedQuestions.length === 0) {
+        setSelectedQuestionIndex(0);
+        setQuestionText("");
+        setOptions(["", "", "", ""]);
+        setAnswer("");
+      } else if (index >= newSavedQuestions.length) {
+        setSelectedQuestionIndex(newSavedQuestions.length);
+        setQuestionText("");
+        setOptions(["", "", "", ""]);
+        setAnswer("");
+      } else {
+        setSelectedQuestionIndex(index > 0 ? index - 1 : 0);
+        const { questionText, option1, option2, option3, option4, answer } = newSavedQuestions[index > 0 ? index - 1 : 0];
+        setQuestionText(questionText);
+        setOptions([option1, option2, option3, option4]);
+        setAnswer(answer);
       }
-    };
+    }
+  });
+};
   
   
   
@@ -183,12 +205,19 @@ const CreateModuleTest = () => {
         answer: answer
       };
     
-      if (selectedQuestionIndex !== null) {
-        const updatedQuestions = [...savedQuestions];
-        updatedQuestions[selectedQuestionIndex] = newQuestion;
-        setSavedQuestions(updatedQuestions);
-        setSelectedQuestionIndex(prevIndex => prevIndex + 1);
-      }
+     
+  if (selectedQuestionIndex < savedQuestions.length) {
+    // Update existing question
+    const updatedQuestions = [...savedQuestions];
+    updatedQuestions[selectedQuestionIndex] = newQuestion;
+    setSavedQuestions(updatedQuestions);
+    setSelectedQuestionIndex(updatedQuestions.length); // Move to blank add page
+  } else {
+    // Add new question
+    setSavedQuestions([...savedQuestions, newQuestion]);
+    setSelectedQuestionIndex(savedQuestions.length + 1);
+  }
+
     
       // Clear input fields after adding or updating a question
       setQuestionText("");
@@ -576,7 +605,10 @@ const CreateModuleTest = () => {
                   style={{ float: "right" ,fontSize:"20px",padding:"10px"}}
                           onClick={() => handleDelete(selectedQuestionIndex)}
                         ></i>)}
-        <div className="formgroup row" > 
+        <div className="formgroup row spanAndInputgrid" > 
+           <span className="numberspan">
+   {selectedQuestionIndex+1}.
+  </span>
                 <input 
                 className={`form-control   ${errors.questionText && 'is-invalid'}`}       
                 type="text"  
@@ -646,7 +678,7 @@ const CreateModuleTest = () => {
                   </button>)}
               </div>
                          <div></div>
-              {selectedQuestionIndex < savedQuestions.length-1 &&(
+              {selectedQuestionIndex < savedQuestions.length &&(
               <button 
                   className="btn btn-primary mt-4" 
                   onClick={shownext}

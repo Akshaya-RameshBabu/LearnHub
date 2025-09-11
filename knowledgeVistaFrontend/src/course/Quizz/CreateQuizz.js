@@ -128,6 +128,13 @@ const CreateQuizz = () => {
       }
       }
      const addQuestion = () => {
+       if (!quizzName) {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          quizzName: 'This field is required.',
+        }));
+        return;
+      }
         if (!questionText) {
           setErrors((prevErrors) => ({
             ...prevErrors,
@@ -184,57 +191,88 @@ const CreateQuizz = () => {
           answer: answer
         };
       
-        if (selectedQuestionIndex !== null) {
-          const updatedQuestions = [...savedQuestions];
-          updatedQuestions[selectedQuestionIndex] = newQuestion;
-          setSavedQuestions(updatedQuestions);
-          setSelectedQuestionIndex(prevIndex => prevIndex + 1);
-        }
-      
-        // Clear input fields after adding or updating a question
+       if (selectedQuestionIndex < savedQuestions.length) {
+    // Update existing question
+    const updatedQuestions = [...savedQuestions];
+    updatedQuestions[selectedQuestionIndex] = newQuestion;
+    setSavedQuestions(updatedQuestions);
+    setSelectedQuestionIndex(updatedQuestions.length); // Move to blank add page
+  } else {
+    // Add new question
+    setSavedQuestions([...savedQuestions, newQuestion]);
+    setSelectedQuestionIndex(savedQuestions.length + 1);
+  }
+
+    
+      // Clear input fields after adding or updating a question
+      setQuestionText("");
+      setOptions(["", "", "", ""]);
+      setAnswer("");
+    
+      // Reset the error state for all fields
+      setErrors({
+        ...errors,
+        mtestName: '',
+        questionText: '',
+        selectedOption: '',
+        options: {
+          option1: '',
+          option2: '',
+          option3: '',
+          option4: ''
+      },
+      });
+      };
+    const shownext = (e) => {
+  const nextindex = selectedQuestionIndex + 1;
+
+  if (nextindex < savedQuestions.length) {
+    const { questionText, option1, option2, option3, option4, answer } = savedQuestions[nextindex];
+    setQuestionText(questionText);
+    setOptions([option1, option2, option3, option4]);
+    setAnswer(answer);
+    setSelectedQuestionIndex(nextindex);
+  } else if (nextindex === savedQuestions.length) {
+    // Show empty page for adding a new question
+    setQuestionText("");
+    setOptions(["", "", "", ""]);
+    setAnswer("");
+    setSelectedQuestionIndex(nextindex);
+  }
+};
+ const handleDelete = (index) => {
+  MySwal.fire({
+    title: "Are you sure?",
+    text: "Do you want to delete this question?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const newSavedQuestions = savedQuestions.filter((ques, i) => i !== index);
+      setSavedQuestions(newSavedQuestions);
+
+      if (newSavedQuestions.length === 0) {
+        setSelectedQuestionIndex(0);
         setQuestionText("");
         setOptions(["", "", "", ""]);
         setAnswer("");
-      
-        // Reset the error state for all fields
-        setErrors({
-          ...errors,
-          questionText: '',
-          options: {
-            option1: '',
-            option2: '',
-            option3: '',
-            option4: ''
-        },
-        });
-      };
-      const shownext=(e)=>{
-        const nextindex=selectedQuestionIndex+1;
-        if(nextindex<savedQuestions.length){
-            const { questionText, option1, option2, option3, option4, answer } = savedQuestions[nextindex];
+      } else if (index >= newSavedQuestions.length) {
+        setSelectedQuestionIndex(newSavedQuestions.length);
+        setQuestionText("");
+        setOptions(["", "", "", ""]);
+        setAnswer("");
+      } else {
+        setSelectedQuestionIndex(index > 0 ? index - 1 : 0);
+        const { questionText, option1, option2, option3, option4, answer } = newSavedQuestions[index > 0 ? index - 1 : 0];
         setQuestionText(questionText);
         setOptions([option1, option2, option3, option4]);
         setAnswer(answer);
-        setSelectedQuestionIndex(nextindex)
-    
-        }
-     }
-     const handleDelete = (index) => {
-      const newSavedQuestions = savedQuestions.filter((ques, i) => i !== index);
-      setSavedQuestions(newSavedQuestions);
-      if(index!==0){
-      setSelectedQuestionIndex(index-1)
-      const { questionText, option1, option2, option3, option4, answer } = savedQuestions[index-1];
-      setQuestionText(questionText);
-      setOptions([option1, option2, option3, option4]);
-      setAnswer(answer);
-      }else{
-          setSelectedQuestionIndex(0)
-          setQuestionText("");
-      setOptions(["", "", "", ""]);
-      setAnswer("");
       }
-    };
+    }
+  });
+};
 
     
     const saveQuizz = async () => {
@@ -482,7 +520,7 @@ navigate(`/lessonList/${courseName}/${courseId}`)
                 </button>)}
             </div>
                        <div></div>
-            {selectedQuestionIndex < savedQuestions.length-1 &&(
+            {selectedQuestionIndex < savedQuestions.length &&(
             <button 
                 className="btn btn-primary mt-4" 
                 onClick={shownext}

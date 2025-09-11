@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.knowledgeVista.Course.Quizz.Quizz;
+import com.knowledgeVista.Course.moduleTest.ModuleTest;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -17,6 +18,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -68,5 +70,7 @@ public class videoLessons {
 	@OneToOne(mappedBy = "lessons", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonIgnore
 	private Quizz quizz;
-
+	@ManyToMany(mappedBy = "lessons")
+	@JsonIgnore
+	private List<ModuleTest> moduleTests;
 }

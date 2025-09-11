@@ -32,6 +32,7 @@ import com.knowledgeVista.Course.videoLessons;
 import com.knowledgeVista.Course.Repository.CourseDetailRepository;
 import com.knowledgeVista.Course.Repository.DocsDetailRepo;
 import com.knowledgeVista.Course.Repository.videoLessonRepo;
+import com.knowledgeVista.Course.moduleTest.ModuleTest;
 import com.knowledgeVista.FileService.PPTReader;
 import com.knowledgeVista.FileService.VideoFileService;
 import com.knowledgeVista.License.licenseRepository;
@@ -41,6 +42,7 @@ import com.knowledgeVista.User.Repository.MuserRepositories;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 
 @RestController
 @CrossOrigin
@@ -838,78 +840,66 @@ public class videolessonController {
 	}
 //======================================================
 
+	@Transactional
 	public ResponseEntity<?> deleteLessonsByLessonId(Long lessonId, String Lessontitle, String token) {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
-			String email = jwtUtil.getEmailFromToken(token);
+			String institution = jwtUtil.getInstitutionFromToken(token);
 
-			String institution = "";
-			Optional<Muser> opuser = muserRepository.findByEmail(email);
-			if (opuser.isPresent()) {
-				Muser user = opuser.get();
-				institution = user.getInstitutionName();
-				boolean adminIsactive = muserRepository.getactiveResultByInstitutionName("ADMIN", institution);
-				if (!adminIsactive) {
-					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-				}
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
 			if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
 				Optional<videoLessons> opvideo = lessonrepo.findBylessonIdAndInstitutionName(lessonId, institution);
 				if (opvideo.isPresent()) {
 					videoLessons videolesson = opvideo.get();
+
+					// 🔹 Step 1: Break the ManyToMany relation first
+					if (videolesson.getModuleTests() != null) {
+						for (ModuleTest mt : videolesson.getModuleTests()) {
+							mt.getLessons().remove(videolesson);
+						}
+					}
+
+					// 🔹 Step 2: Delete attached documents
 					List<DocsDetails> docs = videolesson.getDocuments();
-					if (docs.size() > 0) {
+					if (docs != null && !docs.isEmpty()) {
 						for (DocsDetails doc : docs) {
 							Long sizeone = fileService.getFileSize(doc.getDocumentName(), doc.getDocumentPath());
-							System.out.println("sizeone" + sizeone);
 							if (sizeone > 0) {
 								fileService.deleteFile(doc.getDocumentName(), doc.getDocumentPath());
 							}
 							docsDetailsRepository.deleteById(doc.getId());
-
 						}
 					}
+
+					// 🔹 Step 3: Delete video file if present
 					if (videolesson.getVideofilename() != null) {
 						Long sizeone = fileService.getFileSize(videolesson.getVideofilename(), videolesson.getPath());
 						if (sizeone > 0) {
 							Boolean resultdeleted = fileService.deleteFile(videolesson.getVideofilename(),
 									videolesson.getPath());
-							if (resultdeleted) {
-								videolesson.getDocuments().clear();
-								lessonrepo.deleteById(lessonId);
-
-								return ResponseEntity
-										.ok("{\"message\":\"Lesson " + Lessontitle + " Deleted Successfully\"}");
-							} else {
+							if (!resultdeleted) {
 								return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-										"{\"message\": \"Failed to delete video file associated with the note\"}");
+										"{\"message\": \"Failed to delete video file associated with the lesson\"}");
 							}
-						} else {
-							return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-									.body("{\"message\": \"Failed to delete video file associated with the note\"}");
 						}
-					} else {
-						videolesson.getDocuments().clear();
-						lessonrepo.deleteById(lessonId);
-						return ResponseEntity.ok("{\"message\":\"Lesson " + Lessontitle + " Deleted Successfully\"}");
 					}
 
+					// 🔹 Step 4: Clear documents list (avoid orphan refs)
+					videolesson.getDocuments().clear();
+
+					// 🔹 Step 5: Delete the lesson itself
+					lessonrepo.delete(videolesson);
+
+					return ResponseEntity.ok("{\"message\":\"Lesson " + Lessontitle + " Deleted Successfully\"}");
 				} else {
 					return ResponseEntity.notFound().build();
-
 				}
 			} else {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("", e);
-			;
+			logger.error("Error deleting lesson", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
-
 	}
 
 }
