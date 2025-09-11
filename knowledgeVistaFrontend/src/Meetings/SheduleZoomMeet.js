@@ -196,7 +196,8 @@ const SheduleZoomMeet = () => {
     time: '',
     ampm: '',
   });
-  
+  const [inviteesError, setInviteesError] = useState(false);
+
   // Function to calculate and format the rounded time
   const calculateRoundedTime = () => {
     const now = new Date();
@@ -303,7 +304,7 @@ const SheduleZoomMeet = () => {
       }));
       return [...updated]
     })
-    
+    setInviteesError(false);
      setSearchQuery("");
      setUsers([]);
   };
@@ -452,7 +453,13 @@ const updateStartTime = (event) => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+  if (selectedEmails.length === 0) {
+    setInviteesError(true);
+    return;
+  } else {
+    setInviteesError(false);
+  }
+
     // Compute startTime before updating zoomrequest
     let finalStartTime = zoomrequest.startTime;
   
@@ -465,7 +472,6 @@ const updateStartTime = (event) => {
       recurrence:Reccuranceobject,
       startTime: finalStartTime,
     };
-    console.log("Starttime",updatedZoomRequest)
     // return
     try {
   
@@ -753,15 +759,19 @@ const updateStartTime = (event) => {
                 <div key={index}  className="selectedemail">
                     {email.name} <i onClick={() => handleEmailRemove(email)} className="fa-solid fa-xmark"></i>
                   </div>)}</div>)}
-            
-                <input
-                  type="input"
-                  id="customeinpu"
-                  className="form-control"
-                  placeholder="search member or Batch..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                />
+             <input
+        type="text"
+        id="customeinpu"
+        className={`form-control ${inviteesError ? "is-invalid" : ""}`}
+        placeholder="search member or Batch..."
+        value={searchQuery}
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      {inviteesError && (
+        <div className="invalid-feedback">
+          Please add at least one invitee.
+        </div>
+      )}
                 </div>
                 {users.length > 0 && (
                   <div className="user-list">

@@ -79,6 +79,7 @@ const [selectedIds,setselectedIds]=useState([]);
           }
         });
         if (response.status===200) {
+          setEditingField(null)
             fetchData();
         }
       }
@@ -235,7 +236,7 @@ const handleDelete = async (questID) => {
       <div className='navigateheaders' style={{margin:"2px"}}>
       <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
       <div></div>
-      <div onClick={()=>{navigate("/dashboard/course")}}><i className="fa-solid fa-xmark"></i></div>
+      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
       </div>
       <div className='headingandbutton'>
       <h4 className='text-center 'style={{margin:"0px"}}>{courseName}</h4>

@@ -222,6 +222,8 @@ const EditMeeting = () => {
     topic: "",
     type: 2,
   });
+  
+    const [inviteesError, setInviteesError] = useState(false);
   //type:2=without reccurance
   //type:3= reccurance with no fixedd time
   // type:8 =reccurance with fixed time
@@ -362,7 +364,7 @@ const formattedDate = localStartTime.toLocaleDateString('en-CA'); // 'en-CA' giv
       }));
       return [...updated]
     })
-    
+    setInviteesError(false);
      setSearchQuery("");
      setUsers([]);
   };
@@ -513,6 +515,13 @@ const formattedDate = localStartTime.toLocaleDateString('en-CA'); // 'en-CA' giv
     e.preventDefault();
 
     try {
+      if (selectedEmails.length === 0) {
+    setInviteesError(true);
+    return;
+  } else {
+    setInviteesError(false);
+  }
+
      
       const updatedZoomRequest = {
         ...zoomrequest,
@@ -787,11 +796,16 @@ const formattedDate = localStartTime.toLocaleDateString('en-CA'); // 'en-CA' giv
                 <input
                   type="input"
                   id="customeinpu"
-                  className="form-control"
+        className={`form-control ${inviteesError ? "is-invalid" : ""}`}
                   placeholder="search member or Batch..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                 />
+                {inviteesError && (
+        <div className="invalid-feedback">
+          Please add at least one invitee.
+        </div>
+      )}
                 </div>
                 {users.length > 0 && (
                   <div className="user-list">

@@ -219,88 +219,79 @@ const CreateBatch = () => {
   };
  
   
-  const handleBatchChange = (e) => {
-    const { name, value } = e.target;
-  
-    // Initialize an empty error object
-    let errorObj = { ...errors };
-  
-    // Check for errors based on the name of the field being updated
-    switch (name) {
-      case "batchTitle":
-        if (!value.trim()) {
-          errorObj.batchTitle = "Batch title cannot be empty!";
-        } else if (/[\/\\]/.test(value)) {
-          errorObj.batchTitle = "Batch title cannot contain '/' or '\\'";
-        } else {
-          errorObj.batchTitle = "";
-          setbatch((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        }
-        break;
-      
-  
-      case "startDate":
-        if (value && batch.endDate && new Date(value) > new Date(batch.endDate)) {
-          errorObj.startDate = "Start date should be smaller than end date!";
-        } else {
-          errorObj.startDate = "";
-          setbatch((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        }
-        break;
-  
-      case "endDate":
-        if (value && batch.startDate && new Date(value) < new Date(batch.startDate)) {
-          errorObj.endDate = "End date should be greater than start date!";
-        } else {
-          errorObj.endDate = "";
-          setbatch((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        }
-        break;
-  
-      case "noOfSeats":
-        if (value && value <= 0) {
-          errorObj.noOfSeats = "Number of seats cannot be zero or negative!";
-        } else {
-          errorObj.noOfSeats = "";
-          setbatch((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        }
-        break;
-  
-      case "amount":
-        // Optionally add validation for amount if needed
-        if (value && value < 0) {
-          errorObj.amount = "Amount cannot be negative!";
-        } else {
-          errorObj.amount = "";
-          setbatch((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        }
-        break;
-  
-      default:
-        break;
-    }
-  
-    
-  
-    // Update the errors state
-    setErrors(errorObj);
-  };
+ const handleBatchChange = (e) => {
+  const { name, value } = e.target;
 
+  setbatch((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+
+  // Live validation only for batchTitle
+  if (name === "batchTitle") {
+    let error = "";
+    if (/[\/\\]/.test(value)) {
+      error = "Batch title cannot contain '/' or '\\'";
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
+  }
+};
+const validateField = (name, value, batch) => {
+  let error = "";
+
+  switch (name) {
+    case "batchTitle":
+      if (!value.trim()) {
+        error = "Batch title cannot be empty!";
+      } else if (/[\/\\]/.test(value)) {
+        error = "Batch title cannot contain '/' or '\\'";
+      }
+      break;
+
+    case "startDate":
+      if (value && batch.endDate && new Date(value) > new Date(batch.endDate)) {
+        error = "Start date should be smaller than end date!";
+      }
+      break;
+
+    case "endDate":
+      if (value && batch.startDate && new Date(value) < new Date(batch.startDate)) {
+        error = "End date should be greater than start date!";
+      }
+      break;
+
+    case "noOfSeats":
+      if (value && value <= 0) {
+        error = "Number of seats cannot be zero or negative!";
+      }
+      break;
+
+    case "amount":
+      if (value && value < 0) {
+        error = "Amount cannot be negative!";
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return error;
+};
+
+const handleBlur = (e) => {
+  const { name, value } = e.target;
+  const error = validateField(name, value, batch);
+
+  setErrors((prev) => ({
+    ...prev,
+    [name]: error,
+  }));
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -419,6 +410,7 @@ const CreateBatch = () => {
                       value={batch.batchTitle}
                       name="batchTitle"
                       onChange={handleBatchChange}
+                      onBlur={handleBlur}
                     />
                     <div className="invalid-feedback">{errors.batchTitle}</div>
                   </div>
@@ -437,7 +429,9 @@ const CreateBatch = () => {
                         <input type="date" 
                          min={new Date().toISOString().split("T")[0]}
                         className={`form-control ${errors.startDate && "is-invalid"} `} 
-                        value={batch.startDate} name="startDate" onChange={handleBatchChange} />
+                        value={batch.startDate} name="startDate" 
+                        onChange={handleBatchChange} 
+                        onBlur={handleBlur}/>
                         <div className="invalid-feedback">{errors.startDate}</div>
                       </div>
                     </div>
@@ -453,7 +447,8 @@ const CreateBatch = () => {
                          className={`form-control ${errors.endDate && "is-invalid"} `} 
                          value={batch.endDate}
                           min={batch.startDate ? new Date(batch.startDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}  
-                          name="endDate" onChange={handleBatchChange}/>
+                          name="endDate" onChange={handleBatchChange}
+                          onBlur={handleBlur}/>
                         <div className="invalid-feedback">{errors.endDate}</div>
                       </div>
                     </div>
@@ -607,6 +602,7 @@ const CreateBatch = () => {
                       className={`form-control ${errors.noOfSeats && "is-invalid"} `}
                       value={batch.noOfSeats}
                       onChange={handleBatchChange}
+                      onBlur={handleBlur}
                     />
                     <div className="invalid-feedback">{errors.noOfSeats}</div>
                   </div>
@@ -626,6 +622,7 @@ const CreateBatch = () => {
                       className={`form-control ${errors.amount && "is-invalid"} `}
                       value={batch.amount}
                       onChange={handleBatchChange}
+                      onBlur={handleBlur}
                     />
                     <div className="invalid-feedback">{errors.amount}</div>
                   </div>

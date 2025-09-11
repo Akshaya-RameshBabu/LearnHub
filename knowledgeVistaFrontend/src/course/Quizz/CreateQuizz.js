@@ -18,7 +18,6 @@ const CreateQuizz = () => {
         const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
      const token=sessionStorage.getItem("token")
        const [quizzName, setquizzName] = useState("");
-        const [duration, setDuration] = useState({ hours: "", minutes: "" });
   const [durationInMinutes, setDurationInMinutes] = useState(0);
       const { courseName,courseId,Lessontitle,lessonId} = useParams();
       const [errors,setErrors]=useState({
@@ -31,13 +30,7 @@ const CreateQuizz = () => {
             option4: ''
         },
       });
-      const[question,setQuestion]=useState([{
-        questionText:"",
-        option1:"",
-        option2:"",
-        option3:"",
-        option4:""
-      }])
+    
       const showprevious=(e)=>{
         const index=selectedQuestionIndex-1;
         if(index >=0){
@@ -247,7 +240,7 @@ const CreateQuizz = () => {
     const saveQuizz = async () => {
       try {
         const updatedQuestions = [...savedQuestions];
-        if(questionText!=''&& answer!=""&&options[0]!="" &&options[1]!="" &&options[2]!="" &&options[3]!="" ){
+        if(questionText!==''&& answer!==""&&options[0]!=="" &&options[1]!=="" &&options[2]!=="" &&options[3]!=="" ){
           const newQuestion = {
             questionText: questionText,
             option1: options[0],
@@ -289,7 +282,7 @@ const CreateQuizz = () => {
         setOptions(["", "", "", ""])
         setquizzName("");
         setShowCriteria(false)
-        if(response.status==200){
+        if(response.status===200){
 
           const data=response.data
 MySwal.fire({
@@ -306,7 +299,7 @@ navigate(`/lessonList/${courseName}/${courseId}`)
           }
         }
       });
-        } if(response.status==204){
+        } if(response.status===204){
           MySwal.fire({
             title: "Not FOund .!",
             text: "Lesson Not  Found.!",
@@ -423,6 +416,7 @@ navigate(`/lessonList/${courseName}/${courseId}`)
              onClick={() => handleDelete(selectedQuestionIndex)}
            ></i>)}
   <div className="formgroup row" > 
+    <div className='spanAndInput'>   <span className='mt-2 bold text-primary'> {selectedQuestionIndex+1}.</span>
               <input 
               className={`form-control   ${errors.questionText && 'is-invalid'}`}       
               type="text"  
@@ -433,6 +427,7 @@ navigate(`/lessonList/${courseName}/${courseId}`)
                 required
               />
                {errors.questionText && <div className="invalid-feedback">{errors.questionText}</div>}
+               </div>
                </div>
                <ul className='listgroup' >                
 

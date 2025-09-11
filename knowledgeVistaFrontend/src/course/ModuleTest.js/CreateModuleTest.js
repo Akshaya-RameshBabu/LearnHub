@@ -420,7 +420,7 @@ const CreateModuleTest = () => {
             <div className='navigateheaders'>
         <div onClick={()=>{setShowCriteria(false)}}><i className="fa-solid fa-arrow-left"></i></div>
         <div></div>
-        <div onClick={()=>{navigate("/dashboard/course")}}><i className="fa-solid fa-xmark"></i></div>
+        <div onClick={()=>{setShowCriteria(false)}}><i className="fa-solid fa-xmark"></i></div>
         </div>
         <h4>Module Test Criteria</h4>
         </div>
@@ -545,9 +545,9 @@ const CreateModuleTest = () => {
           <div className="card">
               <div className="card-body">
             <div className='navigateheaders'>
-        <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
+        <div onClick={handleNavigation}><i className="fa-solid fa-arrow-left"></i></div>
         <div></div>
-        <div onClick={()=>{navigate("/dashboard/course")}}><i className="fa-solid fa-xmark"></i></div>
+        <div onClick={handleNavigation}><i className="fa-solid fa-xmark"></i></div>
         </div>
         <h4 > Create Module Test For {courseName}</h4>  
       

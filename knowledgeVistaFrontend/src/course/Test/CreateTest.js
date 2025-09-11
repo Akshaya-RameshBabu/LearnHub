@@ -5,6 +5,7 @@ import withReactContent from "sweetalert2-react-content";
 import { useNavigate, useParams } from "react-router-dom";
 import baseUrl from "../../api/utils";
 import axios from "axios";
+import useGlobalNavigation from "../../AuthenticationPages/useGlobalNavigation";
 
 const CreateTest = () => {
   const navigate=useNavigate();
@@ -336,7 +337,7 @@ const handleOptionChange = (e, index) => {
     // Update the state with new errors
     setErrors(newErrors);
 };
-
+ const handleNavigation = useGlobalNavigation();
 
   return (
     <div>
@@ -350,7 +351,7 @@ const handleOptionChange = (e, index) => {
           <div className='navigateheaders'>
       <div onClick={()=>{setShowCriteria(false)}}><i className="fa-solid fa-arrow-left"></i></div>
       <div></div>
-      <div onClick={()=>{navigate("/dashboard/course")}}><i className="fa-solid fa-xmark"></i></div>
+      <div onClick={()=>{setShowCriteria(false)}}><i className="fa-solid fa-xmark"></i></div>
       </div>
       <h4>Test Criteria</h4>
       </div>
@@ -425,9 +426,9 @@ const handleOptionChange = (e, index) => {
         <div className="card">
             <div className="card-body">
           <div className='navigateheaders'>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
+      <div onClick={handleNavigation}><i className="fa-solid fa-arrow-left"></i></div>
       <div></div>
-      <div onClick={()=>{navigate("/dashboard/course")}}><i className="fa-solid fa-xmark"></i></div>
+      <div onClick={handleNavigation}><i className="fa-solid fa-xmark"></i></div>
       </div>
       <h4 > Create Test For {courseName}</h4>  
     

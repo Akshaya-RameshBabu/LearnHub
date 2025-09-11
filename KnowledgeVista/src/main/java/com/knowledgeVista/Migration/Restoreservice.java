@@ -1,9 +1,12 @@
 package com.knowledgeVista.Migration;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -132,28 +136,50 @@ public class Restoreservice {
 		}
 	}
 
-	private ResponseEntity<?> executeSqlFile(File sqlFile) {
+	private ResponseEntity<?> executeSqlFile(File backupFile) {
 		try {
-			ProcessBuilder pb = new ProcessBuilder("pg_restore", "-U", dbUsername, "-d", dbName, "--clean",
-					"--if-exists", // avoids errors if objects don't exist
-					"--no-owner", // avoids ownership issues
-					"--no-acl", // avoids privileges issues
-					sqlFile.getAbsolutePath());
+			logger.info("Starting restore from custom-format backup");
+
+			URI uri = new URI(dbUrl.replaceFirst("jdbc:", ""));
+			String dbHost = uri.getHost();
+			String dbPort = String.valueOf(uri.getPort() == -1 ? 5432 : uri.getPort());
+			String dbName = uri.getPath().substring(1); // remove leading "/"
+
+			ProcessBuilder pb = new ProcessBuilder("pg_restore", "--clean", // drop objects before restore
+					"--if-exists", // avoid errors if objects don’t exist
+					"--no-owner", // ignore ownership
+					"-h", dbHost, "-p", dbPort, "-U", dbUsername, "-d", dbName, backupFile.getAbsolutePath());
+
+			// Set password environment variable
 			pb.environment().put("PGPASSWORD", dbPassword);
 			pb.redirectErrorStream(true);
-			pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
 			Process process = pb.start();
+
+			// Capture restore output
+			String output;
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+				output = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+			}
+
 			int exitCode = process.waitFor();
+			logger.info("pg_restore exit code: " + exitCode);
+
+			if (!output.isEmpty()) {
+				logger.info("pg_restore output:\n" + output);
+			}
 
 			if (exitCode == 0) {
-				return ResponseEntity.ok("✅ Restore completed successfully ");
+				return ResponseEntity.ok("✅ Restore completed successfully");
 			} else {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("❌ Restore failed. Exit code: " + exitCode);
+				String failureMessage = "❌ Restore failed. Exit code: " + exitCode + ". Details: " + output;
+				logger.error(failureMessage);
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(failureMessage);
 			}
+
 		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("❌ SQL execution error: " + e.getMessage());
+			logger.error("Restore error: " + e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("❌ Restore error: " + e.getMessage());
 		}
 	}
 

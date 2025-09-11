@@ -1,5 +1,6 @@
 package com.knowledgeVista.Migration;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -7,8 +8,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -23,9 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -102,38 +105,89 @@ public class BackupService {
 		return baos.toByteArray();
 	}
 
-	public ResponseEntity<byte[]> streamDatabaseBackup() {
-		try {
-			// 1. Get the database backup data as a byte array
-			byte[] sqlData = createDatabaseBackup();
-			String timestamp = timestamp();
-			String zipFileName = "full_backup_" + timestamp + ".zip";
+	public void writeDatabaseBackupToStream(OutputStream outputStream) throws IOException {
+		try (ZipOutputStream zos = new ZipOutputStream(outputStream)) {
+			// 1. Stream the database backup directly into the ZIP.
+			logger.info("Starting database backup and adding to zip...");
+			zos.putNextEntry(new ZipEntry("backup_" + timestamp() + ".sql"));
+			try (InputStream dbBackupStream = createDatabaseBackupStream()) {
+				dbBackupStream.transferTo(zos);
+			}
+			zos.closeEntry();
+			logger.info("Database dump added successfully.");
 
-			// 2. Create an in-memory ZIP file
-			ByteArrayOutputStream zipBaos = new ByteArrayOutputStream();
-			try (ZipOutputStream zos = new ZipOutputStream(zipBaos)) {
-				// Add the SQL data to the ZIP file
-				zos.putNextEntry(new ZipEntry("backup_" + timestamp + ".sql"));
-				zos.write(sqlData);
-				zos.closeEntry();
-
-				// Add the assets directory to the ZIP file
-				zipDirectory(new File(assetsDirPath), "assets", zos);
+			// 2. Stream the assets directory and its contents into the ZIP.
+			Path assetsPath = Paths.get(assetsDirPath);
+			if (Files.exists(assetsPath) && Files.isDirectory(assetsPath)) {
+				logger.info("Adding assets folder to zip...");
+				zipDirectoryStream(assetsPath, "assets", zos);
+				logger.info("Assets folder added successfully.");
+			} else {
+				logger.warn("Assets directory not found at: {}", assetsDirPath);
 			}
 
-			// 3. Get the final byte array of the zipped data
-			byte[] zipData = zipBaos.toByteArray();
-
-			// 4. Create and return the downloadable ResponseEntity
-			// This sets the headers to tell the browser to download the file
-			return ResponseEntity.ok()
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
-					.contentType(MediaType.APPLICATION_OCTET_STREAM).contentLength(zipData.length).body(zipData);
-
 		} catch (Exception e) {
-			logger.error("❌ Zipped backup failed", e);
-			// For an error, return a 500 status with no body, as the body type is byte[]
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+			logger.error("Error while streaming ZIP", e);
+			// Rethrow as IOException to be handled by the controller's try-catch block.
+			throw new IOException("Error during backup streaming", e);
+		}
+	}
+
+	private InputStream createDatabaseBackupStream() throws IOException {
+		try {
+			logger.info("Starting pg_dump process for database backup...");
+			// Re-use standard URI methods for better parsing.
+			URI uri = new URI(dbUrl.replaceFirst("jdbc:", "")); // Remove "jdbc:" to allow URI parsing.
+			String dbHost = uri.getHost();
+			int dbPort = uri.getPort() == -1 ? 5432 : uri.getPort();
+
+			ProcessBuilder pb = new ProcessBuilder("pg_dump", "-h", dbHost, "-p", String.valueOf(dbPort), "-U",
+					dbUsername, "-F", "c", // custom format
+					"--no-owner", "--no-acl", dbName);
+
+			pb.environment().put("PGPASSWORD", dbPassword);
+			Process process = pb.start();
+
+			// Consume stderr to prevent the process from hanging and log warnings.
+			new Thread(() -> {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						logger.warn("pg_dump STDERR: {}", line);
+					}
+				} catch (IOException ignored) {
+				}
+			}).start();
+
+			return process.getInputStream();
+		} catch (URISyntaxException e) {
+			logger.error("Invalid DB URL: {}", dbUrl, e);
+			throw new IOException("Invalid DB URL", e);
+		}
+	}
+
+	private void zipDirectoryStream(Path sourceDir, String parentPathInZip, ZipOutputStream zos) throws IOException {
+		try (Stream<Path> pathStream = Files.walk(sourceDir)) {
+			pathStream.filter(path -> !Files.isDirectory(path)) // Exclude directories themselves, they'll be created
+																// implicitly
+					.forEach(path -> {
+						try {
+							// Create the entry name relative to the source directory, including the parent
+							// folder in the zip.
+							String entryName = parentPathInZip + "/"
+									+ sourceDir.relativize(path).toString().replace("\\", "/");
+
+							logger.info("Adding file to zip: {}", entryName);
+							zos.putNextEntry(new ZipEntry(entryName));
+							Files.copy(path, zos); // Use Files.copy for a robust stream operation
+							zos.closeEntry();
+						} catch (IOException e) {
+							// Wrap IOException in an UncheckedIOException to use with forEach
+							throw new UncheckedIOException(e);
+						}
+					});
+		} catch (UncheckedIOException e) {
+			throw e.getCause(); // Unwrap the original IOException
 		}
 	}
 

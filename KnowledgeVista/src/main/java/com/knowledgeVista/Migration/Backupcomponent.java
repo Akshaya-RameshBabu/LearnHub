@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.knowledgeVista.Migration.model.BackupScheduleConfig;
 import com.knowledgeVista.Migration.repo.BackupSheduleConfigRepo;
@@ -43,20 +42,6 @@ public class Backupcomponent {
 	private String dbName;
 	@Autowired
 	private BackupSchedulerService backupSchedulerService;
-
-	public ResponseEntity<?> DownloadBackup(String token) {
-		try {
-			String role = jwtUtil.getRoleFromToken(token);
-			if ("ADMIN".equals(role) || "SYSADMIN".equals(role)) {
-				return backupService.streamDatabaseBackup();
-			} else {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("you are not Authorized to access This..");
-			}
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-		}
-	}
 
 	public ResponseEntity<?> BackupAndSaveToDrive(String token) {
 		try {

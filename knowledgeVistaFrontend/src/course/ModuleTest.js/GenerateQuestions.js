@@ -4,6 +4,7 @@ import baseUrl from "../../api/utils";
 import axios from "axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import useGlobalNavigation from "../../AuthenticationPages/useGlobalNavigation";
 
 function sanitizeAIOutput(text) {
   // Replace encoded tags with real tags
@@ -107,7 +108,14 @@ fetchLessonId();
       // Sanitize the AI output before parsing
       const sanitized = sanitizeAIOutput(result);
       const newQuestions = parseQuestions(sanitized);
-      setQuestions(prev => [...prev, ...newQuestions]);
+     setQuestions(prev => {
+  const updated = [...prev, ...newQuestions];
+  setSelectedIndex(prev.length); // first index of the newly added questions
+  setSelectedQuestion(updated[prev.length]); // pick that question
+  return updated;
+});
+setIsManualMode(false);
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -115,34 +123,31 @@ fetchLessonId();
     }
   };
 
-  const parseQuestions = (text) => {
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(`<root>${text}</root>`, "text/xml");
-    const questionNodes = xml.getElementsByTagName("question");
-    const parsed = [];
-    for (let q of questionNodes) {
-      const options = {
-        option1: q.getElementsByTagName("opt1")[0]?.textContent.trim() ?? "",
-        option2: q.getElementsByTagName("opt2")[0]?.textContent.trim() ?? "",
-        option3: q.getElementsByTagName("opt3")[0]?.textContent.trim() ?? "",
-        option4: q.getElementsByTagName("opt4")[0]?.textContent.trim() ?? "",
-      };
-      let answer = q.getElementsByTagName("answer")[0]?.textContent.trim() ?? "";
-      // Normalize answer if it's Option A/B/C/D
-      if (/^Option [A-D]$/i.test(answer)) {
-        const idx = "ABCD".indexOf(answer.slice(-1).toUpperCase());
-        if (idx !== -1) {
-          answer = options[`option${idx + 1}`];
-        }
+const parseQuestions = (text) => {
+  try {
+    const parsed = JSON.parse(text);
+
+    return parsed.map((q) => {
+      const optionsObj = {};
+      if (Array.isArray(q.options)) {
+        q.options.forEach((opt, idx) => {
+          optionsObj[`option${idx + 1}`] = opt.trim();
+        });
       }
-      parsed.push({
-        questionText: q.getElementsByTagName("questiontext")[0]?.textContent.trim() ?? "",
-        options,
-        answer,
-      });
-    }
-    return parsed;
-  };
+
+      return {
+        questionText: q.questionText?.trim() ?? "",
+        options: optionsObj,  // ✅ shape matches your state
+        answer: q.answer?.trim() ?? "",
+      };
+    });
+  } catch (e) {
+    console.error("❌ Failed to parse questions JSON:", e);
+    return [];
+  }
+};
+
+
 
   const handleSelect = (index) => {
     setSelectedIndex(index);
@@ -179,73 +184,103 @@ fetchLessonId();
   };
  
 
-  // Approve logic: validate and add to approved list (works for both generated and manual)
-  const handleApprove = () => {
-    let hasError = false;
-    const newErrors = { questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' };
-    if (!questionText.trim()) {
-      newErrors.questionText = 'This field is required.';
-      hasError = true;
-      
-    }
-    Object.keys(options).forEach((key) => {
-      if (!options[key].trim()) {
-        newErrors.options[key] = 'Option cannot be empty.';
-        hasError = true;
-      }
-    });
-    if (!answer.trim()) {
-      newErrors.answer = 'Please select the correct answer.';
-      hasError = true;
-    }
-    setErrors(newErrors);
-    if (hasError) return;
-    const approved = {
-      questionText,
-      options: { ...options },
-      answer
-    };
-    if (!isManualMode && selectedIndex !== null) {
-      setApprovedIndexes((prev) => prev.includes(selectedIndex) ? prev : [...prev, selectedIndex]);
-      setSelectedQuestions((prevSelectedQuestions) => {
-        const updatedSelected = [...prevSelectedQuestions];
-        updatedSelected[selectedIndex] = approved;
-        return updatedSelected;
-      });
-      // Move to next unapproved question
-      setTimeout(() => {
-        setSelectedIndex((prevIdx) => {
-          const total = questions.length;
-          let found = false;
-          for (let i = (selectedIndex + 1) % total, count = 0; count < total; i = (i + 1) % total, count++) {
-            if (!approvedIndexes.includes(i) && i !== selectedIndex) {
-              setSelectedQuestion(questions[i]);
-              found = true;
-              return i;
-            }
-          }
-          setSelectedQuestion(null);
-          // If no more pending questions, enable manual mode
-          setIsManualMode(true);
-          return null;
-        });
-      }, 0);
-    }
-    if (isManualMode) {
-      setQuestions((prevQuestions) => [...prevQuestions, approved]);
-      setApprovedIndexes((prev) => [...prev, questions.length]);
-      setSelectedQuestions((prevSelectedQuestions) => [...prevSelectedQuestions, approved]);
-    }
-    setQuestionText("");
-    setOptions({
-      option1: "",
-      option2: "",
-      option3: "",
-      option4: ""
-    });
-    setAnswer("");
-    setErrors({ questionText: '', options: { option1: '', option2: '', option3: '', option4: '' }, answer: '' });
+ const handleApprove = () => {
+  let hasError = false;
+  const newErrors = {
+    questionText: '',
+    options: { option1: '', option2: '', option3: '', option4: '' },
+    answer: ''
   };
+
+  if (!questionText.trim()) {
+    newErrors.questionText = 'This field is required.';
+    hasError = true;
+  }
+  Object.keys(options).forEach((key) => {
+    if (!options[key].trim()) {
+      newErrors.options[key] = 'Option cannot be empty.';
+      hasError = true;
+    }
+  });
+  if (!answer.trim()) {
+    newErrors.answer = 'Please select the correct answer.';
+    hasError = true;
+  }
+  setErrors(newErrors);
+  if (hasError) return;
+
+  const approved = {
+    questionText,
+    options: { ...options },
+    answer
+  };
+
+  if (!isManualMode && selectedIndex !== null) {
+    // ✅ AI-generated question approve flow
+    setApprovedIndexes((prev) =>
+      prev.includes(selectedIndex) ? prev : [...prev, selectedIndex]
+    );
+
+    setSelectedQuestions((prev) => {
+      const updated = [...prev];
+      updated[selectedIndex] = approved;
+      return updated;
+    });
+
+    // ✅ Move to next unapproved, or manual if none left
+    setQuestions((prevQuestions) => {
+      const total = prevQuestions.length;
+      let nextIndex = null;
+
+      for (let i = (selectedIndex + 1) % total, count = 0; count < total; i = (i + 1) % total, count++) {
+        if (!approvedIndexes.includes(i) && i !== selectedIndex) {
+          nextIndex = i;
+          break;
+        }
+      }
+
+      if (nextIndex !== null) {
+        setSelectedIndex(nextIndex);
+        setSelectedQuestion(prevQuestions[nextIndex]);
+      } else {
+        setSelectedIndex(null);
+        setSelectedQuestion(null);
+        setIsManualMode(true); // no unapproved left, go manual
+      }
+
+      return prevQuestions; // no change
+    });
+  } else {
+    // ✅ Manual mode approve flow
+    setQuestions((prev) => {
+      const updated = [...prev, approved];
+      return updated;
+    });
+
+    setSelectedQuestions((prev) => [...prev, approved]);
+    setApprovedIndexes((prev) => [...prev, questions.length]);
+
+    // ✅ After manual add, check if any unapproved exist
+    if (questions.some((_, i) => !approvedIndexes.includes(i))) {
+      const nextIndex = questions.findIndex((_, i) => !approvedIndexes.includes(i));
+      if (nextIndex !== -1) {
+        setSelectedIndex(nextIndex);
+        setSelectedQuestion(questions[nextIndex]);
+        setIsManualMode(false);
+        return;
+      }
+    }
+
+    // ✅ Otherwise stay in manual mode (reset form)
+    setSelectedIndex(null);
+    setSelectedQuestion(null);
+    setIsManualMode(true);
+    setQuestionText('');
+    setOptions({ option1: '', option2: '', option3: '', option4: '' });
+    setAnswer('');
+  }
+};
+
 
   const handleReject = () => {
     if (selectedIndex !== null) {
@@ -387,16 +422,16 @@ fetchLessonId();
   };
 
   // Whenever questions, selectedQuestions, or rejectedQuestions change, set the first available question as selected
-  useEffect(() => {
-    if (questions.length > 0) {
-      setSelectedIndex(0);
-      setSelectedQuestion(questions[0]);
-      setIsManualMode(false);
-    } else {
-      setSelectedIndex(null);
-      setSelectedQuestion(null);
-    }
-  }, [questions, selectedQuestions]);
+  // useEffect(() => {
+  //   if (questions.length > 0) {
+  //     setSelectedIndex(0);
+  //     setSelectedQuestion(questions[0]);
+  //     //setIsManualMode(false);
+  //   } else {
+  //     setSelectedIndex(null);
+  //     setSelectedQuestion(null);
+  //   }
+  // }, [questions, selectedQuestions]);
 
   // Handler for manual mode
   const handleManualMode = () => {
@@ -427,6 +462,7 @@ fetchLessonId();
     }
     return [...pending, ...approved];
   };
+  const handleNavigation = useGlobalNavigation();
 
   return (
     <div>
@@ -436,7 +472,7 @@ fetchLessonId();
  
   <div className="card-body">
   <div className='navigateheaders'>
-      <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-arrow-left"></i></div>
+      <div onClick={handleNavigation}><i className="fa-solid fa-arrow-left"></i></div>
      <div></div>
       <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
       </div>

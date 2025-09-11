@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -39,6 +39,7 @@ import com.knowledgeVista.User.Repository.MuserRoleRepository;
 import com.knowledgeVista.User.SecurityConfiguration.JwtUtil;
 import com.knowledgeVista.User.SecurityConfiguration.OtpService;
 
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -691,26 +692,32 @@ public class MserRegistrationController {
 			// Generate and store OTP
 			String otp = otpService.generateOtpAndStore(email);
 
-			// Prepare the email
-			SimpleMailMessage message = new SimpleMailMessage();
-			message.setFrom(otpService.getEmailUsername()); // safer than using injected emailUsername directly
-			message.setTo(email);
-			message.setSubject("LearnHub - Email Verification OTP");
+			// ✅ Build HTML email content with bolded and larger OTP
+			String emailContent = String.format("<html>" + "<body>" + "<p>Dear User,</p>"
+					+ "<p>Welcome to LearnHub! We're excited to have you join our learning community.</p>"
+					+ "<p>To complete your registration and verify your email address, please use the following One-Time Password (OTP):</p>"
+					+ "<p style='font-size: 24px; font-weight: bold; text-align: center;'>%s</p>"
+					+ "<p><strong>Important Notes:</strong><br>" + "• This OTP is valid for 5 minutes only<br>"
+					+ "• Please do not share this OTP with anyone<br>"
+					+ "• If you didn't request this OTP, please ignore this email</p>"
+					+ "<p>Need help? Contact our support team at <a href='mailto:support@meganartech.com'>support@meganartech.com</a></p>"
+					+ "<p>Best regards,<br>The LearnHub Team</p>"
+					+ "<p><em>Note: This is an auto-generated email. Please do not reply to this email.</em></p>"
+					+ "</body>" + "</html>", otp);
 
-			String emailContent = String.format("Dear User,\n\n"
-					+ "Welcome to LearnHub! We're excited to have you join our learning community.\n\n"
-					+ "To complete your registration and verify your email address, please use the following One-Time Password (OTP):\n\n"
-					+ "                          %s\n\n" + "Important Notes:\n"
-					+ "• This OTP is valid for 5 minutes only\n" + "• Please do not share this OTP with anyone\n"
-					+ "• If you didn't request this OTP, please ignore this email\n\n"
-					+ "Need help? Contact our support team at support@meganartech.com\n\n" + "Best regards,\n"
-					+ "The LearnHub Team\n\n"
-					+ "Note: This is an auto-generated email. Please do not reply to this email.", otp);
+			// ✅ Send using MimeMessage for HTML support
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-			message.setText(emailContent);
-			mailSender.send(message);
+			helper.setFrom(otpService.getEmailUsername());
+			helper.setTo(email);
+			helper.setSubject("LearnHub - Email Verification OTP");
+			helper.setText(emailContent, true); // true = HTML email
+
+			mailSender.send(mimeMessage);
 
 			return ResponseEntity.ok().body("OTP sent successfully");
+
 		} catch (Exception e) {
 			logger.error("Error sending OTP", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send OTP");

@@ -238,16 +238,16 @@ function App() {
             <Route
               path="/admin/dashboard"
               element={
-                // <ErrorBoundary>
+                 <ErrorBoundary>
                 <PrivateRoute
-                  // onlyadmin={true}
+                   onlyadmin={true}
                   authenticationRequired={true}
                   authorizationRequired={true}
                   licence={true}
                 >
                   <Dashboard />
                 </PrivateRoute>
-                // </ErrorBoundary>
+               </ErrorBoundary>
               }
             />
             <Route

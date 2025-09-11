@@ -142,35 +142,27 @@ public class GenerateModuleTest {
 	}
 
 	private String buildQuestionPromptwithoutdocs(String topics, Long count) {
-		return String.format(
-				"""
-							You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
+		return String.format("""
+				You are not a chatbot. You are an AI that strictly generates multiple-choice questions.
 
-						Your task:
-						      - Generate exactly %d multiple-choice type question based ONLY on the lesson
-						      - content below.
-						      -no need to give any explanation just give the questions with options
+				Your task:
+				  - Generate exactly %d multiple-choice questions based ONLY on the lesson content below.
+				  - No explanation, just output the JSON.
 
-						Output rules:
-							- Plain text only.
-							- Each question must be fully enclosed in <question>...</question>.
-							- please Dont make any mistakes in tags opening and closing always open and  close the tag correctly.
-							- If the question or options contain <, >, or &, escape them as &lt;, &gt;, and &amp;.
-							- Format must be exactly:
+				Output rules:
+				  - Return ONLY valid JSON (no markdown, no extra text).
+				  - Format:
+				    [
+				      {
+				        "questionText": "...",
+				        "options": ["Option A", "Option B", "Option C", "Option D"],
+				        "answer": "Correct option text (must match one from options)"
+				      }
+				    ]
 
-							<question>
-							<questiontext>[Question text]</questiontext>
-							<opt1>Option A</opt1>
-							<opt2>Option B</opt2>
-							<opt3>Option C</opt3>
-							<opt4>Option D</opt4>
-							<answer>[Correct option text, must match exactly one option]</answer>
-							</question>
-
-							topics:
-							%s
-							""",
-				count, topics);
+				topics:
+				%s
+				""", count, topics);
 	}
 
 	/**

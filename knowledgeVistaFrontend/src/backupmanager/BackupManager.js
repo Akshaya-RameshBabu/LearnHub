@@ -28,6 +28,8 @@ export default function BackupManager() {
   const token = sessionStorage.getItem("token");
   const [loading, setLoading] = useState({});
   const [notfound, setnotfound] = useState();
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
   const [newSchedule, setNewSchedule] = useState({
     scheduleType: "DAILY",
     dayOfWeek: "SUNDAY",
@@ -57,7 +59,7 @@ export default function BackupManager() {
       });
       if (response?.status === 200) {
         setNewSchedule(response?.data);
-        setnotfound(false)
+        setnotfound(false);
       } else if (response?.status === 204) {
         setnotfound(true);
       }
@@ -97,8 +99,7 @@ export default function BackupManager() {
           `Backup schedule ${response?.data} successfully!` ||
           "Your backup schedule was saved.",
         confirmButtonText: "OK",
-      }).then(() => {
-      });
+      }).then(() => {});
     } catch (error) {
       MySwal.fire({
         icon: "error",
@@ -116,24 +117,36 @@ export default function BackupManager() {
     setLoading((prev) => ({ ...prev, [key]: value }));
   };
 
+ 
 const downloadBackup = async () => {
   try {
     setLoadingFor("downloadBackup", true);
+    setDownloadProgress(0); // reset progress
 
     const response = await axios.get(`${baseUrl}/backup/download`, {
       headers: { Authorization: token },
-      responseType: "blob", // ensures we get binary data
+      responseType: "blob",
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setDownloadProgress(percent);
+        }
+      },
     });
 
     if (response.status === 200) {
       const contentType = response.headers["content-type"];
       const contentDisposition = response.headers["content-disposition"];
 
-      let filename = "backup.zip"; // fallback filename
+      let filename = "backup.zip";
       if (contentDisposition) {
-        const match = contentDisposition.match(/filename="([^"]+)"/);
+        const match =
+          contentDisposition.match(/filename\*?=['"]?UTF-8''?([^;"]+)/i) ||
+          contentDisposition.match(/filename="?([^"]+)"?/i);
         if (match && match[1]) {
-          filename = match[1];
+          filename = decodeURIComponent(match[1]);
         }
       }
 
@@ -150,23 +163,47 @@ const downloadBackup = async () => {
       window.URL.revokeObjectURL(url);
     }
   } catch (err) {
-    if (err?.response?.status === 401) {
-      navigate("/unauthorized");
-    } else if (err?.response?.status === 500) {
-      const blob = err?.response?.data;
-      const reader = new FileReader();
-      reader.onload = () => {
-        MySwal.fire({
-          icon: "error",
-          title: "Some Error Occurred",
-          text: reader.result || "Unknown server error",
-          confirmButtonText: "OK",
-        });
-      };
-      reader.readAsText(blob);
+    if (err.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      if (err.response.status === 401) {
+        navigate("/unauthorized");
+      } else if (err.response.status >= 400 && err.response.status < 600) {
+        // Handle other HTTP error statuses (e.g., 400, 500)
+        const blob = err.response.data;
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          MySwal.fire({
+            icon: "error",
+            title: "Error Occurred",
+            text: reader.result || "Unknown server error",
+            confirmButtonText: "OK",
+          });
+        };
+        // Read the blob as text to get the error message
+        reader.readAsText(blob);
+      }
+    } else if (err.request) {
+      // The request was made but no response was received
+      MySwal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "No response from server. Please check your connection.",
+        confirmButtonText: "OK",
+      });
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      MySwal.fire({
+        icon: "error",
+        title: "Client-side Error",
+        text: err.message,
+        confirmButtonText: "OK",
+      });
     }
   } finally {
     setLoadingFor("downloadBackup", false);
+    setDownloadProgress(0); // reset after completion
   }
 };
 
@@ -258,9 +295,11 @@ const downloadBackup = async () => {
                 </div>
               </div>
             ) : notfound ? (
-               <div>
+              <div>
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">Schedule Type</label>
+                  <label className="col-sm-3 col-form-label">
+                    Schedule Type
+                  </label>
                   <div className="col-sm-9">
                     <select
                       className="form-select"
@@ -280,7 +319,9 @@ const downloadBackup = async () => {
 
                 {newSchedule.scheduleType === "WEEKLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">Day of the Week</label>
+                    <label className="col-sm-3 col-form-label">
+                      Day of the Week
+                    </label>
                     <div className="col-sm-9">
                       <select
                         className="form-select"
@@ -301,13 +342,18 @@ const downloadBackup = async () => {
 
                 {newSchedule.scheduleType === "MONTHLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">Day of the Month</label>
+                    <label className="col-sm-3 col-form-label">
+                      Day of the Month
+                    </label>
                     <div className="col-sm-9">
                       <select
                         className="form-select"
                         value={newSchedule.dayOfMonth}
                         onChange={(e) =>
-                          handleScheduleChange("dayOfMonth", parseInt(e.target.value))
+                          handleScheduleChange(
+                            "dayOfMonth",
+                            parseInt(e.target.value)
+                          )
                         }
                       >
                         {monthDays.map((day) => (
@@ -321,13 +367,18 @@ const downloadBackup = async () => {
                 )}
 
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">Max Backups to Keep</label>
+                  <label className="col-sm-3 col-form-label">
+                    Max Backups to Keep
+                  </label>
                   <div className="col-sm-9">
                     <select
                       className="form-select"
                       value={newSchedule.maxBackupsToKeep}
                       onChange={(e) =>
-                        handleScheduleChange("maxBackupsToKeep", parseInt(e.target.value))
+                        handleScheduleChange(
+                          "maxBackupsToKeep",
+                          parseInt(e.target.value)
+                        )
                       }
                     >
                       {[1, 2, 3, 4, 5].map((num) => (
@@ -337,7 +388,9 @@ const downloadBackup = async () => {
                       ))}
                     </select>
                     <small className="form-text text-muted">
-                      Only the latest <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be retained in Drive.
+                      Only the latest{" "}
+                      <strong>{newSchedule.maxBackupsToKeep}</strong> backups
+                      will be retained in Drive.
                     </small>
                   </div>
                 </div>
@@ -362,14 +415,23 @@ const downloadBackup = async () => {
 
                 {newSchedule.scheduleType && (
                   <div className="alert alert-info">
-                    Backups will happen every <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
+                    Backups will happen every{" "}
+                    <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
                     {newSchedule.scheduleType === "WEEKLY" && (
-                      <> on <strong>{newSchedule.dayOfWeek}</strong></>
+                      <>
+                        {" "}
+                        on <strong>{newSchedule.dayOfWeek}</strong>
+                      </>
                     )}
                     {newSchedule.scheduleType === "MONTHLY" && (
-                      <> on day <strong>{newSchedule.dayOfMonth}</strong></>
-                    )} and stored in <strong>Drive</strong>. Only the last{" "}
-                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be kept.
+                      <>
+                        {" "}
+                        on day <strong>{newSchedule.dayOfMonth}</strong>
+                      </>
+                    )}{" "}
+                    and stored in <strong>Drive</strong>. Only the last{" "}
+                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will
+                    be kept.
                   </div>
                 )}
 
@@ -380,27 +442,31 @@ const downloadBackup = async () => {
                   </button>
                 </div>
               </div>
-             
             ) : (
               <div>
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">Schedule Type</label>
+                  <label className="col-sm-3 col-form-label">
+                    Schedule Type
+                  </label>
                   <div className="col-sm-9">
                     <input
                       className="form-select"
                       value={newSchedule.scheduleType}
-                     readOnly/>
+                      readOnly
+                    />
                   </div>
                 </div>
 
                 {newSchedule.scheduleType === "WEEKLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">Day of the Week</label>
+                    <label className="col-sm-3 col-form-label">
+                      Day of the Week
+                    </label>
                     <div className="col-sm-9">
                       <input
                         className="form-select"
                         value={newSchedule.dayOfWeek}
-                       readOnly
+                        readOnly
                       />
                     </div>
                   </div>
@@ -408,25 +474,33 @@ const downloadBackup = async () => {
 
                 {newSchedule.scheduleType === "MONTHLY" && (
                   <div className="form-group row">
-                    <label className="col-sm-3 col-form-label">Day of the Month</label>
+                    <label className="col-sm-3 col-form-label">
+                      Day of the Month
+                    </label>
                     <div className="col-sm-9">
                       <input
                         className="form-select"
                         value={newSchedule.dayOfMonth}
-                       readOnly/>
+                        readOnly
+                      />
                     </div>
                   </div>
                 )}
 
                 <div className="form-group row">
-                  <label className="col-sm-3 col-form-label">Max Backups to Keep</label>
+                  <label className="col-sm-3 col-form-label">
+                    Max Backups to Keep
+                  </label>
                   <div className="col-sm-9">
                     <input
                       className="form-select"
                       value={newSchedule.maxBackupsToKeep}
-                       readOnly/>
+                      readOnly
+                    />
                     <small className="form-text text-muted">
-                      Only the latest <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be retained in Drive.
+                      Only the latest{" "}
+                      <strong>{newSchedule.maxBackupsToKeep}</strong> backups
+                      will be retained in Drive.
                     </small>
                   </div>
                 </div>
@@ -438,7 +512,7 @@ const downloadBackup = async () => {
                       type="time"
                       className="form-control"
                       value={newSchedule.backupTime}
-                       readOnly
+                      readOnly
                     />
                     <small className="form-text text-muted">
                       Choose the time when backup should be executed.
@@ -448,22 +522,34 @@ const downloadBackup = async () => {
 
                 {newSchedule.scheduleType && (
                   <div className="alert alert-info">
-                    Backups will happen every <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
+                    Backups will happen every{" "}
+                    <strong>{newSchedule.scheduleType.toLowerCase()}</strong>
                     {newSchedule.scheduleType === "WEEKLY" && (
-                      <> on <strong>{newSchedule.dayOfWeek}</strong></>
+                      <>
+                        {" "}
+                        on <strong>{newSchedule.dayOfWeek}</strong>
+                      </>
                     )}
                     {newSchedule.scheduleType === "MONTHLY" && (
-                      <> on day <strong>{newSchedule.dayOfMonth}</strong></>
-                    )} and stored in <strong>Drive</strong>. Only the last{" "}
-                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will be kept.
+                      <>
+                        {" "}
+                        on day <strong>{newSchedule.dayOfMonth}</strong>
+                      </>
+                    )}{" "}
+                    and stored in <strong>Drive</strong>. Only the last{" "}
+                    <strong>{newSchedule.maxBackupsToKeep}</strong> backups will
+                    be kept.
                   </div>
                 )}
 
                 <div className="cornerbtn">
                   <div></div>
-                  <button className="btn btn-success" onClick={()=>{
-                    setnotfound(true);
-                  }}>
+                  <button
+                    className="btn btn-success"
+                    onClick={() => {
+                      setnotfound(true);
+                    }}
+                  >
                     Edit
                   </button>
                 </div>
@@ -480,11 +566,17 @@ const downloadBackup = async () => {
               disabled={loading?.downloadBackup}
             >
               {loading?.downloadBackup ? (
-                <i className="fa fa-spinner fa-spin"></i>
+                <>
+                  <i className="fa fa-spinner fa-spin"></i>{" "}
+                  {downloadProgress > 0
+                    ? `Downloading... ${downloadProgress}%`
+                    : "Downloading..."}
+                </>
               ) : (
-                <i className="fa fa-download"></i>
-              )}{" "}
-              {loading?.downloadBackup ? "Downloading..." : "Download Now"}
+                <>
+                  <i className="fa fa-download"></i> Download Now
+                </>
+              )}
             </button>
 
             <button

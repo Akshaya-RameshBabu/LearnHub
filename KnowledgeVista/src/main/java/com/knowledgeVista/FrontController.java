@@ -1,7 +1,9 @@
 package com.knowledgeVista;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.knowledgeVista.AiIntegration.GwenAiService;
 import com.knowledgeVista.Attendance.AttendanceService;
@@ -70,6 +74,7 @@ import com.knowledgeVista.Meeting.ZoomAccountKeys;
 import com.knowledgeVista.Meeting.ZoomMeetAccountController;
 import com.knowledgeVista.Meeting.ZoomMeetingService;
 import com.knowledgeVista.Meeting.zoomclass.MeetingRequest;
+import com.knowledgeVista.Migration.BackupService;
 import com.knowledgeVista.Migration.Backupcomponent;
 import com.knowledgeVista.Migration.OAuthCredentialService;
 import com.knowledgeVista.Migration.Restoreservice;
@@ -260,6 +265,10 @@ public class FrontController {
 
 	@Autowired
 	private Restoreservice restoreservice;
+	@Autowired
+	private BackupService backupService;
+	@Autowired
+	private JwtUtil jwtUtil;
 
 //-------------------ACTIVE PROFILE------------------
 	@GetMapping("/Active/Environment")
@@ -2341,21 +2350,32 @@ public class FrontController {
 	// --------------------------------------BackupComponent-------------------------
 	@GetMapping("/backup/download")
 	@CheckAccessAnnotation
-	public ResponseEntity<?> downloadWholeBackup(@RequestHeader("Authorization") String token) {
-		try {
-			if (environment.equals("VPS")) {
-				return backupcomp.DownloadBackup(token);
-			} else {
-				// need to implement the backup for sas model specific to institution and add
-				// that method here.
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body("Oops...! This Feature is not Available for This Environment");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+	public ResponseEntity<StreamingResponseBody> downloadWholeBackup(@RequestHeader("Authorization") String token) {
+
+		String role = jwtUtil.getRoleFromToken(token);
+		if (!("ADMIN".equals(role) || "SYSADMIN".equals(role))) {
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
+		if (!"VPS".equals(environment)) {
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+		}
+
+		String zipFileName = "full_backup_" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date()) + ".zip";
+
+		// This is a lambda function that will be executed by Spring
+		StreamingResponseBody responseBody = outputStream -> {
+			try {
+				backupService.writeDatabaseBackupToStream(outputStream);
+			} catch (Exception e) {
+				logger.error("An error occurred during streaming the backup.", e);
+				throw e; // Let Spring's error handler deal with it
+			}
+		};
+
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+				.contentType(MediaType.APPLICATION_OCTET_STREAM).body(responseBody);
 	}
 
 	@GetMapping("/backup/SaveToDrive")
