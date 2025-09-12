@@ -42,7 +42,6 @@ import baseUrl from "./api/utils.js";
 import axios from "axios";
 import RefreshToken from "./AuthenticationPages/RefreshToken.js";
 import MyPayments from "./Student/MyPayments.js";
-import UpdatePartialPaymentSettings from "./course/Components/UpdatePartialPaymentSettings.js";
 import Paymenttransactions from "./course/Components/Paymenttransactions.js";
 import Mystudents from "./Trainer/Mystudents.js";
 import AdminRegister from "./Registration/AdminRegister.js";
@@ -1197,19 +1196,7 @@ function App() {
                 </ErrorBoundary>
               }
             />
-            <Route
-              path="/batch/update/partpay/:batchTitle/:batchId"
-              element={
-                <ErrorBoundary>
-                  <PrivateRoute
-                    authenticationRequired={true}
-                    authorizationRequired={true}
-                  >
-                    <UpdatePartialPaymentSettings />
-                  </PrivateRoute>
-                </ErrorBoundary>
-              }
-            />
+           
             <Route
               path="/batch/addNew"
               element={

@@ -349,13 +349,31 @@ public class BatchService {
 					updatedTrainers.add(trainer);
 				}, () -> logger.warn("Trainer with ID {} not found. Skipping...", trainerId));
 			}
+			boolean amtchanged = false;
+			if (batch.getAmount() != amount) {
+				batch.setPaytype(PaymentType.FULL);
+				Optional<Batch_partPayment_Structure> partPaymentStructure = partayStructureRepo.findByBatch(batch);
+
+				// If a part payment structure exists, delete it.
+				if (partPaymentStructure.isPresent()) {
+					// The CascadeType.REMOVE on the OneToMany relationship will handle deleting the
+					// BatchInstallmentdetails
+					partayStructureRepo.delete(partPaymentStructure.get());
+				}
+
+				// 4. Update the batch with the new amount
+				batch.setAmount(amount);
+				amtchanged = true;
+			} else {
+				batch.setAmount(amount);
+			}
 
 			batch.getTrainers().clear();
 			batch.getTrainers().addAll(updatedTrainers);
 
 // Update batch details
 			batch.setBatchTitle(batchTitle);
-			batch.setAmount(amount);
+
 			batch.setNoOfSeats(noofSeats);
 			batch.setStartDate(startDate);
 			batch.setEndDate(endDate);
@@ -367,7 +385,7 @@ public class BatchService {
 // Save updated batch
 			batchrepo.save(batch);
 
-			return ResponseEntity.ok("Batch updated successfully!");
+			return ResponseEntity.ok(amtchanged);
 
 		} catch (Exception e) {
 			logger.error("Exception occurred while updating batch", e);
@@ -577,38 +595,104 @@ public class BatchService {
 			return ResponseEntity.ok(Page.empty());
 		}
 	}
-//======================================PARTPAY batch====================================
 
-	public ResponseEntity<?> SavePartPay(Long batchId, List<BatchInstallmentdetails> installmentDetails, String token) {
+//======================================PARTPAY batch====================================
+	@Transactional
+	public ResponseEntity<?> clearPartPaymentSettings(Long batchId, String token) {
+		try {
+			// Find the Batch entity
+			String role = jwtUtil.getRoleFromToken(token);
+			String email = jwtUtil.getEmailFromToken(token);
+
+			if (!"ADMIN".equals(role)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Only Admins Can Access This Page");
+			}
+
+			Optional<Batch> opbatch = batchrepo.findById(batchId);
+			if (opbatch.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Batch Not Found with ID: " + batchId);
+			}
+			Batch batch = opbatch.get();
+
+			// Find the existing part payment structure
+			Optional<Batch_partPayment_Structure> existingStructure = partayStructureRepo.findByBatch(batch);
+
+			if (existingStructure.isPresent()) {
+				// Delete the parent entity, which will cascade to delete the children
+				Batch_partPayment_Structure structureToDelete = existingStructure.get();
+				partayStructureRepo.delete(structureToDelete);
+
+				// Set the batch's payment type back to FULL (or its default)
+				batch.setPaytype(PaymentType.FULL);
+				batchrepo.save(batch);
+
+				logger.info("Cleared partial payment settings for batch ID: " + batchId);
+			}
+
+			return ResponseEntity.ok("Partial payment settings cleared successfully.");
+		} catch (Exception e) {
+			logger.error("Error clearing partial payment settings for batch ID: " + batchId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Failed to clear settings due to an internal error: " + e.getMessage());
+		}
+	}
+
+	@Transactional // Ensure the entire operation is a single transaction
+	public ResponseEntity<?> SavePartPay(Long batchId, List<BatchInstallmentdetails> newInstallmentDetails,
+			String token) {
 		try {
 			String role = jwtUtil.getRoleFromToken(token);
 			String email = jwtUtil.getEmailFromToken(token);
-			if ("ADMIN".equals(role)) {
-				Optional<Batch> opbatch = batchrepo.findById(batchId);
-				if (opbatch.isEmpty()) {
-					return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Batch Not Found");
-				}
 
-				Batch batch = opbatch.get();
-				batch.setPaytype(PaymentType.PART);
-				Batch_partPayment_Structure paystructure = new Batch_partPayment_Structure();
-				paystructure.setApprovedBy(email);
-				paystructure.setCreatedBy(email);
-				paystructure.setDatecreated(LocalDate.now());
-				paystructure.setBatch(batch);
-				paystructure = partayStructureRepo.save(paystructure);
-				batchrepo.save(batch);
-				for (BatchInstallmentdetails installment : installmentDetails) {
-					BatchInstallmentdetails install = new BatchInstallmentdetails();
-					install.setDurationInDays(installment.getDurationInDays());
-					install.setInstallmentAmount(installment.getInstallmentAmount());
-					install.setInstallmentNumber(installment.getInstallmentNumber());
-					install.setPartpay(paystructure);
-					installmentRepo.save(install);
-				}
-				return ResponseEntity.ok("Installment Settings Saved SuccessFully");
+			if (!"ADMIN".equals(role)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Only Admins Can Access This Page");
 			}
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Only Admins Can Access This Page");
+
+			Optional<Batch> opbatch = batchrepo.findById(batchId);
+			if (opbatch.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Batch Not Found");
+			}
+
+			Batch batch = opbatch.get();
+
+			Optional<Batch_partPayment_Structure> existingStructure = partayStructureRepo.findByBatch(batch);
+			Batch_partPayment_Structure paystructure;
+
+			if (existingStructure.isPresent()) {
+				paystructure = existingStructure.get();
+				// Delete old installments before adding new ones
+				installmentRepo.deleteAll(paystructure.getInstallmentDetail());
+				logger.info("Updating existing partial payment structure for batch ID: " + batchId);
+			} else {
+				paystructure = new Batch_partPayment_Structure();
+				paystructure.setBatch(batch);
+				logger.info("Creating new partial payment structure for batch ID: " + batchId);
+			}
+
+			// Update common fields
+			paystructure.setApprovedBy(email);
+			paystructure.setCreatedBy(email); // Or dateupdated
+			paystructure.setDatecreated(LocalDate.now());
+
+			paystructure = partayStructureRepo.save(paystructure);
+
+			batch.setPaytype(PaymentType.PART);
+			batchrepo.save(batch);
+
+			// --- THIS IS THE KEY CHANGE ---
+			// Save the new installments and link them to the newly saved paystructure
+			for (BatchInstallmentdetails installment : newInstallmentDetails) {
+				installment.setPartpay(paystructure);
+			}
+			installmentRepo.saveAll(newInstallmentDetails); // Save all new installments at once
+
+			// Re-load the paystructure to reflect the new relationships if needed for
+			// response
+			// paystructure =
+			// partayStructureRepo.findById(paystructure.getBatchPartayId()).orElse(null);
+
+			return ResponseEntity.ok("Installment Settings Saved Successfully");
+
 		} catch (Exception e) {
 			logger.error("Error At Save PartPay", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());

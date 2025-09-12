@@ -1,411 +1,333 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import baseUrl from "../../api/utils";
-import axios from "axios";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import baseUrl from '../../api/utils';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 const Partialpaymentsetting = () => {
-  
-    const [installmentData, setInstallmentData] = useState([]);
-        const MySwal = withReactContent(Swal);
-    const [durations, setDurations] = useState([]);
-  const [noOfInstallments, setNoOfInstallments] = useState(2);
-  const [noofDuration, setnoofDuration] = useState(1);
-  const[batchAmount,setbatchAmount]=useState();
-   const {batchTitle,batchId}=useParams();
-    const [enablechecked, setenablechecked] = useState(false);
-    const token=sessionStorage.getItem("token")
+  const { batchId } = useParams();
+  const MySwal = withReactContent(Swal);
   const navigate = useNavigate();
-  const[batch,setbatch]=useState({
-        batchName:"",
-        amount:"",
-        id:""
-      })
-    useEffect(() => {
-        const fetchpartpaydata = async () => {
-            try {
-                const response = await axios.get(`${baseUrl}/viewPaymentList/${batchId}`, {
-                    headers: {
-                        "Authorization": token
-                    }
-                });
-                const data = await response.data;
-              
-                if (response.status===200) {
-                    setbatch((prev)=>({
-                      ...prev,
-                      batchName: data?.batchTitle,
-                      amount:data?.batchAmount,
-                      batchId:data?.batchId
-                 } ))
-                 setbatchAmount(data?.batchAmount)
-                 if(data?.batchInstallments.length>0){
-                    setInstallmentData(data?.batchInstallments)
-                    setNoOfInstallments(data?.batchInstallments.length)
-                 }
-                
-                }   
-            } catch (error) {
-              if(error.response){
-                if(error.response.status===401){
-                  MySwal.fire({
-                    title: "Un Authorized",
-                    text: error.response.data ? error.response.data : "error occured",
-                    icon: "error",
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                      navigate(-1);
-                       }
-                  });
-                }else if(error.response.status===404){
-                  setenablechecked(false)
-                  MySwal.fire({
-                    title: "Not Found",
-                    text: error.response.data ? error.response.data : "error occured",
-                    icon: "warning",
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                      navigate(-1);
-                       }
-                  });
-                }
-              }else{
-                // MySwal.fire({
-                //   title: "Error!",
-                //   text: "An error occurred . Please try again later.",
-                //   icon: "error",
-                //   confirmButtonText: "OK",
-                // });
-                throw error
-              }
-            }
-        }
-    
-        fetchpartpaydata(); // Call the async function
-    
-        // Add any dependencies if needed
-    }, []);
-  // Calculate initial installment data on component mount or noOfInstallments change
-  useEffect(() => {
-    if (noOfInstallments >= 1) {
-      let newInstallmentData = [];
-      let newDurations = [];
+  const token = sessionStorage.getItem('token');
 
-      for (let i = 0; i < noOfInstallments; i++) {
-        newInstallmentData.push({
-          InstallmentNumber: `${i + 1}`,
-          InstallmentAmount: batchAmount / noOfInstallments,
-          DurationInDays: i === 0 ? 0 : 15,
+  // Unified state for all data
+  const [enablechecked, setEnablechecked] = useState(false);
+  const [batchData, setBatchData] = useState({
+    batchTitle: '',
+    batchAmount: '',
+  });
+  const [installmentData, setInstallmentData] = useState([]);
+  const [noOfInstallments, setNoOfInstallments] = useState(2);
+  const [loading, setLoading] = useState(true);
+
+  // Helper function to get ordinal suffix
+  const getOrdinalSuffix = (num) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = num % 100;
+    return num + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  // --- API CALLS ---
+  useEffect(() => {
+    const fetchPaymentData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${baseUrl}/viewPaymentList/${batchId}`, {
+          headers: { Authorization: token },
         });
 
-        if (i < noOfInstallments - 1) {
-          newDurations.push(15);
+        const data = response.data;
+        if (data.batchInstallments && data.batchInstallments.length > 0) {
+          // Case 1: Partial payments already exist
+          setEnablechecked(true);
+          setBatchData({
+            batchTitle: data.batchTitle,
+            batchAmount: data.batchAmount,
+          });
+          setInstallmentData(data.batchInstallments);
+          setNoOfInstallments(data.batchInstallments.length);
+        } else {
+          // Case 2: Partial payments don't exist, but batch data is returned
+          setEnablechecked(false);
+          setBatchData({
+            batchTitle: data.batchTitle,
+            batchAmount: data.batchAmount,
+          });
+          // Initialize a new installment structure
+          initializeInstallments(data.batchAmount, 2);
         }
+      } catch (error) {
+        setLoading(false);
+        if (error.response?.status === 404) {
+          // Case 3: Batch or payment details not found
+          // Fetch base batch data to get the amount for new settings
+          try {
+            const batchResponse = await axios.get(`${baseUrl}/getBatchDetails/${batchId}`, {
+                headers: { Authorization: token },
+            });
+            const batchDetails = batchResponse.data;
+            setBatchData({
+              batchTitle: batchDetails.batchTitle,
+              batchAmount: batchDetails.amount,
+            });
+            setEnablechecked(false);
+            initializeInstallments(batchDetails.amount, 2);
+          } catch (batchError) {
+              handleApiError(batchError);
+          }
+        } else {
+            handleApiError(error);
+        }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setInstallmentData(newInstallmentData);
-      setDurations(newDurations);
+    fetchPaymentData();
+  }, [batchId, token]);
+
+  const handleApiError = (error) => {
+    if (error.response?.status === 401) {
+      MySwal.fire({
+        title: 'Unauthorized',
+        text: 'Session expired or invalid token.',
+        icon: 'error',
+      }).then(() => navigate(-1));
     } else {
-      setInstallmentData([]);
-      setDurations([]);
-    }
-  }, [noOfInstallments, batchAmount]);
-  const handleSubmit = async () => {
-    if (!enablechecked) {
-     navigate("/batch/viewall")
-    }
-  console.log(installmentData);
-    try {
-      const response = await axios.post(
-        `${baseUrl}/Batch/Save/PartPayDetails`, 
-        installmentData, // Send only installmentDetails as request body
-        {
-          headers: {
-            "Authorization": token
-          },
-          params: { batchId: batchId } // Send batchId as RequestParam
-        }
-      );
-  
-      if (response.status===200) {
-        MySwal.fire({
-          title: "Saved ",
-          text: "Installments Saved  sucessfully !",
-          icon: "success",
-        })
-        navigate("/batch/viewall")
-      }
-    } catch (error) {
-      console.error("Error saving installments:", error);
-        MySwal.fire({
-                                toast:true,
-                          position: 'top-end', 
-                          icon: 'error',
-                          title: 'Something Went Wrong Please Try again later !',
-                          showConfirmButton: false,
-                          timer: 3000,
-                          timerProgressBar: true,
-                          didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer);
-                            toast.addEventListener('mouseleave', Swal.resumeTimer);
-                          }
-                        });
-    }
-  };
-  
-  const installmentChange = (e, index) => {
-    const newInstallmentAmount = parseFloat(e.target.value);
-    if (newInstallmentAmount > 0) {
-      const updatedInstallmentData = [...installmentData];
-      updatedInstallmentData[index].InstallmentAmount = newInstallmentAmount;
-
-      // Recalculate remaining installments if needed
-      if (index < noOfInstallments - 1) {
-        let remainingAmount = batchAmount; // Start with total course amount
-        for (let i = 0; i <= index; i++) {
-          // Subtract updated amounts of previous installments
-          remainingAmount -= updatedInstallmentData[i].InstallmentAmount;
-        }
-        const remainingInstallments = noOfInstallments - index - 1;
-        const remainingInstallmentAmount =
-          remainingAmount / remainingInstallments;
-        for (let i = index + 1; i < noOfInstallments; i++) {
-          updatedInstallmentData[i].InstallmentAmount =
-            remainingInstallmentAmount;
-        }
-      }
-
-      setInstallmentData(updatedInstallmentData);
+      MySwal.fire({
+        title: 'Error!',
+        text: 'An unexpected error occurred. Please try again later.',
+        icon: 'error',
+      }).then(() => navigate(-1));
     }
   };
 
-  const installmentnoChange = (e) => {
+  const initializeInstallments = (amount, numInstallments) => {
+    if (amount && numInstallments >= 2) {
+      const defaultAmount = amount / numInstallments;
+      const newInstallments = Array.from({ length: numInstallments }, (_, i) => ({
+        installmentNumber: `${i + 1}`,
+        installmentAmount: defaultAmount,
+        durationInDays: i === 0 ? 0 : 15, // First installment has no duration
+      }));
+      setInstallmentData(newInstallments);
+    }
+  };
+
+  // --- EVENT HANDLERS ---
+  const handleNoOfInstallmentsChange = (e) => {
     const newNoOfInstallments = parseInt(e.target.value, 10);
     if (newNoOfInstallments >= 2) {
       setNoOfInstallments(newNoOfInstallments);
-      setnoofDuration(newNoOfInstallments - 1);
+      initializeInstallments(batchData.batchAmount, newNoOfInstallments);
     }
   };
 
-  function getOrdinalSuffix(num) {
-    const ones = num % 10;
-    const tens = Math.floor(num / 10) % 10;
-    if (tens === 1) {
-      return num + "th";
-    } else {
-      switch (ones) {
-        case 1:
-          return num + "st";
-        case 2:
-          return num + "nd";
-        case 3:
-          return num + "rd";
-        default:
-          return num + "th";
+  const handleInstallmentAmountChange = (e, index) => {
+    const newAmount = parseFloat(e.target.value);
+    if (newAmount > 0) {
+      const updatedInstallments = [...installmentData];
+      updatedInstallments[index].installmentAmount = newAmount;
+
+      // Recalculate remaining amounts
+      const totalPaid = updatedInstallments.slice(0, index + 1).reduce((sum, item) => sum + item.installmentAmount, 0);
+      const remainingAmount = batchData.batchAmount - totalPaid;
+      const remainingInstallmentsCount = noOfInstallments - (index + 1);
+
+      if (remainingInstallmentsCount > 0) {
+        const amountPerRemaining = remainingAmount / remainingInstallmentsCount;
+        for (let i = index + 1; i < noOfInstallments; i++) {
+          updatedInstallments[i].installmentAmount = amountPerRemaining;
+        }
       }
+      setInstallmentData(updatedInstallments);
+    }
+  };
+
+  const handleDurationChange = (e, index) => {
+    const newDuration = parseInt(e.target.value, 10);
+    if (newDuration > 0) {
+      const updatedInstallments = [...installmentData];
+      updatedInstallments[index].durationInDays = newDuration;
+      setInstallmentData(updatedInstallments);
+    }
+  };
+  const clearpaysettings=async()=>{
+       try {
+      await axios.post(
+        `${baseUrl}/Batch/clear/PartPayDetails`,
+        {},
+        {
+          headers: { Authorization: token },
+          params: { batchId: batchId },
+        }
+      );
+       MySwal.fire({
+        title: 'Success!',
+        text: 'Partial payment settings saved successfully.',
+        icon: 'success',
+      }).then(() => navigate('/batch/viewall'));
+    } catch (error) {
+      MySwal.fire({
+        title: 'Error!',
+        text: 'Failed to save settings. Please try again.',
+        icon: 'error',
+      });
+      console.error('Save error:', error);
     }
   }
+  const handleSave = async () => {
+    if (!enablechecked) {
+      clearpaysettings();
+      return
+    }
+
+    const payload = installmentData.map(item => ({
+    InstallmentNumber: parseInt(item.installmentNumber),
+    InstallmentAmount: parseFloat(item.installmentAmount),
+    DurationInDays: parseInt(item.durationInDays)
+}));
+    
+    try {
+      await axios.post(
+        `${baseUrl}/Batch/Save/PartPayDetails`,
+        payload,
+        {
+          headers: { Authorization: token },
+          params: { batchId: batchId },
+        }
+      );
+      MySwal.fire({
+        title: 'Success!',
+        text: 'Partial payment settings saved successfully.',
+        icon: 'success',
+      }).then(() => navigate('/batch/viewall'));
+    } catch (error) {
+      MySwal.fire({
+        title: 'Error!',
+        text: 'Failed to save settings. Please try again.',
+        icon: 'error',
+      });
+      console.error('Save error:', error);
+    }
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
-    <div className="page-header"></div>
-    <div className="card">
-      <div className="card-body">
-      
+      <div className="page-header"></div>
+      <div className="card">
+        <div className="card-header">
+          <div className="navigateheaders">
+            <div onClick={() => navigate(-1)}>
+              <i className="fa-solid fa-arrow-left"></i>
+            </div>
+            <div></div>
+            <div onClick={() => navigate("/dashboard/course")}>
+              <i className="fa-solid fa-xmark"></i>
+            </div>
+          </div>
+          <h4>
+            <span>Partial Payment Settings for {batchData.batchTitle}</span>
+          </h4>
+        </div>
+        <div className="card-body">
           <div className="row">
             <div className="col-12">
-        <div className="navigateheaders">
-          <div
-            onClick={() => {
-             navigate(-1)
-            }}
-          >
-            <i className="fa-solid fa-arrow-left"></i>
-          </div>
-          <div></div>
-          <div
-            onClick={() => {
-              navigate("/dashboard/course");
-            }}
-          >
-            <i className="fa-solid fa-xmark"></i>
-          </div>
-        </div>
-        <h4> Partial Payment Settings for {batch.batchName}</h4>
-
-        <hr />
-        <h6 className="checkboxes-lg">
-          <input
-            type="checkbox"
-            className="mr-2"
-            name="check"
-            disabled={batchAmount <= 0}
-            checked={enablechecked}
-            onChange={() => {
-              if(batchAmount!=0){
-              setenablechecked(!enablechecked);
-              }
-            }}
-          />
-          <span htmlFor="check" style={{ display: "inline" }}>
-            Enable Partial Payment
-          </span>
-          </h6>
-        
-        {enablechecked ? (
-          <>
-  <div className="row">
-    <div className="col-md-6">
-      <div className="form-group row">
-        <label className="col-sm-4 col-form-label">Batch Amount</label>
-        <div className="col-sm-8">
-          <input type="number" className="form-control" value={batch.amount} />
-        </div>
-      </div>
-    </div>
-
-    <div className="col-md-6">
-      <div className="form-group row">
-        <label className="col-sm-4 col-form-label">No of Installments</label>
-        <div className="col-sm-8">
-          <input
-            type="number"
-            className="form-control"
-            value={noOfInstallments}
-            onChange={installmentnoChange}
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
-            <div className="row mt-3" style={{marginBottom:"10px",minHeight:"250px" }}>
-              <div className="col-md-6">
-                {installmentData.map((installment, index) => (
-                  <div key={index}>
-                    <div className="form-group row pt-2">
-                      <label  className="col-sm-4 col-form-label"> installment{installment.InstallmentNumber}</label>
-                      <div className="col-sm-8">
-                      <input
-                        type="number"
-                          className="form-control"
-                        value={installment.InstallmentAmount}
-                        onChange={(e) => installmentChange(e, index)}
-                      />
+              <h6 className="checkboxes-lg">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={enablechecked}
+                  disabled={batchData.batchAmount <= 0}
+                  onChange={() => setEnablechecked(!enablechecked)}
+                />
+                <span htmlFor="check" style={{ display: 'inline' }}>
+                  Enable Partial Payment
+                </span>
+              </h6>
+              {enablechecked && (
+                <>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="form-group row">
+                        <label className="col-sm-4 col-form-label">Batch Amount</label>
+                        <div className="col-sm-8">
+                          <input type="number" className="form-control" value={batchData.batchAmount} readOnly />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="form-group row">
+                        <label className="col-sm-4 col-form-label"> No of Installments </label>
+                        <div className="col-sm-8">
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={noOfInstallments}
+                            onChange={handleNoOfInstallmentsChange}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-              <div className="pt-5 col-md-6">
-                {durations.map((duration, index) => (
-                  <div className="form-group row pt-2" key={index}>
-                    <label  className="col-sm-4 col-form-label">
-                      Duration for {getOrdinalSuffix(index + 2)} installment
-                    </label>
-                    <div className="col-sm-8">
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <input
-                        type="number"
-                          className="form-control"
-                        value={duration}
-                        onChange={(e) => {
-                          const updatedDurations = [...durations];
-                          updatedDurations[index] = parseInt(
-                            e.target.value,
-                            10
-                          );
-                          if (e.target.value > 0) {
-                            setDurations(updatedDurations);
-                            const installmentdata = [...installmentData];
-                            installmentdata[index + 1].DurationInDays =
-                              parseInt(e.target.value, 10);
-                          }
-                        }}
-                      />
-                      <label style={{ marginLeft: "5px" }}>Days</label>
+                  <div className="row mt-3" style={{ marginBottom: '10px', minHeight: '200px', maxHeight: '250px', overflow: 'auto' }}>
+                    <div className="col-md-6">
+                      {installmentData.map((installment, index) => (
+                        <div key={index}>
+                          <div className="form-group row pt-2">
+                            <label className="col-sm-4 col-form-label"> Installment {getOrdinalSuffix(index + 1)}</label>
+                            <div className="col-sm-8">
+                              <input
+                                type="number"
+                                className="form-control"
+                                value={installment.installmentAmount || ''}
+                                onChange={(e) => handleInstallmentAmountChange(e, index)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
+                    <div className="pt-5 col-md-6">
+                      {installmentData.slice(1).map((installment, index) => (
+                        <div className="form-group row pt-2" key={index}>
+                          <label>
+                            Duration for {getOrdinalSuffix(index + 2)} installment
+                          </label>
+                          <div className="col-sm-8">
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <input
+                                type="number"
+                                className="form-control"
+                                value={installment.durationInDays}
+                                onChange={(e) => handleDurationChange(e, index + 1)}
+                              />
+                              <label style={{ marginLeft: '5px' }}>Days</label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
-          </>
-        ) : (
-          <>
-            <div className="row">
-    <div className="col-md-6">
-      <div className="form-group row">
-                <label  className="col-sm-4 col-form-label">Batch Amount</label>
-                <div className="col-sm-8">
-                <input type="number" className="form-control" value={batch.amount} />
-                </div>
-                </div>
-              </div>
-              <div className="col-md-6">
-              <div className="form-group row">
-                <label  className="col-sm-4 col-form-label"> No of Installments </label>
-                <div className="col-sm-8">
-                <input
-                  type="number"
-                  className="form-control"
-                  value=" "
-                  readOnly
-                />
-                </div>
-              </div>
-            </div>
-            </div>
-            <div className="row mt-3" style={{marginBottom:"10px",minHeight:"250px"}}>
-            <div className="col-md-6">
-                <div className="form-group row pt-2">
-                  <label  className="col-sm-4 col-form-label"> Installment 1</label>
-                  <div className="col-sm-8">
-                  <input type="number" className="form-control" readOnly />
-                </div>
-                </div>
-                <div className="form-group row pt-2">
-                <label  className="col-sm-4 col-form-label"> Installment 2</label>
-                  <div className="col-sm-8">
-                  <input type="number" className="form-control" readOnly />
-                </div>
-                </div>
-              </div>
-
-              <div className="pt-5 col-md-6">
-                <div className="form-group row pt-5">
-                  <label  className="col-sm-4 col-form-label">Duration for 2 nd installment</label>
-                  <div className="col-sm-8">
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <input type="number" className="form-control" readOnly />
-                    <label style={{ marginLeft: "5px" }}>Days</label>
-                  </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        <div className="cornerbtn">
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              navigate(-1)
-            }}
-          >
-            cancel
-          </button>
-         {enablechecked ? <button
-            className="btn btn-primary"
-          onClick={handleSubmit}
-          >
-            Save
-          </button>:<button className="btn btn-primary" onClick={()=>{navigate("/batch/viewall")}}>Skip</button>}
+          </div>
+          <div className="cornerbtn">
+            <button className="btn btn-secondary" onClick={() => navigate(-1)}>
+              cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleSave}>
+              Save
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    </div>
-    </div>
     </div>
   );
 };

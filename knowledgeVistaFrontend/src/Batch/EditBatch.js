@@ -367,6 +367,7 @@ useEffect(()=>{
         });        
    
        if (response.status === 200) {
+
          MySwal.fire({
            title: "Batch Updated",
            text: "batch Updated sucessfully !",
@@ -384,7 +385,11 @@ useEffect(()=>{
          setSelectedCourse([]);
          setselectedTrainers([])
          setErrors({});
+         if(response?.data){
+          navigate(`/batch/save/partpay/${batch.batchTitle}/${id}`);}
+          else{
          navigate("/batch/viewall")
+          }
        }else if(response.status===204){
         setbatch({
           batchTitle: "",
@@ -658,6 +663,7 @@ useEffect(()=>{
                   >
                     Batch Amount <span className="text-danger">*</span>
                   </label>
+                  {role==="ADMIN" ? (
                   <div className="col-sm-9">
                     <input
                       type="number"
@@ -668,7 +674,16 @@ useEffect(()=>{
                       onChange={handleBatchChange}
                     />
                     <div className="invalid-feedback">{errors.amount}</div>
-                  </div>
+                  </div>):(<div className="col-sm-9">
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      name="amount"
+                      readOnly
+                      className="form-control"
+                      value={batch.amount}
+                    />
+                  </div>)}
 
                   {role === "ADMIN" && batch?.paytype && (
   <div className="form-group row">
@@ -679,11 +694,10 @@ useEffect(()=>{
         onClick={(event) => {
           event.preventDefault(); // Prevent default anchor behavior
 
-          const baseUrl = batch.paytype === "FULL" 
-            ? `/batch/save/partpay/${batch.batchTitle}/${batch.id}`
-            : `/batch/update/partpay/${batch.batchTitle}/${batch.id}`;
+         navigate(
+             `/batch/save/partpay/${batch.batchTitle}/${batch.id}`);
 
-          navigate(baseUrl);
+         
         }}
       >
         Installment Settings

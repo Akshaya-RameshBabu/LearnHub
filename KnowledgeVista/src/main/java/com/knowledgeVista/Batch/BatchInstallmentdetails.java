@@ -12,29 +12,33 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-@Entity@Table@Getter
-@Setter@NoArgsConstructor
+
+@Entity
+@Table
+@Getter
+@Setter
+@NoArgsConstructor
 public class BatchInstallmentdetails {
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @JsonProperty("InstallmentNumber")
-    private Long installmentNumber;  // Changed to camelCase
+	@JsonProperty("InstallmentNumber")
+	private Long installmentNumber; // Changed to camelCase
 
-    @JsonProperty("InstallmentAmount")
-    private Long installmentAmount;  // Changed to camelCase
+	@JsonProperty("InstallmentAmount")
+	private Long installmentAmount; // Changed to camelCase
 
-    @JsonProperty("DurationInDays")
-    private Long durationInDays;  // Changed to camelCase
+	@JsonProperty("DurationInDays")
+	private Long durationInDays; // Changed to camelCase
 
-    @ManyToOne
-    @JoinColumn(name = "batchPartayId", referencedColumnName = "batchPartayId")
-    private Batch_partPayment_Structure partpay;
+	@ManyToOne
+	@JoinColumn(name = "batchPartayId", referencedColumnName = "batchPartayId")
+	private Batch_partPayment_Structure partpay;
 
-    @Override
-    public String toString() {
-        return "InstallmentDetails [Id=" + id + ", InstallmentNumber=" + installmentNumber + ", InstallmentAmount="
-                + installmentAmount + ", DurationInDays=" + durationInDays + ", partpay=" + partpay + "]";
-    }
+	@Override
+	public String toString() {
+		return "InstallmentDetails [Id=" + id + ", InstallmentNumber=" + installmentNumber + ", InstallmentAmount="
+				+ installmentAmount + ", DurationInDays=" + durationInDays + ", partpay=" + partpay + "]";
+	}
 }

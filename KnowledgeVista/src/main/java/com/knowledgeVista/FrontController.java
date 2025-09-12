@@ -1793,6 +1793,12 @@ public class FrontController {
 		return batchService.GetbatchImagesForMyPayments(token, batchIds);
 	}
 
+	@PostMapping("/Batch/clear/PartPayDetails")
+	@CheckAccessAnnotation
+	public ResponseEntity<?> clearpartpay(@RequestParam Long batchId, @RequestHeader("Authorization") String token) {
+		return batchService.clearPartPaymentSettings(batchId, token);
+	}
+
 	@PostMapping("/Batch/Save/PartPayDetails")
 	@CheckAccessAnnotation
 	public ResponseEntity<?> savePartPayment(@RequestParam Long batchId,

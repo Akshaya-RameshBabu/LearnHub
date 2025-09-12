@@ -7,9 +7,10 @@ const Mycourse = () => {
   const token = sessionStorage.getItem("token");
   const [courses, setCourses] = useState([]);
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchItems = async () => {
+  const[loading,setLoading]=useState(false);
+     const fetchItems = async () => {
       try {
+        setLoading(true);
         // Replace {userId} with the actual user ID
         const response = await axios.get(
           `${baseUrl}/AssignCourse/student/courselist`,
@@ -26,8 +27,12 @@ const Mycourse = () => {
         console.error("Error fetching courses:", error);
         // Handle error here, for example, show an error message
         throw error
+      }finally{
+        setLoading(false);
       }
     };
+  useEffect(() => {
+ 
 
     fetchItems();
   }, []);
@@ -35,8 +40,44 @@ const Mycourse = () => {
   return (
     <>
       <div className="page-header"></div>
+         {loading ? (
+  <div className="row">
+    {[...Array(12)].map((_, index) => (
+      <div className=" course" key={index}>
+        <div className="card mb-3">
+          {/* Image skeleton */}
+          <div
+            className="skeleton skeleton-input"
+            style={{ height: "140px", width: "100%" }}
+          ></div>
+
+          <div className="card-body">
+            {/* Title skeleton */}
+            <div
+              className="skeleton skeleton-title"
+              style={{ marginBottom: "10px" }}
+            ></div>
+
+            {/* Description skeleton */}
+            <div
+              className="skeleton skeleton-input"
+              style={{ height: "1rem", marginBottom: "15px" }}
+            ></div>
+
+            {/* Button skeleton */}
+            <div
+              className="skeleton skeleton-button"
+              style={{ marginTop: "10px" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
       <div className="row">
         <div className="col-sm-12">
+
           {courses.length === 0 ? (
             <div className="card">
               <div className="card-body">
@@ -84,6 +125,7 @@ const Mycourse = () => {
           )}
         </div>
       </div>
+)}
     </>
   );
 };

@@ -10,11 +10,13 @@ const MyAssignedcourses = () => {
   const MySwal = withReactContent(Swal);
   const role = sessionStorage.getItem("role");
   const token = sessionStorage.getItem("token");
+  const[loading,setLoading]=useState(false)
   const [courses, setCourses] = useState([]);
   const Currency=sessionStorage.getItem("Currency")
   const navigate=useNavigate()
      const fetchItems = async () => {
       try {
+        setLoading(true);
         const response = await axios.get(
           `${baseUrl}/AssignCourse/Trainer/courselist`,
           {
@@ -27,6 +29,8 @@ const MyAssignedcourses = () => {
         setCourses(data);
       } catch (error) {
         console.error("Error fetching courses:", error);
+      }finally{
+        setLoading(false);
       }
     };
   useEffect(() => {
@@ -69,14 +73,6 @@ const MyAssignedcourses = () => {
             if (error.response && error.response.status === 401) {
               navigate("/unauthorized")
             } else {
-              // MySwal.fire({
-              //   title: "Error!",
-              //   text: error.response.data
-              //     ? error.response.data
-              //     : "error occured",
-              //   icon: "error",
-              //   confirmButtonText: "OK",
-              // });
               throw error
             }
           });
@@ -89,6 +85,41 @@ const MyAssignedcourses = () => {
   return (
     <div>
       <div className="page-header"></div>
+               {loading ? (
+  <div className="row">
+    {[...Array(12)].map((_, index) => (
+      <div className=" course" key={index}>
+        <div className="card mb-3">
+          {/* Image skeleton */}
+          <div
+            className="skeleton skeleton-input"
+            style={{ height: "140px", width: "100%" }}
+          ></div>
+
+          <div className="card-body">
+            {/* Title skeleton */}
+            <div
+              className="skeleton skeleton-title"
+              style={{ marginBottom: "10px" }}
+            ></div>
+
+            {/* Description skeleton */}
+            <div
+              className="skeleton skeleton-input"
+              style={{ height: "1rem", marginBottom: "15px" }}
+            ></div>
+
+            {/* Button skeleton */}
+            <div
+              className="skeleton skeleton-button"
+              style={{ marginTop: "10px" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
       <div className="row">
         <div className="col-sm-12">
           <div className="createbtn">
@@ -227,6 +258,7 @@ const MyAssignedcourses = () => {
           )}
         </div>
       </div>
+)}
     </div>
   );
 };

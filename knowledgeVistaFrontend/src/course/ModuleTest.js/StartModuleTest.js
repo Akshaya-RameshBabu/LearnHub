@@ -132,7 +132,7 @@ const StartModuleTest = () => {
  
  
                                      <div className="atgrid">
-                                         <h3>{questions[currentQuestionIndex].questionText}</h3>
+                                         <h3><span>{currentQuestionIndex+1}.</span> {questions[currentQuestionIndex].questionText}</h3>
                                          <ul className="listgroup">
                                              {[1, 2, 3, 4].map((num) => {
                                                  const optionValue = questions[currentQuestionIndex][`option${num}`];

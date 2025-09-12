@@ -29,12 +29,13 @@ const UserTestHistory = () => {
       total: "",
     });
     const [percentage, setpercentage] = useState(0);
-   
+   const[loading,setloading]=useState(false);
     const fetTestHistory = async (page = 0) => {
       if(!batchId){
         return
       }
       try {
+        setloading(true);
         const response = await axios.get(`${baseUrl}/get/TestHistoryForUser/${email}/${batchId}`, {
           headers: {
             Authorization: token,
@@ -55,6 +56,8 @@ const UserTestHistory = () => {
         console.log(response?.data);
       } catch (err) {
         console.log(err);
+      }finally{
+        setloading(false);
       }
     };
    
@@ -123,6 +126,9 @@ const UserTestHistory = () => {
                         <th scope="col"> Status </th>
                       </tr>
                     </thead>
+                     {loading? (  <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>):
                     <tbody>
                       {testScore?.map((item, index) => (
                         <tr key={index}>
@@ -141,7 +147,7 @@ const UserTestHistory = () => {
                           <td className="py-2"> {item?.status}</td>
                         </tr>
                       ))}
-                    </tbody>
+                    </tbody>}
                   </table>
                 </div>
                 <div className="cornerbtn">

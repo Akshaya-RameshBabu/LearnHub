@@ -10,7 +10,7 @@ const ProgramCalender = () => {
   const [event, setevent] = useState([]);
   const [submitting, setsubmitting] = useState(false);
   const MySwal = withReactContent(Swal);
-  
+  const[loading,setloading]=useState(false);
     const itemsperpage = 10;
     const [datacounts, setdatacounts] = useState({
       start: "",
@@ -23,6 +23,7 @@ const ProgramCalender = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        setloading(true);
         const response = await axios.get(`${baseUrl}/Events/Get?pageNumber=${currentPage+1}&pageSize=${itemsperpage}`, {
           headers: {
             Authorization: token,
@@ -44,6 +45,8 @@ const ProgramCalender = () => {
       });
       } catch (err) {
         console.log(err);
+      }finally{
+        setloading(false);
       }
     };
     fetchEvents();
@@ -151,6 +154,9 @@ if(item?.type==="MTEST"){
                       
                     </tr>
                   </thead>
+                   {loading? (  <div className="outerspinner active">
+                <div className="spinner"></div>
+            </div>):
                   <tbody>
   {Array.isArray(event) &&
     event.map((item, index) => {
@@ -214,7 +220,7 @@ if(item?.type==="MTEST"){
         );
       }
     })}
-</tbody>
+</tbody>}
 
                 </table>
               </div>
