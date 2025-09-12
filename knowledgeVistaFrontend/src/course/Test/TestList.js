@@ -311,6 +311,7 @@ const handleDelete = async (questID) => {
                       <div>
                         <input
                           type="number"
+                          onWheel={(e) => e.currentTarget.blur()}
                           name='passPercentage'
                           className={`form-control .form-control-sm  smalltextbox ${errors.passPercentage && 'is-invalid'}`}
                           value={editedTest && editedTest.passPercentage !== undefined ? editedTest.passPercentage : test.passPercentage}
@@ -335,6 +336,7 @@ const handleDelete = async (questID) => {
                       <div>
                         <input
                           type="number"
+                          onWheel={(e) => e.currentTarget.blur()}
                           name='noofattempt'
                           className={`form-control .form-control-sm   smalltextbox ${errors.noofattempt && 'is-invalid'}`}
                           value={editedTest && editedTest.noofattempt !== undefined ? editedTest.noofattempt : test.noofattempt}

@@ -471,6 +471,7 @@ const CreateModuleTest = () => {
                  <div className="col-sm-9">
               <input
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 value={mnoofattempt}
                 name="mnoofattempt"
                 className={`form-control ${errors.mnoofattempt && "is-invalid"}`}
@@ -486,6 +487,7 @@ const CreateModuleTest = () => {
                  <div className="col-sm-9">
               <input
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 value={mpassPercentage}
                 name="mpassPercentage"
                 className={`form-control ${errors.mpassPercentage && "is-invalid"}`}

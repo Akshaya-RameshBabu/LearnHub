@@ -6,6 +6,7 @@ import AddQuestionToAssignment from "./AddQuestionToAssignment";
 import baseUrl from "../api/utils.js";
 import axios from "axios";
 import AddQuizzToAssignment from "./AddQuizzToAssignment.js";
+import useGlobalNavigation from "../AuthenticationPages/useGlobalNavigation.js";
 
 const CreateAssignment = () => {
   const { courseName, courseId } = useParams();
@@ -182,7 +183,7 @@ const handleSubmit = async () => {
     });
   }
 };
-
+const handleNavigation = useGlobalNavigation();
 
   return (
     <div>
@@ -322,6 +323,7 @@ const handleSubmit = async () => {
                             placeholder="Enter max file size"
                             min="1"
                             value={Assignment.maxFileSize}
+                            onWheel={(e) => e.currentTarget.blur()}
                             onChange={(e) =>
                               setAssignment({
                                 ...Assignment,
@@ -347,6 +349,7 @@ const handleSubmit = async () => {
                     <div className="col-sm-6">
                       <input
                         type="number"
+                        onWheel={(e) => e.currentTarget.blur()}
                         id="totalMarks"
                         name="totalMarks"
                         maxLength={100}
@@ -382,7 +385,7 @@ const handleSubmit = async () => {
                   <button
                     className="btn btn-secondary"
                     type="button"
-                    onClick={() => navigate(-1)}
+                    onClick={handleNavigation}
                   >
                     Cancel
                   </button>

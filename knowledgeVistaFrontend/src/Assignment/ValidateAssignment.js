@@ -253,6 +253,7 @@ const ValidateAssignment = () => {
                     <div className="col-sm-6">
                       <input
                         type="number"
+                        onWheel={(e) => e.currentTarget.blur()}
                         id="totalMarksObtained"
                         name="totalMarksObtained"
                         max={Assignment?.totalMarks ?? ''}

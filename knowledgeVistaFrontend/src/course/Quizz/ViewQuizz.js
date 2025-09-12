@@ -11,14 +11,12 @@ const ViewQuizz = () => {
     useParams();
   const navigate = useNavigate();
   const MySwal = withReactContent(Swal);
-  const[quizzDetails,setquizzDetails]=useState({
+  const [quizzDetails, setquizzDetails] = useState({});
 
-  });
-  
-          const [duration, setDuration] = useState({ hours: "", minutes: "" });
-          
-                 const [examDuration, setExamDuration] = useState({ hours: "", minutes: "" });
-    const [durationInMinutes, setDurationInMinutes] = useState(0);
+  const [duration, setDuration] = useState({ hours: "", minutes: "" });
+
+  const [examDuration, setExamDuration] = useState({ hours: "", minutes: "" });
+  const [durationInMinutes, setDurationInMinutes] = useState(0);
   const [quizz, setquizz] = useState([]);
   const [submitting, setsubmitting] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -32,20 +30,24 @@ const ViewQuizz = () => {
   };
 
   const handleUpdateQuizzName = async () => {
- 
     if (!newQuizzName.trim()) return;
 
     try {
-      const response = await fetch(`${baseUrl}/Quizz/updatename/${quizzId}/${encodeURIComponent(newQuizzName)}`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": token
-        },
-      });
+      const response = await fetch(
+        `${baseUrl}/Quizz/updatename/${quizzId}/${encodeURIComponent(
+          newQuizzName
+        )}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
 
-      if (response.status===200) {
+      if (response.status === 200) {
         setIsEditing(false);
-        fetchQuizzQuestions()
+        fetchQuizzQuestions();
       } else {
         console.error("Failed to update quiz name");
       }
@@ -56,7 +58,7 @@ const ViewQuizz = () => {
 
   const fetchQuizzQuestions = async () => {
     try {
-      setsubmitting(true)
+      setsubmitting(true);
       const response = await axios.get(`${baseUrl}/Quizz/${quizzId}`, {
         headers: {
           Authorization: token,
@@ -68,11 +70,11 @@ const ViewQuizz = () => {
 
         setDuration(() => ({
           hours: Math.floor(response?.data?.durationInMinutes / 60),
-          minutes: response?.data?.durationInMinutes % 60
+          minutes: response?.data?.durationInMinutes % 60,
         }));
         const data = response?.data?.quizzquestions;
         setquizz(data);
-        setNewQuizzName(response?.data?.quizzName)
+        setNewQuizzName(response?.data?.quizzName);
       }
       if (response.status === 204) {
         navigate(
@@ -132,7 +134,7 @@ const ViewQuizz = () => {
             );
 
             if (response.status === 200) {
-            fetchQuizzQuestions();
+              fetchQuizzQuestions();
             }
           }
         } catch (error) {
@@ -146,9 +148,7 @@ const ViewQuizz = () => {
     fetchQuizzQuestions();
   };
 
-
   const handleDelete = async (questid) => {
-   
     MySwal.fire({
       title: "Delete Test?",
       text: "Are you sure you want to delete this Questions?",
@@ -162,7 +162,7 @@ const ViewQuizz = () => {
         try {
           if (quizzId != null) {
             const arr = [];
-arr.push(questid);
+            arr.push(questid);
             const response = await axios.delete(
               `${baseUrl}/Quizz/Delete/${quizzId}`,
               {
@@ -174,7 +174,7 @@ arr.push(questid);
             );
 
             if (response.status === 200) {
-             fetchQuizzQuestions();
+              fetchQuizzQuestions();
             }
           }
         } catch (error) {
@@ -187,13 +187,15 @@ arr.push(questid);
   };
   const handleUpdateDuration = async (totalMinutes) => {
     try {
-     
-      const response = await axios.patch(`${baseUrl}/Quizz/updateDuration/${quizzId}/${totalMinutes}`,{},{
-        headers: {
-          Authorization: token,
-        },
-        
-      });
+      const response = await axios.patch(
+        `${baseUrl}/Quizz/updateDuration/${quizzId}/${totalMinutes}`,
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
       fetchQuizzQuestions();
     } catch (err) {
       console.error("Error updating quiz duration:", err);
@@ -269,49 +271,68 @@ arr.push(questid);
                 </div>
               )}
               <div className="headingandbutton">
-              <div className="text-center">
-      {isEditing ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <input
-            type="text"
-            value={newQuizzName}
-            onChange={(e) =>{
-              const value=e.target.value
-    if (value.trim() === '') {
-    }else if (value.length > 50) {
-      return;
-    }else 
-    if(value.includes("/")||  value.includes("\\")){
-      return;
-    }else{
-      setNewQuizzName(value)
-    }
-            }}
-            autoFocus
-          />
-         <button className="hidebtn" 
-            onClick={handleUpdateQuizzName}> <i className="fa-solid fa-check"
-          ></i></button>
-        </div>
-      ) : (
-        <h4 className="text-center"  onDoubleClick={handleDoubleClick}>
-          {quizzDetails.quizzName|| quizzName}
-        </h4>
-      )}
-    </div>
+                <div className="text-center">
+                  {isEditing ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={newQuizzName}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value.trim() === "") {
+                          } else if (value.length > 50) {
+                            return;
+                          } else if (
+                            value.includes("/") ||
+                            value.includes("\\")
+                          ) {
+                            return;
+                          } else {
+                            setNewQuizzName(value);
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        className="hidebtn"
+                        onClick={handleUpdateQuizzName}
+                      >
+                        {" "}
+                        <i className="fa-solid fa-check"></i>
+                      </button>
+                    </div>
+                  ) : (
+                    <h4
+                      className="text-center"
+                      onDoubleClick={handleDoubleClick}
+                    >
+                      {quizzDetails.quizzName || quizzName}
+                    </h4>
+                  )}
+                </div>
                 <div style={{ width: "200px", display: "flex", gap: "10px" }}>
-                 
-                    <button className="hidebtn" onClick={DeleteQuestion} disabled={selectedIds.length <= 0}
-                     style={{
+                  <button
+                    className="hidebtn"
+                    onClick={DeleteQuestion}
+                    disabled={selectedIds.length <= 0}
+                    style={{
                       opacity: selectedIds.length > 0 ? 1 : 0.5, // Dim when disabled
-                      cursor: selectedIds.length > 0 ? "pointer" : "not-allowed", // Show disabled cursor
-                    }}>
-                      {" "}
-                      <i
-                        className="fa-solid fa-trash text-danger"
-                        style={{ fontSize: "20px", paddingTop: "20px" }}
-                      ></i>
-                    </button>
+                      cursor:
+                        selectedIds.length > 0 ? "pointer" : "not-allowed", // Show disabled cursor
+                    }}
+                  >
+                    {" "}
+                    <i
+                      className="fa-solid fa-trash text-danger"
+                      style={{ fontSize: "20px", paddingTop: "20px" }}
+                    ></i>
+                  </button>
                   <Link
                     to={`/AddQuestionInQuizz/${courseName}/${courseID}/${lessonsName}/${lessonId}/${quizzName}/${quizzId}`}
                     className="btn btn-primary mr-2"
@@ -322,8 +343,8 @@ arr.push(questid);
                 </div>
                 <div></div>
               </div>
- <div className='singletest'>
- <span>
+              <div className="singletest">
+                <span>
                   <b>Lesson Name:</b> {lessonsName}
                 </span>
                 <span>
@@ -332,14 +353,18 @@ arr.push(questid);
                 <span>
                   <b>No Of Question :</b> {quizz?.length}
                 </span>
-                <span style={{display:"flex",alignItems:"center"}}>
-                  <b >Duration :</b> &nbsp; 
+                <span style={{ display: "flex", alignItems: "center" }}>
+                  <b>Duration :</b> &nbsp;
                   <div className="col-sm-9">
-      <DurationPickerEdit onChange={handleUpdateDuration} durationInMinutes={durationInMinutes} setDurationInMinutes={setDurationInMinutes}  duration={duration} setDuration={setDuration} />
-    
-      </div>
+                    <DurationPickerEdit
+                      onChange={handleUpdateDuration}
+                      durationInMinutes={durationInMinutes}
+                      setDurationInMinutes={setDurationInMinutes}
+                      duration={duration}
+                      setDuration={setDuration}
+                    />
+                  </div>
                 </span>
-              
               </div>
               {quizz && (
                 <div className="table-container mt-2">
@@ -349,7 +374,7 @@ arr.push(questid);
                         <th scope="col" style={{ width: "50px" }}>
                           <input
                             type="checkbox"
-                            checked={selectedIds.length===quizz.length}
+                            checked={selectedIds.length === quizz.length}
                             title="Select All"
                             onChange={handleSelectAll}
                           />
@@ -391,17 +416,23 @@ arr.push(questid);
                           <td>{question.option4}</td>
                           <td>{question.answer}</td>
                           <td>
-                            <Link
-                              to={`/editQuizzQuestion/${courseName}/${courseID}/${lessonsName}/${lessonId}/${quizzName}/${quizzId}/${question.questionId}`}
+                            <div
+                              onClick={() => {
+                                navigate(
+                                  `/editQuizzQuestion/${courseName}/${courseID}/${lessonsName}/${lessonId}/${quizzName}/${quizzId}/${question.questionId}`,
+                                  { state: { sno: index + 1 } }
+                                );
+                              }}
                             >
-                              {" "}
                               <i className="fas fa-edit text-primary"></i>
-                            </Link>
+                            </div>
                           </td>
-                          <td className='text-center'>
-                          <i className='fa fa-trash text-danger' onClick={() => handleDelete(question.questionId)}></i>
+                          <td className="text-center">
+                            <i
+                              className="fa fa-trash text-danger"
+                              onClick={() => handleDelete(question.questionId)}
+                            ></i>
                           </td>
-                          
                         </tr>
                       ))}
                     </tbody>

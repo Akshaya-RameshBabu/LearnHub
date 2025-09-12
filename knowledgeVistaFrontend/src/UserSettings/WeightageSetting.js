@@ -154,6 +154,7 @@ const WeightageSetting = () => {
         <div className="col-sm-4">
           <input
             type="number"
+            onWheel={(e) => e.currentTarget.blur()}
             min="0"
             max="100"
             className="form-control"
@@ -178,6 +179,7 @@ const WeightageSetting = () => {
           <div className="col-sm-4">
             <input
               type="number"
+              onWheel={(e) => e.currentTarget.blur()}
               name={key}
               min="0"
               max="100"
@@ -206,6 +208,7 @@ const WeightageSetting = () => {
         <div className="col-sm-4">
           <input
             type="number"
+            onWheel={(e) => e.currentTarget.blur()}
             min="0"
             max="100"
             className="form-control"
@@ -230,6 +233,7 @@ const WeightageSetting = () => {
           <div className="col-sm-4">
             <input
               type="number"
+              onWheel={(e) => e.currentTarget.blur()}
               name={key}
               min="0"
               max="100"

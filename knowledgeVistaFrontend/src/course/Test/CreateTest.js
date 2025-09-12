@@ -373,6 +373,7 @@ const handleOptionChange = (e, index) => {
                <div className="col-sm-9">
             <input
               type="number"
+              onWheel={(e) => e.currentTarget.blur()}
               value={noofattempt}
               name="noofattempt"
               className={`form-control ${errors.noofattempt && "is-invalid"}`}
@@ -388,6 +389,7 @@ const handleOptionChange = (e, index) => {
                <div className="col-sm-9">
             <input
               type="number"
+              onWheel={(e) => e.currentTarget.blur()}
               value={passPercentage}
               name="passPercentage"
               className={`form-control ${errors.passPercentage && "is-invalid"}`}

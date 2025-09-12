@@ -393,6 +393,7 @@ const EditAssignment = () => {
         <label className="form-label col-sm-4">Max File Size (MB)</label>
         <input
           type="number"
+          onWheel={(e) => e.currentTarget.blur()}
           className="form-control col"
           placeholder="Enter max file size"
           min="1"
@@ -419,6 +420,7 @@ const EditAssignment = () => {
                     <div className="col-sm-6">
                       <input
                         type="number"
+                        onWheel={(e) => e.currentTarget.blur()}
                         id="totalMarks"
                         name="totalMarks"
                         maxLength={100}

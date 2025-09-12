@@ -540,6 +540,7 @@ const CourseCreation = () => {
                     <div className="col">
                       <input
                         type="number"
+                        onWheel={(e) => e.currentTarget.blur()}
                         placeholder="Duration"
                         id="Duration"
                         name="Duration"
@@ -561,6 +562,7 @@ const CourseCreation = () => {
                     <div className="col">
                       <input
                         type="number"
+                        onWheel={(e) => e.currentTarget.blur()}
                         placeholder="No Of Seats"
                         id="Noofseats"
                         name="Noofseats"
@@ -658,6 +660,7 @@ const CourseCreation = () => {
                         value={formData.courseAmount}
                         className={`form-control ${errors.courseAmount && "is-invalid"}`}
                         onChange={handleChange}
+                        onWheel={(e) => e.currentTarget.blur()}
                         required
                       />
                       <div className="invalid-feedback">{errors.courseAmount}</div>

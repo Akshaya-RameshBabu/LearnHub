@@ -10,8 +10,10 @@ const EditQuizz = () => {
   const MySwal = withReactContent(Swal);
   const { courseName, courseID, lessonsName, lessonId, quizzName, quizzId ,questionId} =
      useParams();
+     const location = useLocation();
+     const{sno}=location?.state || {};
   const token = sessionStorage.getItem("token");
- 
+ const[submitting,setsubmitting]=useState(false);
   const navigate =useNavigate();
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState({
@@ -34,6 +36,7 @@ const EditQuizz = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setsubmitting(true);
         const response = await axios.get(`${baseUrl}/Quizz/getQuestion/${questionId}`, {
        
           headers: {
@@ -53,13 +56,9 @@ const EditQuizz = () => {
           setSelectedOption(selectedOption); 
         
       } catch (error) {
-        // MySwal.fire({
-        //   title: "Error",
-        //   text: "Some error occurred. Please try again later.",
-        //   icon: "error",
-        //   confirmButtonText: "OK"
-        // })
         throw error
+      }finally{
+        setsubmitting(false);
       }
     };
   
@@ -209,7 +208,7 @@ const formresponse={
                             <li className="breadcrumb-item"><a href="#"onClick={handleNavigation} ><i className="feather icon-layout"></i></a></li>
                             <li className="breadcrumb-item"><a href="#" onClick={()=>{navigate(`/lessonList/${courseName}/${courseID}`)}}>{lessonsName}</a></li>
                             <li className="breadcrumb-item"><a href="#"onClick={()=>{navigate(`/ViewQuizz/${courseName}/${courseID}/${lessonsName}/${lessonId}/${quizzName}/${quizzId}`)}}>{quizzName}</a></li>
-                            <li className="breadcrumb-item"><a href="#">Edit</a></li>
+                            <li className="breadcrumb-item text-light">Edit</li>
                         </ul>
                        
                     </div>
@@ -225,8 +224,26 @@ const formresponse={
       <div></div>
       <div onClick={()=>{navigate(-1)}}><i className="fa-solid fa-xmark"></i></div>
       </div>
-     
-            <div>            
+        {submitting? (
+            <div className="skeleton-wrapper">
+        <div  className="skeleton skeleton-input"></div>
+        <ul className='listgroup'>
+        {Object.keys(options).map((optionKey, index) => (
+                  <li className='choice' key={index}>
+                    <div className="skeleton skeleton-radio mt-2 "></div>
+                    <div className="skeleton skeleton-input"></div>
+                  </li>
+                ))}
+            </ul>
+            <div className='atbtndiv'>
+            <div className="skeleton skeleton-button"></div>
+              <div></div>
+              <div className="skeleton skeleton-button"></div>
+            </div>
+         </div>):(
+     <div>
+            <div className='spanAndInputgrid'> 
+              <span>{sno}.</span>           
               <input 
               className={`form-control   ${errors.questionText && 'is-invalid'}`}
               autoFocus
@@ -275,7 +292,7 @@ const formresponse={
             </button>
             </div>
           </div>
-     
+     </div>)}
         </div>
         </div>
         </div>

@@ -350,6 +350,7 @@ const EditCourseForm = ({}) => {
                     <input
                       name="duration"
                       type="number"
+                      onWheel={(e) => e.currentTarget.blur()}
                       id="duration"
                       className={`form-control   mt-1 ${
                         errors.duration && "is-invalid"
@@ -372,6 +373,7 @@ const EditCourseForm = ({}) => {
                   <input
                     name="noofseats"
                     type="number"
+                    onWheel={(e) => e.currentTarget.blur()}
                     id="noofseats"
                     value={courseEdit.noofseats}
                     className={`form-control    ${
@@ -394,6 +396,7 @@ const EditCourseForm = ({}) => {
                  <div className="col-sm-9">
                     <input
                       type="number"
+                      onWheel={(e) => e.currentTarget.blur()}
                       name="amount"
                       id="amount"
                       className={`form-control   mt-1 ${

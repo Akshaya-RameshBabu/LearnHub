@@ -257,7 +257,7 @@ const Partialpaymentsetting = () => {
                       <div className="form-group row">
                         <label className="col-sm-4 col-form-label">Batch Amount</label>
                         <div className="col-sm-8">
-                          <input type="number" className="form-control" value={batchData.batchAmount} readOnly />
+                          <input type="number" className="form-control" onWheel={(e) => e.currentTarget.blur()} value={batchData.batchAmount} readOnly />
                         </div>
                       </div>
                     </div>
@@ -267,6 +267,7 @@ const Partialpaymentsetting = () => {
                         <div className="col-sm-8">
                           <input
                             type="number"
+                            onWheel={(e) => e.currentTarget.blur()}
                             className="form-control"
                             value={noOfInstallments}
                             onChange={handleNoOfInstallmentsChange}
@@ -284,6 +285,7 @@ const Partialpaymentsetting = () => {
                             <div className="col-sm-8">
                               <input
                                 type="number"
+                                onWheel={(e) => e.currentTarget.blur()}
                                 className="form-control"
                                 value={installment.installmentAmount || ''}
                                 onChange={(e) => handleInstallmentAmountChange(e, index)}
@@ -303,6 +305,7 @@ const Partialpaymentsetting = () => {
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                               <input
                                 type="number"
+                                onWheel={(e) => e.currentTarget.blur()}
                                 className="form-control"
                                 value={installment.durationInDays}
                                 onChange={(e) => handleDurationChange(e, index + 1)}

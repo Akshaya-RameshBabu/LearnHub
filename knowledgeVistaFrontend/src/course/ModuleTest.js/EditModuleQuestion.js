@@ -8,6 +8,8 @@ import useGlobalNavigation from "../../AuthenticationPages/useGlobalNavigation";
 const EditModuleQuestion = () => {
     const MySwal = withReactContent(Swal);
   const { courseName,courseId,mtestName, mtestId,questionId } = useParams();
+  const location = useLocation();
+  const{sno}=location?.state || {};
     const token = sessionStorage.getItem("token");
    const[submitting,setsubmitting]=useState(false)
     const navigate =useNavigate();
@@ -204,7 +206,7 @@ const EditModuleQuestion = () => {
                             }}>Module Tests</a></li>
                             <li className="breadcrumb-item"><a href="#"
                             onClick={()=>{navigate(`/view/ModuleTest/${courseName}/${courseId}/${mtestName}/${mtestId}`)}}>{mtestName}</a></li>
-                            <li className="breadcrumb-item"><a href="#">Edit</a></li>
+                            <li className="breadcrumb-item text-light">Edit</li>
                         </ul>
                        
                     </div>
@@ -237,7 +239,8 @@ const EditModuleQuestion = () => {
               <div className="skeleton skeleton-button"></div>
             </div>
          </div>):(<div>
-        <div>            
+         <div className='spanAndInputgrid'>
+                  <span>{sno}.</span>         
                 <input 
                 className={`form-control   ${errors.questionText && 'is-invalid'}`}
                 autoFocus

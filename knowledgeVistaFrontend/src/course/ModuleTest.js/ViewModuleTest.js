@@ -291,6 +291,7 @@ if(response?.status===200){
                       <div>
                         <input
                           type="number"
+                          onWheel={(e) => e.currentTarget.blur()}
                           name='mpassPercentage'
                           className={`form-control .form-control-sm  smalltextbox ${errors.mpassPercentage && 'is-invalid'}`}
                           value={editedTest && editedTest.mpassPercentage !== undefined ? editedTest.mpassPercentage : mtest.mpassPercentage}
@@ -315,6 +316,7 @@ if(response?.status===200){
                       <div>
                         <input
                           type="number"
+                          onWheel={(e) => e.currentTarget.blur()}
                           name='mnoOfAttempt'
                           className={`form-control .form-control-sm   smalltextbox ${errors.mnoOfAttempt && 'is-invalid'}`}
                           value={editedTest && editedTest.mnoOfAttempt !== undefined ? editedTest.mnoOfAttempt : mtest.mnoOfAttempt}
@@ -375,9 +377,9 @@ if(response?.status===200){
                           <td>{question.option4}</td>
                           <td>{question.answer}</td>
                           <td className='text-center'>
-                            <Link to={`/moduleTest/EditQuestion/${courseName}/${courseId}/${mtest?.mtestName}/${mtest?.mtestId}/${question.questionId}`}>
+                            <div onClick={()=>{navigate(`/moduleTest/EditQuestion/${courseName}/${courseId}/${mtest?.mtestName}/${mtest?.mtestId}/${question.questionId}`,{state:{sno:index+1}})}}>
                               <i className='fa text-primary fa-edit'></i>
-                            </Link>
+                            </div>
                           </td>
                           <td className='text-center'>
                           <i className='fa fa-trash text-danger' 

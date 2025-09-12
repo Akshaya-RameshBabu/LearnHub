@@ -647,6 +647,7 @@ useEffect(()=>{
                   <div className="col-sm-9">
                     <input
                       type="number"
+                      onWheel={(e) => e.currentTarget.blur()}
                       name="noOfSeats"
                       placeholder="No of Seats"
                       className={`form-control ${errors.noOfSeats && "is-invalid"} `}
@@ -667,6 +668,7 @@ useEffect(()=>{
                   <div className="col-sm-9">
                     <input
                       type="number"
+                      onWheel={(e) => e.currentTarget.blur()}
                       placeholder="Amount"
                       name="amount"
                       className={`form-control ${errors.amount && "is-invalid"} `}
@@ -677,6 +679,7 @@ useEffect(()=>{
                   </div>):(<div className="col-sm-9">
                     <input
                       type="number"
+                      onWheel={(e) => e.currentTarget.blur()}
                       placeholder="Amount"
                       name="amount"
                       readOnly
